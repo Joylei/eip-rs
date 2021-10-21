@@ -34,6 +34,7 @@ impl Decoder for ClientCodec {
         let hdr = EncapsulationHeader::try_from(header_data)?;
         match hdr.status {
             0 => {}
+            v if v > u16::MAX as u32 => unreachable!("unexpected status code: {}", v),
             v => return Err(Error::Response(ResponseError::from(v as u16))),
         }
         match hdr.command {
