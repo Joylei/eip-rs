@@ -59,8 +59,8 @@ pub enum ResponseError {
 }
 
 impl From<u16> for ResponseError {
-    fn from(src: u16) -> Self {
-        match src {
+    fn from(status: u16) -> Self {
+        match status {
             0x0000 => unreachable!(), // represents success
             0x0001 => Self::InvalidCommand,
             0x0002 => Self::InsufficientMemory,
@@ -68,7 +68,7 @@ impl From<u16> for ResponseError {
             0x0064 => Self::InvalidSession,
             0x0065 => Self::InvalidLength,
             0x0069 => Self::UnsupportedRevision,
-            _ => Self::Unknown(src),
+            _ => Self::Unknown(status),
         }
     }
 }
