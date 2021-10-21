@@ -1,6 +1,5 @@
-use std::ops::{Deref, DerefMut};
-
 use bytes::Bytes;
+use std::ops::{Deref, DerefMut};
 
 /// item_count:u16 | item_count of CommonPacketItem
 #[derive(Default, Debug)]

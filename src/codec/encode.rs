@@ -74,14 +74,6 @@ impl Encoder<CommonPacketItem> for ClientCodec {
     fn encode(&mut self, item: CommonPacketItem, dst: &mut BytesMut) -> Result<(), Self::Error> {
         let bytes_count = item.bytes_count();
         dst.reserve(bytes_count);
-        // match item {
-        //     CommonPacketItem::Address(addr) => {
-        //         self.encode(addr, dst)?;
-        //     }
-        //     CommonPacketItem::Data(data) => {
-        //         self.encode(data, dst)?;
-        //     }
-        // }
         dst.put_u16_le(item.type_code);
         if let Some(data) = item.data {
             debug_assert!(data.len() <= u16::MAX as usize);

@@ -1,10 +1,8 @@
 pub mod common_packet;
 pub mod encapsulation;
 
-use bytes::Bytes;
-
 use crate::objects::{identity::IdentityObject, service::ListServiceItem};
-
+use bytes::Bytes;
 pub use common_packet::{CommonPacketFormat, CommonPacketItem};
 pub use encapsulation::{EncapsulationHeader, EncapsulationPacket};
 

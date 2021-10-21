@@ -1,6 +1,5 @@
-use crate::frame::{CommonPacketFormat, CommonPacketItem};
-
 use super::EncodedBytesCount;
+use crate::frame::{CommonPacketFormat, CommonPacketItem};
 
 impl EncodedBytesCount for CommonPacketFormat {
     #[inline(always)]
