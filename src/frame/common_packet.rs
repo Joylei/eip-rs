@@ -8,11 +8,6 @@ pub struct CommonPacketFormat(Vec<CommonPacketItem>);
 
 impl CommonPacketFormat {
     #[inline(always)]
-    pub fn len(&self) -> usize {
-        self.0.len()
-    }
-
-    #[inline(always)]
     pub fn into_vec(self) -> Vec<CommonPacketItem> {
         self.0
     }
