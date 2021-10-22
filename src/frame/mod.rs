@@ -1,3 +1,4 @@
+pub mod cip;
 pub mod common_packet;
 pub mod encapsulation;
 
@@ -62,7 +63,7 @@ impl Request {
 pub enum Response {
     ListServices(Vec<ListServiceItem>),
     ListIdentity(Vec<IdentityObject>),
-    ListInterfaces,
+    ListInterfaces(CommonPacketFormat),
     RegisterSession {
         session_handle: u32,
         protocol_version: u16,
