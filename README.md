@@ -1,7 +1,31 @@
 # eip-rs
 EtherNet/IP in pure Rust
 
-(Work In Progress)
+## Features
+
+- Pure Rust Library
+- Asynchronous
+- Extensible
+- Open Source
+
+## Work In Progress
+
+- [x] ListIdentity
+- [x] RegisterSession
+- [x] UnregisterSession
+- [x] SendRRData
+- [x] UnconnectedSend
+- [ ] ForwardOpen
+- [ ] ForwardClose
+- [ ] SendUnitData 
+
+## How to use
+
+Add `rseip` to your cargo project's dependencies
+
+```toml
+rseip={git="https://github.com/Joylei/eip-rs.git"}
+```
 
 ## Related Projects
 - [EIPScanner](https://github.com/nimbuscontrols/EIPScanner)
