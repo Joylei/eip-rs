@@ -1,5 +1,5 @@
 [package]
-name = "fleip"
+name = "rseip"
 version = "0.1.0"
 edition = "2018"
 readme = "README.md"
@@ -28,3 +28,6 @@ env_logger = "0.9"
 futures = "0.3"
 tokio={version = "1", features = ["full"]}
 anyhow="1"
+tracing = "0.1"
+tracing-subscriber = "0.3"
+once_cell="*"

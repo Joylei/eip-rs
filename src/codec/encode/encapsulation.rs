@@ -13,7 +13,7 @@ impl<D: Encodable> Encodable for EncapsulationPacket<D> {
         assert!(data_len <= ENCAPSULATION_DATA_MAX_LEN);
 
         self.hdr.length = data_len as u16;
-        dst.reserve(ENCAPSULATION_HEADER_LEN + data_len);
+        dst.reserve(ENCAPSULATION_HEADER_LEN);
         self.hdr.encode(dst)?;
         self.data.encode(dst)?;
         Ok(())

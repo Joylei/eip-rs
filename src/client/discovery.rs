@@ -53,7 +53,7 @@ mod test {
     use crate::test::block_on;
     use tokio::pin;
 
-    #[test]
+    //#[test]
     fn test_discover() {
         block_on(async {
             let stream =

@@ -159,7 +159,7 @@ impl<D: Encodable + Send> Encodable for SendUnitData<D> {
 
                 buf.put_u16_le(0xB1); // connected data item
                 buf.put_u16_le(data_item_len as u16); // data item len
-                buf.put_u32_le(sequence_number.unwrap()); // sequence number
+                                                      //buf.put_u32_le(sequence_number.unwrap()); // sequence number
 
                 data_item.encode(buf)?; // data request
                 Ok(())
@@ -183,5 +183,22 @@ impl<D: Encodable + Send> Encodable for SendUnitData<D> {
             8
         };
         ENCAPSULATION_HEADER_LEN + 8 + addr_size + 4 + self.data.bytes_count()
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_list_identity_request() {
+        let buf = ListIdentity.try_into_bytes().unwrap();
+        assert_eq!(
+            &buf[..],
+            &[
+                0x63, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+                0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
+            ]
+        )
     }
 }

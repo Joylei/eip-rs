@@ -144,7 +144,7 @@ impl TryFrom<Bytes> for CommonPacketFormat {
         }
         let item_count = LittleEndian::read_u16(&buf[0..2]);
         buf = buf.slice(2..);
-        let mut items = Vec::with_capacity(item_count as usize);
+        let mut items = Vec::new();
         for _ in 0..item_count {
             if buf.len() < 4 {
                 return Err(Error::Response(ResponseError::InvalidData));

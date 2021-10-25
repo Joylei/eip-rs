@@ -41,6 +41,7 @@ impl TryFrom<EncapsulationPacket<Bytes>> for RegisterSessionReply {
 
 impl TryFrom<EncapsulationPacket<Bytes>> for ListIdentityReply {
     type Error = Error;
+    #[inline]
     fn try_from(src: EncapsulationPacket<Bytes>) -> Result<Self, Self::Error> {
         if src.hdr.command != 0x63 {
             return Err(

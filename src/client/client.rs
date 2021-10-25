@@ -82,6 +82,7 @@ impl Client {
         self.state.as_ref().map(|v| v.session_handle)
     }
 
+    /// unconnected send
     #[inline]
     pub async fn unconnected_send<P, D>(
         &mut self,
@@ -96,9 +97,10 @@ impl Client {
             Some(ref mut state) => state,
             None => return Err(io::Error::new(io::ErrorKind::Other, "session closed").into()),
         };
-        let mut ucmm = UnconnectedSend::new(path, mr);
-        ucmm.session_handle = state.session_handle;
-        state.service.send(ucmm).await?;
+        let mut request = UnconnectedSend::new(path, mr);
+        request.session_handle = state.session_handle;
+
+        state.service.send(request).await?;
         match state.service.next().await {
             Some(resp) => {
                 let mr_reply: UnconnectedSendReply<Bytes> = resp?.try_into()?;
@@ -174,6 +176,50 @@ mod test {
             client.close().await?;
             Ok(())
         });
+    }
+
+    #[test]
+    fn test_encode_ab_read_tag() {
+        let connection_path = EPath::from(vec![Segment::Port(PortSegment::default())]);
+        let mr_request = MessageRouterRequest::new(
+            0x4c,
+            EPath::from(vec![Segment::Symbol("test_car1_x".to_owned())]),
+            ElementCount(1),
+        );
+        let mut request = UnconnectedSend::new(connection_path, mr_request);
+        request.session_handle = 0x12345678;
+
+        let buf = request.try_into_bytes().unwrap();
+        assert_eq!(
+            &buf[..],
+            &[
+                0x6F, 0x00, // command
+                0x30, 0x00, // data len, 48
+                0x78, 0x56, 0x34, 0x12, // session handle
+                0x00, 0x00, 0x00, 0x00, // status
+                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // sender context
+                0x00, 0x00, 0x00, 0x00, // options
+                // - encapsulation data -
+                0x00, 0x00, 0x00, 0x00, // interface handle
+                0x00, 0x00, // timeout
+                // -- cpf --
+                0x02, 0x00, // cpf item count
+                0x00, 0x00, 0x00, 0x00, // null address
+                0xB2, 0x00, // data item type
+                0x20, 0x00, // data item len, 32
+                0x52, // cm service
+                0x02, 0x20, 0x06, 0x24, 0x01, // path
+                0x03, 0xFA, // time ticks
+                0x12, 0x00, // mr size in bytes 18
+                0x4C, // mr service code
+                0x07, // path size
+                0x91, 0x0B, // padded path
+                b't', b'e', b's', b't', b'_', b'c', b'a', b'r', b'1', b'_', b'x', // path
+                0x00, // padded
+                0x01, 0x00, // element count
+                0x01, 0x00, 0x01, 0x00 // connection path
+            ]
+        )
     }
 
     struct ElementCount(u16);

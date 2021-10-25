@@ -68,9 +68,6 @@ impl CommonPacketItem {
         if self.type_code != 0 {
             return false;
         }
-        if let Some(ref data) = self.data {
-            return &data[..] == &[0x00, 0x00];
-        }
-        false
+        self.data.as_ref().map(|v| v.len()).unwrap_or_default() == 0
     }
 }

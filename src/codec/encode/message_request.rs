@@ -11,9 +11,9 @@ where
         // service code
         dst.put_u8(self.service_code);
 
-        let path_len = self.path.bytes_count() / 2;
-        assert!(path_len <= u8::MAX as usize);
-        dst.put_u8(path_len as u8);
+        let path_len = self.path.bytes_count();
+        assert!(path_len <= u8::MAX as usize && path_len % 2 == 0);
+        dst.put_u8((path_len / 2) as u8);
 
         self.path.encode(dst)?;
         self.data.encode(dst)?;

@@ -2,31 +2,10 @@ pub mod decode;
 pub mod encode;
 
 use crate::Result;
-use crate::{
-    consts::ENCAPSULATION_DATA_MAX_LEN,
-    frame::{
-        cip::AddressItem, encapsulation::EncapsulationPacket, CommonPacketFormat, CommonPacketItem,
-        Request,
-    },
-};
-use bytes::{BufMut, Bytes, BytesMut};
+use bytes::{Bytes, BytesMut};
 
-#[derive(Debug, PartialEq)]
-pub struct EIPDecoder;
-
-#[derive(Debug, PartialEq)]
-pub struct ClientCodec {
-    pub(crate) decoder: EIPDecoder,
-}
-
-impl Default for ClientCodec {
-    #[inline(always)]
-    fn default() -> Self {
-        Self {
-            decoder: EIPDecoder,
-        }
-    }
-}
+#[derive(Debug, Default, PartialEq)]
+pub struct ClientCodec {}
 
 pub trait Encodable {
     fn encode(self, dst: &mut BytesMut) -> Result<()>;

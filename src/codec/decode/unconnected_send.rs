@@ -5,6 +5,7 @@ use crate::{
         CommonPacketFormat, EncapsulationPacket,
     },
 };
+use byteorder::{ByteOrder, LittleEndian};
 use bytes::Bytes;
 use std::convert::TryFrom;
 use std::io;
@@ -20,8 +21,12 @@ impl TryFrom<EncapsulationPacket<Bytes>> for UnconnectedSendReply<Bytes> {
             )
             .into());
         }
+        let interface_handle = LittleEndian::read_u32(&src.data[0..4]); // interface handle
+        debug_assert_eq!(interface_handle, 0);
+        // timeout = &src.data[4..6]
+
         //TODO: verify buf length
-        let mut cpf = CommonPacketFormat::try_from(src.data)?.into_vec();
+        let mut cpf = CommonPacketFormat::try_from(src.data.slice(6..))?.into_vec();
         if cpf.len() != 2 {
             return Err(Error::Response(ResponseError::InvalidData));
         }

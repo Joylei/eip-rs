@@ -45,7 +45,7 @@ impl<D: Encodable + Send> Encodable for UnconnectedSend<D> {
                     route_path.encode(buf)?; // padded epath
                     Ok(())
                 },
-                bytes_count: 8 + mr_data_len + mr_data_len % 2 + path_len,
+                bytes_count: 4 + mr_data_len + mr_data_len % 2 + 2 + path_len,
             },
         };
         let command = SendRRData {
@@ -84,17 +84,17 @@ mod test {
 
     #[test]
     fn test_encode_unconnected_send() {
-        let ucmm = UnconnectedSend::new(
+        let request = UnconnectedSend::new(
             EPath::from(vec![Segment::Port(PortSegment::default())]),
             Bytes::from_static(&[0x10, 0x00, 0x88]),
         );
-        assert_eq!(ucmm.bytes_count(), 58);
-        let buf = ucmm.try_into_bytes().unwrap();
+        assert_eq!(request.bytes_count(), 58);
+        let buf = request.try_into_bytes().unwrap();
         assert_eq!(
             &buf[..],
             &[
                 0x6F, 0x00, // command
-                0x24, 0x00, // data len, 36
+                0x22, 0x00, // data len, 34
                 0x00, 0x00, 0x00, 0x00, // session handle
                 0x00, 0x00, 0x00, 0x00, // status
                 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // sender context
@@ -106,7 +106,7 @@ mod test {
                 0x02, 0x00, // cpf item count
                 0x00, 0x00, 0x00, 0x00, // null address
                 0xB2, 0x00, // data item type
-                0x14, 0x00, // data item len, 20
+                0x12, 0x00, // data item len, 18
                 0x52, // cm service
                 0x02, 0x20, 0x06, 0x24, 0x01, // path
                 0x03, 0xFA, // time ticks
@@ -120,17 +120,17 @@ mod test {
 
     #[test]
     fn test_encode_unconnected_send_padded() {
-        let ucmm = UnconnectedSend::new(
+        let request = UnconnectedSend::new(
             EPath::from(vec![Segment::Port(PortSegment::default())]),
             Bytes::from_static(&[0x10, 0x00, 0x88, 0x99]),
         );
-        assert_eq!(ucmm.bytes_count(), 58);
-        let buf = ucmm.try_into_bytes().unwrap();
+        assert_eq!(request.bytes_count(), 58);
+        let buf = request.try_into_bytes().unwrap();
         assert_eq!(
             &buf[..],
             &[
                 0x6F, 0x00, // command
-                0x24, 0x00, // data len, 36
+                0x22, 0x00, // data len, 34
                 0x00, 0x00, 0x00, 0x00, // session handle
                 0x00, 0x00, 0x00, 0x00, // status
                 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // sender context
@@ -142,7 +142,7 @@ mod test {
                 0x02, 0x00, // cpf item count
                 0x00, 0x00, 0x00, 0x00, // null address
                 0xB2, 0x00, // data item type
-                0x14, 0x00, // data item len, 20
+                0x12, 0x00, // data item len, 18
                 0x52, // cm service
                 0x02, 0x20, 0x06, 0x24, 0x01, // path
                 0x03, 0xFA, // time ticks
