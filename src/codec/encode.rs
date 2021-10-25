@@ -1,99 +1,235 @@
-use bytes::{BufMut, BytesMut};
+mod cip;
+mod command;
+mod common_packet;
+mod connected_send;
+mod encapsulation;
+mod epath;
+mod message_request;
+mod unconnected_send;
+
+use super::{ClientCodec, Encodable};
+use crate::{
+    consts::ENCAPSULATION_DATA_MAX_LEN,
+    error::Error,
+    frame::{
+        common_packet::{CommonPacketFormat, CommonPacketItem},
+        encapsulation::EncapsulationPacket,
+        Request,
+    },
+};
+use bytes::{BufMut, Bytes, BytesMut};
 use tokio_util::codec::Encoder;
 
-use crate::consts::ENCAPSULATION_HEADER_LEN;
-use crate::error::Error;
-use crate::frame::common_packet::{CommonPacketFormat, CommonPacketItem};
-use crate::frame::encapsulation::{EncapsulationHeader, EncapsulationPacket};
-use crate::frame::Request;
-use crate::objects::socket::SocketAddr;
+impl Encodable for () {
+    #[inline(always)]
+    fn encode(self, _: &mut bytes::BytesMut) -> crate::Result<()> {
+        Ok(())
+    }
+    #[inline(always)]
+    fn bytes_count(&self) -> usize {
+        0
+    }
+}
 
-use super::{ClientCodec, EncodedBytesCount};
+impl<D1, D2> Encodable for (D1, D2)
+where
+    D1: Encodable,
+    D2: Encodable,
+{
+    #[inline(always)]
+    fn encode(self, dst: &mut bytes::BytesMut) -> crate::Result<()> {
+        self.0.encode(dst)?;
+        self.1.encode(dst)?;
+        Ok(())
+    }
+    #[inline(always)]
+    fn bytes_count(&self) -> usize {
+        self.0.bytes_count() + self.1.bytes_count()
+    }
+}
+
+impl<D1, D2, D3> Encodable for (D1, D2, D3)
+where
+    D1: Encodable,
+    D2: Encodable,
+    D3: Encodable,
+{
+    #[inline(always)]
+    fn encode(self, dst: &mut bytes::BytesMut) -> crate::Result<()> {
+        self.0.encode(dst)?;
+        self.1.encode(dst)?;
+        self.2.encode(dst)?;
+        Ok(())
+    }
+    #[inline(always)]
+    fn bytes_count(&self) -> usize {
+        self.0.bytes_count() + self.1.bytes_count() + self.2.bytes_count()
+    }
+}
+
+impl Encodable for &[u8] {
+    #[inline(always)]
+    fn encode(self, dst: &mut bytes::BytesMut) -> crate::Result<()> {
+        dst.put_slice(self);
+        Ok(())
+    }
+    #[inline(always)]
+    fn bytes_count(&self) -> usize {
+        self.len()
+    }
+}
+
+pub struct LazyEncode<F> {
+    pub f: F,
+    pub bytes_count: usize,
+}
+
+impl<F> Encodable for LazyEncode<F>
+where
+    F: FnOnce(&mut bytes::BytesMut) -> crate::Result<()> + Send,
+{
+    #[inline(always)]
+    fn encode(self, dst: &mut bytes::BytesMut) -> crate::Result<()> {
+        (self.f)(dst)
+    }
+
+    #[inline(always)]
+    fn bytes_count(&self) -> usize {
+        self.bytes_count
+    }
+}
+
+impl<E: Encodable> Encoder<E> for ClientCodec {
+    type Error = Error;
+    #[inline(always)]
+    fn encode(&mut self, item: E, dst: &mut bytes::BytesMut) -> Result<(), Self::Error> {
+        item.encode(dst)
+    }
+}
 
 impl Encoder<Request> for ClientCodec {
     type Error = Error;
     fn encode(&mut self, item: Request, dst: &mut BytesMut) -> Result<(), Self::Error> {
-        let pkt = EncapsulationPacket::from(item);
+        use crate::frame::Request::*;
+        let mut pkt = EncapsulationPacket::default();
+        pkt.hdr.command = item.command_code();
+
+        match item {
+            Nop { data } => {
+                if let Some(ref data) = data {
+                    debug_assert!(data.len() <= ENCAPSULATION_DATA_MAX_LEN);
+                }
+                pkt.data = data;
+            }
+            RegisterSession { sender_context } => {
+                pkt.hdr.sender_context.copy_from_slice(&sender_context);
+
+                let mut data = BytesMut::with_capacity(4);
+                // protocol version, shall be 1
+                data.put_u16_le(1);
+                // session options, shall be 0
+                data.put_u16_le(0);
+
+                pkt.data = Some(data.freeze());
+            }
+            UnRegisterSession {
+                session_handle,
+                sender_context,
+            } => {
+                pkt.hdr.session_handle = session_handle;
+                pkt.hdr.sender_context.copy_from_slice(&sender_context);
+            }
+            ListServices { sender_context } => {
+                pkt.hdr.sender_context.copy_from_slice(&sender_context);
+            }
+            SendRRData {
+                session_handle,
+                timeout,
+                data,
+            } => {
+                pkt.hdr.session_handle = session_handle;
+                let mut buf = BytesMut::new();
+                buf.put_u32_le(0); // interface handle, shall be 0 for CIP
+                buf.put_u16_le(timeout);
+                //cpf
+                let cpf = CommonPacketFormat::from(vec![
+                    CommonPacketItem::with_null_addr(),
+                    CommonPacketItem::with_connected_data(data.unwrap()),
+                ]);
+
+                self.encode(cpf, dst)?;
+
+                pkt.data = Some(buf.freeze());
+            }
+            SendUnitData {
+                session_handle,
+                connection_id,
+                sequence_number,
+                data,
+            } => {
+                pkt.hdr.session_handle = session_handle;
+                let mut buf = BytesMut::new();
+                buf.put_u32_le(0); // interface handle, shall be 0 for CIP
+                buf.put_u16_le(0); // timeout, 0 for SendUnitData
+
+                let addr_item = {
+                    let mut buf = BytesMut::new();
+                    buf.put_u32_le(connection_id);
+                    if let Some(sid) = sequence_number {
+                        buf.put_u32_le(sid);
+                        CommonPacketItem {
+                            type_code: 0x8002, // sequenced address item
+                            data: Some(buf.freeze()),
+                        }
+                    } else {
+                        CommonPacketItem {
+                            type_code: 0xA1, // connected address item
+                            data: Some(buf.freeze()),
+                        }
+                    }
+                };
+
+                //cpf
+                let cpf = CommonPacketFormat::from(vec![
+                    addr_item,
+                    CommonPacketItem::with_unconnected_data(data.unwrap()),
+                ]);
+
+                self.encode(cpf, dst)?;
+
+                pkt.data = Some(buf.freeze());
+            }
+            ListIdentity | ListInterfaces => {}
+            _ => unimplemented!(),
+        }
         self.encode(pkt, dst)
     }
 }
 
-impl Encoder<EncapsulationPacket> for ClientCodec {
-    type Error = Error;
+impl Encodable for Bytes {
     #[inline(always)]
-    fn encode(
-        &mut self,
-        mut item: EncapsulationPacket,
-        dst: &mut bytes::BytesMut,
-    ) -> Result<(), Self::Error> {
-        let data_len = item.data.as_ref().map(|v| v.len()).unwrap_or_default();
-        item.hdr.length = data_len as u16;
-        dst.reserve(ENCAPSULATION_HEADER_LEN + data_len);
-        self.encode(item.hdr, dst)?;
-        if let Some(data) = item.data {
-            dst.put_slice(&*data);
-        }
+    fn encode(self, dst: &mut bytes::BytesMut) -> Result<(), Error> {
+        dst.put_slice(&self);
         Ok(())
+    }
+
+    #[inline(always)]
+    fn bytes_count(&self) -> usize {
+        self.len()
     }
 }
 
-impl Encoder<EncapsulationHeader> for ClientCodec {
-    type Error = Error;
+impl<D: Encodable> Encodable for Option<D> {
     #[inline(always)]
-    fn encode(
-        &mut self,
-        item: EncapsulationHeader,
-        dst: &mut bytes::BytesMut,
-    ) -> Result<(), Self::Error> {
-        dst.put_u16_le(item.command);
-        dst.put_u16_le(item.length);
-        dst.put_u32_le(item.session_handler);
-        dst.put_u32_le(item.status);
-        dst.put_slice(&item.sender_context);
-        dst.put_u32_le(item.options);
-        Ok(())
-    }
-}
-
-impl Encoder<CommonPacketFormat> for ClientCodec {
-    type Error = Error;
-    #[inline(always)]
-    fn encode(&mut self, item: CommonPacketFormat, dst: &mut BytesMut) -> Result<(), Self::Error> {
-        debug_assert!(item.len() > 0 && item.len() <= 4);
-        dst.put_u16_le(item.len() as u16);
-        for item in item.into_vec() {
-            self.encode(item, dst)?;
-        }
-        Ok(())
-    }
-}
-
-impl Encoder<CommonPacketItem> for ClientCodec {
-    type Error = Error;
-    #[inline(always)]
-    fn encode(&mut self, item: CommonPacketItem, dst: &mut BytesMut) -> Result<(), Self::Error> {
-        let bytes_count = item.bytes_count();
-        dst.reserve(bytes_count);
-        dst.put_u16_le(item.type_code);
-        if let Some(data) = item.data {
-            debug_assert!(data.len() <= u16::MAX as usize);
-            dst.put_u16_le(data.len() as u16);
-            dst.put_slice(&data);
+    fn encode(self, dst: &mut BytesMut) -> crate::Result<()> {
+        if let Some(item) = self {
+            item.encode(dst)
         } else {
-            dst.put_u16_le(0);
+            Ok(())
         }
-        Ok(())
     }
-}
-
-impl Encoder<SocketAddr> for ClientCodec {
-    type Error = Error;
     #[inline(always)]
-    fn encode(&mut self, addr: SocketAddr, dst: &mut BytesMut) -> Result<(), Self::Error> {
-        dst.put_i16(addr.sin_family);
-        dst.put_u16(addr.sin_port);
-        dst.put_u32(addr.sin_addr);
-        dst.put_slice(&addr.sin_zero);
-        Ok(())
+    fn bytes_count(&self) -> usize {
+        self.as_ref().map(|v| v.bytes_count()).unwrap_or_default()
     }
 }

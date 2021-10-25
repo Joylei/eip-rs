@@ -12,10 +12,14 @@ pub struct ListServiceItem {
 }
 
 impl ListServiceItem {
-    pub fn capability_cip(&self) -> bool {
+    /// supports CIP Encapsulation via TCP
+    #[inline(always)]
+    pub fn capability_tcp(&self) -> bool {
         self.capability & 0b100000 > 0
     }
 
+    /// support CIP Class 0 or 1 via UDP
+    #[inline(always)]
     pub fn capability_udp(&self) -> bool {
         self.capability & 0b100000000 > 0
     }

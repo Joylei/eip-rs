@@ -1,4 +1,4 @@
-use super::socket::SocketAddr;
+use super::{socket::SocketAddr, Revision};
 
 /// class code = 0x01
 /// type code =  0x0C
@@ -15,7 +15,7 @@ pub struct IdentityObject {
     /// product code
     pub product_code: u16,
     /// device revision
-    pub revision: [u8; 2],
+    pub revision: Revision,
     /// current status of device
     pub status: u16,
     /// serial number of device

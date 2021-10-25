@@ -1,8 +1,13 @@
 pub mod cip;
+pub mod command;
+pub mod command_reply;
 pub mod common_packet;
 pub mod encapsulation;
 
-use crate::objects::{identity::IdentityObject, service::ListServiceItem};
+use crate::{
+    codec::Encodable,
+    objects::{identity::IdentityObject, service::ListServiceItem},
+};
 use bytes::Bytes;
 pub use common_packet::{CommonPacketFormat, CommonPacketItem};
 pub use encapsulation::{EncapsulationHeader, EncapsulationPacket};
@@ -25,24 +30,31 @@ pub enum Request {
         session_handle: u32,
         sender_context: Bytes,
     },
-    /// for UCMM (unconnected message), sent by originator
+
     SendRRData {
-        /// shall be 0 for CIP
-        interface_handle: u32,
+        session_handle: u32,
         /// operation timeout, in seconds;
         /// - set to 0, rely on the timeout mechanism of the encapsulated protocol
         /// - usually set to 0 for CIP
         timeout: u16,
-        /// encoded in Common Packet Format
-        cpf: Option<Bytes>,
+        /// Data to be Sent via Unconnected Message
+        data: Option<Bytes>,
     },
-    /// for connected message, sent by either end, no reply
-    SendUnitData,
+
+    SendUnitData {
+        session_handle: u32,
+        connection_id: u32,
+        /// sequenced or not
+        sequence_number: Option<u32>,
+        /// Data to be Sent via Connected Message
+        data: Option<Bytes>,
+    },
     IndicateStatus,
     Cancel,
 }
 
 impl Request {
+    #[inline(always)]
     pub(crate) fn command_code(&self) -> u16 {
         match self {
             Self::Nop { .. } => 0x0000,
@@ -52,7 +64,7 @@ impl Request {
             Self::RegisterSession { .. } => 0x0065,
             Self::UnRegisterSession { .. } => 0x0066,
             Self::SendRRData { .. } => 0x006F,
-            Self::SendUnitData => 0x0070,
+            Self::SendUnitData { .. } => 0x0070,
             Self::IndicateStatus => 0x0072,
             Self::Cancel => 0x0073,
         }

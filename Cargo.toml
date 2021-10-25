@@ -1,13 +1,13 @@
 [package]
-name = "fast-enip"
+name = "fleip"
 version = "0.1.0"
 edition = "2018"
 readme = "README.md"
 license = "MIT"
-homepage = "https://github.com/Joylei/enip-rs"
-repository = "https://github.com/Joylei/enip-rs.git"
-#documentation = "https://docs.rs/crate/fast-enip/"
-keywords = ["ethernet","hardware", "industry"]
+homepage = "https://github.com/Joylei/eip-rs"
+repository = "https://github.com/Joylei/eip-rs.git"
+#documentation = "https://docs.rs/crate/fast-eip/"
+keywords = ["ethernet","hardware", "industry", "eip", "cip"]
 categories = ["asynchronous", "hardware-support"]
 authors = ["joylei <leingliu@gmail.com>"]
 
@@ -21,9 +21,10 @@ log="0.4"
 tokio = { version = "1", features = ["net", "macros", "io-util", "rt"] }
 tokio-util = { version = "0.6", features = ["codec", "net"] }
 futures-util="0.3"
-futures = "0.3"
+async-trait="0.1"
 
 [dev-dependencies]
 env_logger = "0.9"
 futures = "0.3"
 tokio={version = "1", features = ["full"]}
+anyhow="1"

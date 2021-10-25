@@ -1,16 +1,22 @@
+use crate::frame::cip::Status;
 use std::error;
+use std::net::AddrParseError;
 use std::{fmt, io};
 
 #[derive(Debug)]
 pub enum Error {
     Io(io::Error),
+    CIPError(Status),
     Response(ResponseError),
+    InvalidAddr(AddrParseError),
 }
 
 impl error::Error for Error {
+    #[inline(always)]
     fn source(&self) -> Option<&(dyn error::Error + 'static)> {
         match self {
-            Error::Io(e) => e.source(),
+            Self::Io(e) => e.source(),
+            Self::InvalidAddr(e) => e.source(),
             _ => None,
         }
     }
@@ -19,11 +25,17 @@ impl error::Error for Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Error::Io(e) => {
-                write!(f, "ENIP codec error: {}", e)?;
+            Self::Io(e) => {
+                write!(f, "IO error: {}", e)?;
             }
-            Error::Response(e) => {
-                write!(f, "{}", e)?;
+            Self::CIPError(e) => {
+                write!(f, "CIP error: {}", e)?;
+            }
+            Self::Response(e) => {
+                write!(f, "ENIP reply error: {}", e)?;
+            }
+            Self::InvalidAddr(e) => {
+                write!(f, "invalid IP address: {}", e)?;
             }
         }
         Ok(())
@@ -31,14 +43,22 @@ impl fmt::Display for Error {
 }
 
 impl From<io::Error> for Error {
+    #[inline(always)]
     fn from(e: io::Error) -> Self {
-        Error::Io(e)
+        Self::Io(e)
     }
 }
 
 impl From<ResponseError> for Error {
+    #[inline(always)]
     fn from(e: ResponseError) -> Self {
         Self::Response(e)
+    }
+}
+
+impl From<AddrParseError> for Error {
+    fn from(e: AddrParseError) -> Self {
+        Self::InvalidAddr(e)
     }
 }
 
