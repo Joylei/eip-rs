@@ -23,14 +23,15 @@ pub struct Client {
 }
 
 impl Client {
-    /// open session
+    /// connect with default port
     #[inline(always)]
     pub fn connect<S: AsRef<str>>(host: S) -> impl Future<Output = Result<Self>> {
-        Self::open_with_port(host, ENIP_DEFAULT_PORT)
+        Self::connection_with_port(host, ENIP_DEFAULT_PORT)
     }
 
+    /// connect with specified port
     #[inline]
-    pub async fn open_with_port<S: AsRef<str>>(host: S, port: u16) -> Result<Self> {
+    pub async fn connection_with_port<S: AsRef<str>>(host: S, port: u16) -> Result<Self> {
         let addr = match lookup_host(format!("{}:{}", host.as_ref(), port))
             .await?
             .next()
@@ -115,22 +116,21 @@ impl Client {
     }
 
     /// close current session
+    #[inline]
     pub async fn close(&mut self) -> Result<()> {
-        match self.state {
-            Some(ref mut state) => {
-                let req = command::UnRegisterSession {
-                    session_handle: state.session_handle,
-                };
-                // TODO: handle error when socket was closed
-                state.service.send(req).await?;
-                self.state = None;
-            }
-            None => {}
+        if let Some(ref mut state) = self.state {
+            let req = command::UnRegisterSession {
+                session_handle: state.session_handle,
+            };
+            // TODO: handle error when socket was closed
+            state.service.send(req).await?;
+            self.state = None;
         }
         Ok(())
     }
 
     /// is session closed?
+    #[inline(always)]
     pub fn closed(&self) -> bool {
         self.state.is_none()
     }
