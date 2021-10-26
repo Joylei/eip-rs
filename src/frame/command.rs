@@ -1,4 +1,4 @@
-use crate::{codec::Encodable, objects::identity::IdentityObject};
+use crate::codec::Encodable;
 
 /// EIP Command
 pub trait Command: Encodable {

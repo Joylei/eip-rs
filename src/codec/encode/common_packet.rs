@@ -1,6 +1,8 @@
-use crate::frame::CommonPacketItem;
-use crate::Result;
-use crate::{codec::Encodable, frame::CommonPacketFormat};
+use crate::{
+    codec::Encodable,
+    frame::{CommonPacketFormat, CommonPacketItem},
+    Result,
+};
 use bytes::{BufMut, BytesMut};
 
 impl Encodable for CommonPacketFormat {

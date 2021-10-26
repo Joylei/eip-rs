@@ -1,7 +1,5 @@
 use std::ops::{Deref, DerefMut};
 
-use bytes::{BufMut, Bytes, BytesMut};
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Segment {
     Symbol(String),

@@ -1,15 +1,15 @@
-use std::convert::TryFrom;
-
 use crate::{
     error::{Error, ResponseError},
     frame::cip::{MessageRouterReply, Status},
 };
 use byteorder::{ByteOrder, LittleEndian};
 use bytes::Bytes;
+use std::convert::TryFrom;
 
 impl TryFrom<Bytes> for MessageRouterReply<Bytes> {
     type Error = Error;
 
+    #[inline]
     fn try_from(buf: Bytes) -> Result<Self, Self::Error> {
         if buf.len() < 4 {
             return Err(Error::Response(ResponseError::InvalidData));

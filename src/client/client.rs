@@ -152,13 +152,12 @@ pub(crate) struct State {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::frame::cip::Segment;
-    use crate::test::block_on;
-    use byteorder::ByteOrder;
-    use byteorder::LittleEndian;
+    use crate::{
+        frame::cip::{PortSegment, Segment},
+        test::block_on,
+    };
+    use byteorder::{ByteOrder, LittleEndian};
     use bytes::BufMut;
-
-    use crate::frame::cip::PortSegment;
 
     #[test]
     fn ab_read_tag() {

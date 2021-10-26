@@ -1,4 +1,4 @@
-use crate::{codec::Encodable, objects::identity::IdentityObject};
+use crate::objects::identity::IdentityObject;
 
 #[derive(Debug, Default)]
 pub struct RegisterSessionReply {

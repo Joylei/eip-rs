@@ -1,5 +1,5 @@
 pub mod client;
-mod codec;
+pub mod codec;
 pub mod consts;
 pub mod error;
 pub mod frame;
@@ -11,6 +11,7 @@ pub type Result<T> = std::result::Result<T, error::Error>;
 mod test {
     use std::future::Future;
 
+    #[inline]
     pub(crate) fn block_on<F>(f: F)
     where
         F: Future<Output = anyhow::Result<()>>,

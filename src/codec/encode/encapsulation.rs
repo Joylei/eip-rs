@@ -18,7 +18,7 @@ impl<D: Encodable> Encodable for EncapsulationPacket<D> {
         self.data.encode(dst)?;
         Ok(())
     }
-
+    #[inline(always)]
     fn bytes_count(&self) -> usize {
         ENCAPSULATION_HEADER_LEN + self.data.bytes_count()
     }
@@ -35,7 +35,7 @@ impl Encodable for EncapsulationHeader {
         dst.put_u32_le(self.options);
         Ok(())
     }
-
+    #[inline(always)]
     fn bytes_count(&self) -> usize {
         ENCAPSULATION_HEADER_LEN
     }

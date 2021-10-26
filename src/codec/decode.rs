@@ -16,12 +16,13 @@ use crate::{
 use byteorder::{BigEndian, ByteOrder, LittleEndian};
 use bytes::Bytes;
 use std::convert::TryFrom;
-use std::io;
 use tokio_util::codec::Decoder;
 
 impl Decoder for ClientCodec {
     type Item = EncapsulationPacket<Bytes>;
     type Error = Error;
+
+    #[inline]
     fn decode(&mut self, src: &mut bytes::BytesMut) -> Result<Option<Self::Item>, Self::Error> {
         if src.len() < ENCAPSULATION_HEADER_LEN {
             return Ok(None);
@@ -50,88 +51,6 @@ impl Decoder for ClientCodec {
             hdr,
             data: reply_data,
         }));
-        // match hdr.command {
-        //     0x04 => {
-        //         // ListServices
-        //         //TODO: validate sender context
-        //         let cpf = CommonPacketFormat::try_from(reply_data)?;
-        //         if cpf.len() != 1 {
-        //             return Err(Error::Response(ResponseError::InvalidData));
-        //         }
-        //         let res: Result<Vec<_>, _> = cpf
-        //             .into_vec()
-        //             .into_iter()
-        //             .map(|item| {
-        //                 if item.type_code != 0x100 {
-        //                     return Err(Error::Response(ResponseError::InvalidData));
-        //                 }
-        //                 let item_data = item.data.unwrap();
-        //                 if item_data.len() != 20 {
-        //                     return Err(Error::Response(ResponseError::InvalidData));
-        //                 }
-        //                 ListServiceItem::try_from(item_data)
-        //             })
-        //             .collect();
-        //         Ok(Some(Response::ListServices(res?)))
-        //     }
-        //     0x63 => {
-        //         let cpf = CommonPacketFormat::try_from(reply_data)?;
-        //         if cpf.len() != 1 {
-        //             return Err(Error::Response(ResponseError::InvalidData));
-        //         }
-        //         // ListIdentity
-        //         let res: Result<Vec<_>, _> = cpf
-        //             .into_vec()
-        //             .into_iter()
-        //             .map(|item| {
-        //                 if item.type_code != 0x0C {
-        //                     return Err(Error::Response(ResponseError::InvalidData));
-        //                 }
-        //                 let item_data = item.data.unwrap();
-        //                 IdentityObject::try_from(item_data)
-        //             })
-        //             .collect();
-        //         Ok(Some(Response::ListIdentity(res?)))
-        //     }
-        //     0x64 => {
-        //         // ListInterfaces
-        //         let cpf = CommonPacketFormat::try_from(reply_data)?;
-        //         // if cpf.len() != 1 {
-        //         //     return Err(Error::Response(ResponseError::InvalidData));
-        //         // }
-        //         Ok(Some(Response::ListInterfaces(cpf)))
-        //     }
-        //     0x65 => {
-        //         //RegisterSession
-        //         if reply_data.len() < 4 {
-        //             return Err(Error::Response(ResponseError::InvalidData));
-        //         }
-        //         //TODO: validate sender context
-        //         let protocol_version = LittleEndian::read_u16(&reply_data[0..2]);
-        //         debug_assert_eq!(protocol_version, 1);
-        //         let session_options = LittleEndian::read_u16(&reply_data[2..4]);
-        //         debug_assert_eq!(session_options, 0);
-        //         Ok(Some(Response::RegisterSession {
-        //             session_handle: hdr.session_handle,
-        //             protocol_version,
-        //         }))
-        //     }
-        //     0x6F => {
-        //         // SendRRData
-        //         if reply_data.len() < 6 {
-        //             return Err(Error::Response(ResponseError::InvalidData));
-        //         }
-        //         let interface_handle = LittleEndian::read_u32(&reply_data[0..4]); // 0 for CIP
-        //         debug_assert!(interface_handle == 0);
-        //         let _timeout = LittleEndian::read_u16(&reply_data[4..6]);
-        //         let cpf_data = reply_data.slice(6..);
-        //         let cpf = CommonPacketFormat::try_from(cpf_data)?;
-        //         Ok(Some(Response::SendRRData(cpf)))
-        //     }
-        //     _ => {
-        //         return Err(Error::Response(ResponseError::InvalidCommand));
-        //     }
-        // }
     }
 }
 

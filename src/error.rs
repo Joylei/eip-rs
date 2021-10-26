@@ -23,6 +23,7 @@ impl error::Error for Error {
 }
 
 impl fmt::Display for Error {
+    #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Io(e) => {
@@ -57,6 +58,7 @@ impl From<ResponseError> for Error {
 }
 
 impl From<AddrParseError> for Error {
+    #[inline(always)]
     fn from(e: AddrParseError) -> Self {
         Self::InvalidAddr(e)
     }
@@ -79,6 +81,7 @@ pub enum ResponseError {
 }
 
 impl From<u16> for ResponseError {
+    #[inline]
     fn from(status: u16) -> Self {
         match status {
             0x0000 => unreachable!(), // represents success
@@ -94,6 +97,7 @@ impl From<u16> for ResponseError {
 }
 
 impl fmt::Display for ResponseError {
+    #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::InvalidCommand => write!(f, "The sender issued an invalid or unsupported encapsulation command"),

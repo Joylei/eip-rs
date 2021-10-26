@@ -5,6 +5,7 @@ use crate::{
 };
 
 impl<D: Encodable + Send> Encodable for ConnectedSend<D> {
+    #[inline(always)]
     fn encode(self, dst: &mut bytes::BytesMut) -> Result<()> {
         let command = SendUnitData {
             connection_id: self.connection_id,
@@ -38,7 +39,6 @@ impl<D: Encodable + Send> Encodable for ConnectedSend<D> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::frame::cip::{EPath, PortSegment, Segment};
     use bytes::Bytes;
 
     #[test]

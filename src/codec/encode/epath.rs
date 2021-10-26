@@ -1,11 +1,9 @@
 use crate::{
     codec::Encodable,
     frame::cip::{EPath, PortSegment, Segment},
+    Result,
 };
-use byteorder::ByteOrder;
 use bytes::{BufMut, BytesMut};
-
-use crate::Result;
 
 impl Encodable for PortSegment {
     #[inline]
@@ -78,7 +76,7 @@ impl Encodable for Segment {
             Segment::Element(elem) => match elem {
                 v if *v <= (u8::MAX as u32) => 2,
                 v if *v <= (u16::MAX as u32) => 4,
-                v => 6,
+                _ => 6,
             },
             Segment::Port(port) => port.bytes_count(),
             Segment::Symbol(symbol) => {
