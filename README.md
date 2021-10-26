@@ -27,7 +27,32 @@ Add `rseip` to your cargo project's dependencies
 rseip={git="https://github.com/Joylei/eip-rs.git"}
 ```
 
+## Example
+
+### Read tag from Allen-bradley device
+
+```rust
+use tokio;
+use rseip::{client::Client, frame::cip::{EPath, PortSegment, Segment}};
+
+tokio::block_on(async {
+      let connection_path = EPath::from(vec![Segment::Port(PortSegment::default())]);
+      let mut client = Client::connect("192.168.0.83").await?;
+      let mr_request = MessageRouterRequest::new(
+          0x4c,
+          EPath::from(vec![Segment::Symbol("test_car1_x".to_owned())]),
+          ElementCount(1),
+      );
+      let resp = client.unconnected_send(mr_request, connection_path).await?;
+      assert_eq!(resp.reply_service, 0xCC); // read tag service reply
+      assert_eq!(LittleEndian::read_u16(&resp.data[0..2]), 0xC4); // DINT
+      client.close().await?;
+      Ok(())
+});
+```
+
 ## Related Projects
+
 - [EIPScanner](https://github.com/nimbuscontrols/EIPScanner)
 
    Free implementation of EtherNet/IP in C++
