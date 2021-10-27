@@ -7,7 +7,7 @@ license = "MIT"
 homepage = "https://github.com/Joylei/eip-rs"
 repository = "https://github.com/Joylei/eip-rs.git"
 #documentation = "https://docs.rs/crate/fast-eip/"
-keywords = ["ethernet","hardware", "industry", "eip", "cip"]
+keywords = ["ethernet","codec", "industry", "eip", "cip"]
 categories = ["asynchronous", "hardware-support"]
 authors = ["joylei <leingliu@gmail.com>"]
 

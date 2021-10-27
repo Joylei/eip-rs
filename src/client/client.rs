@@ -7,12 +7,13 @@ use crate::{
 };
 use bytes::Bytes;
 use std::io;
+use tokio::io::{AsyncRead, AsyncWrite};
 use tokio::net::{lookup_host, TcpSocket, TcpStream};
 use tokio_util::codec::Framed;
 
 /// CIP client over TCP/IP
 #[derive(Debug)]
-pub struct Client<S: TcpService = State>(S);
+pub struct Client<S: TcpService = State<TcpStream>>(S);
 
 impl Client {
     /// connect with default port `0xAF12`
@@ -44,21 +45,28 @@ impl Client {
         let res = Self::new(stream).await?;
         Ok(res)
     }
+}
 
+impl<S> Client<S>
+where
+    S: TcpService + Sized,
+    S::Stream: AsyncRead + AsyncWrite + Unpin,
+{
     /// create from tcp stream
-    #[inline]
-    pub async fn new(stream: TcpStream) -> Result<Self> {
-        let service = Framed::new(stream, ClientCodec::default());
-        let mut state = State {
-            service,
-            session_handle: None,
-        };
+    #[inline(always)]
+    pub async fn new(stream: S::Stream) -> Result<Self> {
+        let mut state = S::from_stream(stream)?;
         let session_handle = state.register_session().await?;
-        state.session_handle = Some(session_handle);
-
+        *state.session_handle_mut() = Some(session_handle);
         Ok(Self(state))
     }
+}
 
+impl<S> Client<S>
+where
+    S: TcpService,
+    S::Stream: AsyncRead + AsyncWrite + Unpin,
+{
     /// session handle
     #[inline(always)]
     pub fn session_handle(&self) -> Option<u32> {
@@ -82,6 +90,7 @@ impl Client {
     }
 
     /// open session
+    #[inline(always)]
     pub async fn open(&mut self) -> Result<()> {
         if self.closed() {
             let session_handle = self.0.register_session().await?;
@@ -91,7 +100,7 @@ impl Client {
     }
 
     /// close current session
-    #[inline]
+    #[inline(always)]
     pub async fn close(&mut self) -> Result<()> {
         self.0.unregister_session().await?;
         Ok(())
@@ -100,17 +109,33 @@ impl Client {
     /// is session closed?
     #[inline(always)]
     pub fn closed(&self) -> bool {
-        self.0.session_handle.is_none()
+        self.0.session_handle().is_none()
     }
 }
 
 #[derive(Debug)]
-pub struct State {
+pub struct State<T> {
     pub(crate) session_handle: Option<u32>,
-    pub(crate) service: Framed<TcpStream, ClientCodec>,
+    pub(crate) service: Framed<T, ClientCodec>,
 }
 
-impl Context for State {
+impl<T> Context for State<T>
+where
+    T: AsyncRead + AsyncWrite,
+{
+    type Stream = T;
+
+    #[inline(always)]
+    fn from_stream(stream: Self::Stream) -> Result<Self>
+    where
+        Self: Sized,
+    {
+        Ok(State {
+            session_handle: None,
+            service: Framed::new(stream, ClientCodec::default()),
+        })
+    }
+
     #[inline(always)]
     fn session_handle(&self) -> Option<u32> {
         self.session_handle
@@ -122,17 +147,17 @@ impl Context for State {
     }
 
     #[inline(always)]
-    fn framed(&self) -> &Framed<TcpStream, ClientCodec> {
+    fn framed(&self) -> &Framed<T, ClientCodec> {
         &self.service
     }
 
     #[inline(always)]
-    fn framed_mut(&mut self) -> &mut Framed<TcpStream, ClientCodec> {
+    fn framed_mut(&mut self) -> &mut Framed<T, ClientCodec> {
         &mut self.service
     }
 }
 
-impl TcpService for State {}
+impl<T> TcpService for State<T> where T: AsyncRead + AsyncWrite {}
 
 #[cfg(test)]
 mod test {

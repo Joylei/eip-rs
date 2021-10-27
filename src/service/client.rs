@@ -14,26 +14,35 @@ use crate::{
 use bytes::{BufMut, Bytes, BytesMut};
 use futures_util::{SinkExt, StreamExt};
 use std::{convert::TryInto, io};
-use tokio::net::TcpStream;
+use tokio::io::{AsyncRead, AsyncWrite};
 use tokio_util::codec::Framed;
 
 /// CIP context
 pub trait Context {
+    type Stream: AsyncRead + AsyncWrite;
+
+    fn from_stream(stream: Self::Stream) -> Result<Self>
+    where
+        Self: Sized;
+
     /// session handle
     fn session_handle(&self) -> Option<u32>;
 
     fn session_handle_mut(&mut self) -> &mut Option<u32>;
 
-    fn framed(&self) -> &Framed<TcpStream, ClientCodec>;
+    fn framed(&self) -> &Framed<Self::Stream, ClientCodec>;
 
-    fn framed_mut(&mut self) -> &mut Framed<TcpStream, ClientCodec>;
+    fn framed_mut(&mut self) -> &mut Framed<Self::Stream, ClientCodec>;
 }
 
 /// CIP service over TCP
 #[async_trait::async_trait(?Send)]
 pub trait TcpService: Context {
     #[inline]
-    async fn register_session(&mut self) -> Result<u32> {
+    async fn register_session(&mut self) -> Result<u32>
+    where
+        Self::Stream: Unpin,
+    {
         let service = self.framed_mut();
         service.send(command::RegisterSession).await?;
         let session_handle = match service.next().await {
@@ -57,7 +66,10 @@ pub trait TcpService: Context {
     }
 
     #[inline]
-    async fn unregister_session(&mut self) -> Result<()> {
+    async fn unregister_session(&mut self) -> Result<()>
+    where
+        Self::Stream: Unpin,
+    {
         if let Some(session_handle) = self.session_handle() {
             let service = self.framed_mut();
             service
@@ -73,6 +85,7 @@ pub trait TcpService: Context {
         request: UnconnectedSend<P, D>,
     ) -> Result<MessageRouterReply<Bytes>>
     where
+        Self::Stream: Unpin,
         P: Encodable,
         D: Encodable,
     {
@@ -144,6 +157,7 @@ pub trait TcpService: Context {
         parameters: ConnectionParameters<P>,
     ) -> Result<ForwardOpenReply>
     where
+        Self::Stream: Unpin,
         P: Encodable,
     {
         const SERVICE_FORWARD_OPEN: u8 = 0x54;
@@ -179,6 +193,7 @@ pub trait TcpService: Context {
     #[inline]
     async fn forward_close<P>(&mut self, request: ForwardCloseRequest<P>) -> Result<()>
     where
+        Self::Stream: Unpin,
         P: Encodable,
     {
         const SERVICE_FORWARD_CLOSE: u8 = 0x4E;

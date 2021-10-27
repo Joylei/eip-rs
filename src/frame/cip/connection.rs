@@ -1,6 +1,5 @@
-use bytes::Bytes;
-
 use crate::codec::Encodable;
+use bytes::Bytes;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ConnectionType {
