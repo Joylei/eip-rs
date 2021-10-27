@@ -103,6 +103,7 @@ where
     #[inline(always)]
     pub async fn close(&mut self) -> Result<()> {
         self.0.unregister_session().await?;
+        *self.0.session_handle_mut() = None;
         Ok(())
     }
 

@@ -1,7 +1,7 @@
 pub mod connection;
 pub mod epath;
 mod status;
-pub mod types;
+//pub mod types;
 
 use crate::{codec::Encodable, objects::socket::SocketAddr};
 use bytes::Bytes;
