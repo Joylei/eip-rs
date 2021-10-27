@@ -43,7 +43,7 @@ tokio::block_on(async {
           EPath::from(vec![Segment::Symbol("test_car1_x".to_owned())]),
           ElementCount(1),
       );
-      let resp = client.unconnected_send(mr_request, connection_path).await?;
+      let resp = client.send(mr_request, connection_path).await?;
       assert_eq!(resp.reply_service, 0xCC); // read tag service reply
       assert_eq!(LittleEndian::read_u16(&resp.data[0..2]), 0xC4); // DINT
       client.close().await?;
