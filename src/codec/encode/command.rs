@@ -1,15 +1,16 @@
+use crate::{
+    codec::Encodable,
+    consts::ENCAPSULATION_HEADER_LEN,
+    frame::{command::*, EncapsulationPacket},
+    Result,
+};
 use bytes::{BufMut, BytesMut};
-
-use crate::codec::Encodable;
-use crate::consts::ENCAPSULATION_HEADER_LEN;
-use crate::frame::{command::*, EncapsulationPacket};
-use crate::Result;
 
 use super::LazyEncode;
 
 impl<D: Encodable> Encodable for Nop<D> {
     #[inline(always)]
-    fn encode(self, dst: &mut bytes::BytesMut) -> Result<()> {
+    fn encode(self, dst: &mut BytesMut) -> Result<()> {
         let mut pkt = EncapsulationPacket {
             hdr: Default::default(),
             data: self.data,
@@ -25,7 +26,7 @@ impl<D: Encodable> Encodable for Nop<D> {
 
 impl Encodable for ListIdentity {
     #[inline(always)]
-    fn encode(self, dst: &mut bytes::BytesMut) -> Result<()> {
+    fn encode(self, dst: &mut BytesMut) -> Result<()> {
         let mut pkt = EncapsulationPacket::default();
         pkt.hdr.command = Self::command_code();
         pkt.data = ();
@@ -39,7 +40,7 @@ impl Encodable for ListIdentity {
 
 impl Encodable for ListInterfaces {
     #[inline(always)]
-    fn encode(self, dst: &mut bytes::BytesMut) -> Result<()> {
+    fn encode(self, dst: &mut BytesMut) -> Result<()> {
         let mut pkt = EncapsulationPacket::default();
         pkt.hdr.command = Self::command_code();
         pkt.data = ();
@@ -53,7 +54,7 @@ impl Encodable for ListInterfaces {
 
 impl Encodable for ListServices {
     #[inline(always)]
-    fn encode(self, dst: &mut bytes::BytesMut) -> Result<()> {
+    fn encode(self, dst: &mut BytesMut) -> Result<()> {
         let mut pkt = EncapsulationPacket::default();
         pkt.hdr.command = Self::command_code();
         pkt.data = ();
@@ -67,7 +68,7 @@ impl Encodable for ListServices {
 
 impl Encodable for RegisterSession {
     #[inline(always)]
-    fn encode(self, dst: &mut bytes::BytesMut) -> Result<()> {
+    fn encode(self, dst: &mut BytesMut) -> Result<()> {
         let mut pkt: EncapsulationPacket<&[u8]> = EncapsulationPacket::default();
         pkt.hdr.command = Self::command_code();
         pkt.data = &[0x01, 0x00, 0x00, 0x00];
@@ -82,7 +83,7 @@ impl Encodable for RegisterSession {
 
 impl Encodable for UnRegisterSession {
     #[inline(always)]
-    fn encode(self, dst: &mut bytes::BytesMut) -> Result<()> {
+    fn encode(self, dst: &mut BytesMut) -> Result<()> {
         let mut pkt = EncapsulationPacket::default();
         pkt.hdr.command = Self::command_code();
         pkt.hdr.session_handle = self.session_handle;
@@ -95,9 +96,9 @@ impl Encodable for UnRegisterSession {
     }
 }
 
-impl<D: Encodable + Send> Encodable for SendRRData<D> {
+impl<D: Encodable> Encodable for SendRRData<D> {
     #[inline]
-    fn encode(self, dst: &mut bytes::BytesMut) -> Result<()> {
+    fn encode(self, dst: &mut BytesMut) -> Result<()> {
         let timeout = self.timeout;
         let data_item = self.data;
         let data_item_len = data_item.bytes_count();
@@ -129,9 +130,9 @@ impl<D: Encodable + Send> Encodable for SendRRData<D> {
     }
 }
 
-impl<D: Encodable + Send> Encodable for SendUnitData<D> {
+impl<D: Encodable> Encodable for SendUnitData<D> {
     #[inline]
-    fn encode(self, dst: &mut bytes::BytesMut) -> Result<()> {
+    fn encode(self, dst: &mut BytesMut) -> Result<()> {
         let Self {
             session_handle,
             connection_id,

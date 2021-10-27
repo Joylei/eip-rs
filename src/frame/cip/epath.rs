@@ -1,5 +1,10 @@
 use std::ops::{Deref, DerefMut};
 
+use bytes::Bytes;
+
+/// EPATH for unconnected send
+pub const EPATH_CONNECTION_MANAGER: &'static [u8] = &[0x20, 0x06, 0x24, 0x01];
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Segment {
     Symbol(String),
@@ -62,12 +67,15 @@ pub struct PortSegment {
     /// Port to leave Current Node (1 if Backplane)
     pub port: u16,
     /// link address to route packet (number or IP address)
-    pub link: u32,
+    pub link: Bytes,
 }
 
 impl Default for PortSegment {
     #[inline(always)]
     fn default() -> Self {
-        Self { port: 1, link: 0 }
+        Self {
+            port: 1,
+            link: Bytes::from_static(&[0]),
+        }
     }
 }

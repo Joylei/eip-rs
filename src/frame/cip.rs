@@ -1,5 +1,5 @@
 pub mod connection;
-mod epath;
+pub mod epath;
 mod status;
 pub mod types;
 
@@ -128,21 +128,19 @@ impl SocketType {
 }
 
 #[derive(Debug)]
-pub struct UnconnectedSend<D> {
-    pub session_handle: u32,
+pub struct UnconnectedSend<P, D> {
     pub timeout: u16,
     pub priority_ticks: u8,
     pub timeout_ticks: u8,
     /// connection path
-    pub path: EPath,
-    /// message router request
+    pub path: P,
+    /// request data
     pub data: D,
 }
 
-impl<D> UnconnectedSend<D> {
-    pub fn new(path: EPath, data: D) -> Self {
+impl<P, D> UnconnectedSend<P, D> {
+    pub fn new(path: P, data: D) -> Self {
         Self {
-            session_handle: 0,
             timeout: 0,
             priority_ticks: 0x03,
             timeout_ticks: 0xFA,

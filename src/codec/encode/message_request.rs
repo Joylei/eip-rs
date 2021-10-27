@@ -1,5 +1,5 @@
 use crate::{codec::Encodable, frame::cip::MessageRouterRequest, Result};
-use bytes::BufMut;
+use bytes::{BufMut, BytesMut};
 
 impl<P, D> Encodable for MessageRouterRequest<P, D>
 where
@@ -7,7 +7,7 @@ where
     D: Encodable,
 {
     #[inline(always)]
-    fn encode(self, dst: &mut bytes::BytesMut) -> Result<()> {
+    fn encode(self, dst: &mut BytesMut) -> Result<()> {
         // service code
         dst.put_u8(self.service_code);
 

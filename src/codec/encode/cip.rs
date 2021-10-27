@@ -1,13 +1,13 @@
 use crate::{
-    codec::{ClientCodec, Encodable},
+    codec::Encodable,
     error::Error,
-    frame::cip::{AddressItem, DataItem, MessageRouterRequest, UnconnectedSend},
+    frame::cip::{AddressItem, DataItem},
     objects::socket::SocketAddr,
 };
 use bytes::{BufMut, Bytes, BytesMut};
-use tokio_util::codec::Encoder;
 
 impl From<AddressItem> for Bytes {
+    #[inline]
     fn from(item: AddressItem) -> Self {
         let mut dst = BytesMut::new();
         match item {
@@ -36,6 +36,7 @@ impl From<AddressItem> for Bytes {
 }
 
 impl From<DataItem> for Bytes {
+    #[inline]
     fn from(item: DataItem) -> Self {
         let mut dst = BytesMut::new();
         match item {
@@ -72,32 +73,15 @@ impl From<DataItem> for Bytes {
 
 impl Encodable for SocketAddr {
     #[inline(always)]
-    fn encode(self, dst: &mut bytes::BytesMut) -> Result<(), Error> {
+    fn encode(self, dst: &mut BytesMut) -> Result<(), Error> {
         dst.put_i16(self.sin_family);
         dst.put_u16(self.sin_port);
         dst.put_u32(self.sin_addr);
         dst.put_slice(&self.sin_zero);
         Ok(())
     }
-
+    #[inline(always)]
     fn bytes_count(&self) -> usize {
         16
     }
 }
-
-// impl SelfEncoder for ForwardCloseRequest {
-//     fn encode(self, dst: &mut bytes::BytesMut) -> Result<(), Error> {
-//         dst.put_u8(self.time_tick);
-//         dst.put_u8(self.timeout_tick);
-//         dst.put_u16_le(self.connection_serial_number);
-//         dst.put_u16_le(self.originator_vender_id);
-//         dst.put_u16_le(self.connection_serial_number);
-//         assert!(
-//             self.connection_path.len() % 2 == 0 && self.connection_path.len() <= u16::MAX as usize
-//         );
-//         dst.put_u16_le(self.connection_path.len() as u16 / 2); //path size
-//         dst.put_u8(0); // reserved
-//         dst.put_slice(&self.connection_path);
-//         Ok(())
-//     }
-// }

@@ -1,10 +1,10 @@
 use crate::{
     error::{Error, ResponseError},
     frame::{
-        command_reply::{ListIdentityReply, RegisterSessionReply},
+        command_reply::{ListIdentityReply, ListServicesReply, RegisterSessionReply},
         CommonPacketFormat, EncapsulationPacket,
     },
-    objects::identity::IdentityObject,
+    objects::{identity::IdentityObject, service::ListServiceItem},
 };
 use byteorder::{ByteOrder, LittleEndian};
 use bytes::Bytes;
@@ -62,6 +62,35 @@ impl TryFrom<EncapsulationPacket<Bytes>> for ListIdentityReply {
                 }
                 let item_data = item.data.unwrap();
                 IdentityObject::try_from(item_data)
+            })
+            .collect();
+        Ok(Self(res?))
+    }
+}
+
+impl TryFrom<EncapsulationPacket<Bytes>> for ListServicesReply {
+    type Error = Error;
+    #[inline]
+    fn try_from(src: EncapsulationPacket<Bytes>) -> Result<Self, Self::Error> {
+        if src.hdr.command != 0x0004 {
+            return Err(
+                io::Error::new(io::ErrorKind::Other, "ListServices: unexpected reply").into(),
+            );
+        }
+        let cpf = CommonPacketFormat::try_from(src.data)?;
+        if cpf.len() != 1 {
+            return Err(Error::Response(ResponseError::InvalidData));
+        }
+        // ListServices
+        let res: Result<Vec<_>, _> = cpf
+            .into_vec()
+            .into_iter()
+            .map(|item| {
+                if item.type_code != 0x0C {
+                    return Err(Error::Response(ResponseError::InvalidData));
+                }
+                let item_data = item.data.unwrap();
+                ListServiceItem::try_from(item_data)
             })
             .collect();
         Ok(Self(res?))

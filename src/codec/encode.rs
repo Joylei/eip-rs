@@ -2,10 +2,10 @@ mod cip;
 mod command;
 mod common_packet;
 mod connected_send;
+mod connection;
 mod encapsulation;
 mod epath;
 mod message_request;
-mod unconnected_send;
 
 use super::{ClientCodec, Encodable};
 use crate::error::Error;
@@ -14,7 +14,7 @@ use tokio_util::codec::Encoder;
 
 impl Encodable for () {
     #[inline(always)]
-    fn encode(self, _: &mut bytes::BytesMut) -> crate::Result<()> {
+    fn encode(self, _: &mut BytesMut) -> crate::Result<()> {
         Ok(())
     }
     #[inline(always)]
@@ -29,7 +29,7 @@ where
     D2: Encodable,
 {
     #[inline(always)]
-    fn encode(self, dst: &mut bytes::BytesMut) -> crate::Result<()> {
+    fn encode(self, dst: &mut BytesMut) -> crate::Result<()> {
         self.0.encode(dst)?;
         self.1.encode(dst)?;
         Ok(())
@@ -47,7 +47,7 @@ where
     D3: Encodable,
 {
     #[inline(always)]
-    fn encode(self, dst: &mut bytes::BytesMut) -> crate::Result<()> {
+    fn encode(self, dst: &mut BytesMut) -> crate::Result<()> {
         self.0.encode(dst)?;
         self.1.encode(dst)?;
         self.2.encode(dst)?;
@@ -61,7 +61,7 @@ where
 
 impl Encodable for &[u8] {
     #[inline(always)]
-    fn encode(self, dst: &mut bytes::BytesMut) -> crate::Result<()> {
+    fn encode(self, dst: &mut BytesMut) -> crate::Result<()> {
         dst.put_slice(self);
         Ok(())
     }
@@ -79,10 +79,10 @@ pub struct LazyEncode<F> {
 
 impl<F> Encodable for LazyEncode<F>
 where
-    F: FnOnce(&mut bytes::BytesMut) -> crate::Result<()> + Send,
+    F: FnOnce(&mut BytesMut) -> crate::Result<()>,
 {
     #[inline(always)]
-    fn encode(self, dst: &mut bytes::BytesMut) -> crate::Result<()> {
+    fn encode(self, dst: &mut BytesMut) -> crate::Result<()> {
         (self.f)(dst)
     }
 
@@ -95,14 +95,14 @@ where
 impl<E: Encodable> Encoder<E> for ClientCodec {
     type Error = Error;
     #[inline(always)]
-    fn encode(&mut self, item: E, dst: &mut bytes::BytesMut) -> Result<(), Self::Error> {
+    fn encode(&mut self, item: E, dst: &mut BytesMut) -> Result<(), Self::Error> {
         item.encode(dst)
     }
 }
 
 impl Encodable for Bytes {
     #[inline(always)]
-    fn encode(self, dst: &mut bytes::BytesMut) -> Result<(), Error> {
+    fn encode(self, dst: &mut BytesMut) -> Result<(), Error> {
         dst.put_slice(&self);
         Ok(())
     }

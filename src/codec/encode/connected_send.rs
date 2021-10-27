@@ -3,10 +3,11 @@ use crate::{
     frame::{cip::ConnectedSend, command::SendUnitData},
     Result,
 };
+use bytes::BytesMut;
 
-impl<D: Encodable + Send> Encodable for ConnectedSend<D> {
+impl<D: Encodable> Encodable for ConnectedSend<D> {
     #[inline(always)]
-    fn encode(self, dst: &mut bytes::BytesMut) -> Result<()> {
+    fn encode(self, dst: &mut BytesMut) -> Result<()> {
         let command = SendUnitData {
             connection_id: self.connection_id,
             session_handle: self.session_handle,

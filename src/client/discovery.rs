@@ -1,6 +1,8 @@
-use crate::frame::command_reply::ListIdentityReply;
-use crate::Result;
-use crate::{codec::ClientCodec, frame::command::ListIdentity};
+use crate::{
+    codec::ClientCodec,
+    frame::{command::ListIdentity, command_reply::ListIdentityReply},
+    Result,
+};
 use futures_util::{SinkExt, Stream, StreamExt, TryStreamExt};
 use std::{convert::TryInto, io, net::SocketAddr};
 use tokio::net::UdpSocket;

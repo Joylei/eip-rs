@@ -10,12 +10,7 @@ impl Encodable for PortSegment {
     fn encode(self, dst: &mut BytesMut) -> Result<()> {
         const EXTENDED_LINKED_ADDRESS_SIZE: u16 = 1 << 4; // 0x10
 
-        let link_addr_len = match self.link {
-            v if v <= u8::MAX as u32 => 1,
-            v if v <= u16::MAX as u32 => 2,
-            _ => 4,
-        };
-
+        let link_addr_len = self.link.len();
         assert!(link_addr_len < u8::MAX as usize);
 
         let start_pos = dst.len();
@@ -31,11 +26,7 @@ impl Encodable for PortSegment {
             dst.put_u16(self.port);
         }
 
-        match self.link {
-            v if v <= u8::MAX as u32 => dst.put_u8(v as u8),
-            v if v <= u16::MAX as u32 => dst.put_u16(v as u16),
-            v => dst.put_u32(v),
-        }
+        dst.put_slice(&self.link);
         let end_pos = dst.len();
         if (end_pos - start_pos) % 2 != 0 {
             dst.put_u8(0);
@@ -45,12 +36,7 @@ impl Encodable for PortSegment {
 
     #[inline]
     fn bytes_count(&self) -> usize {
-        let link_addr_len = match self.link {
-            v if v <= u8::MAX as u32 => 1,
-            v if v <= u16::MAX as u32 => 2,
-            _ => 4,
-        };
-
+        let link_addr_len = self.link.len();
         let mut count = 1;
         if link_addr_len > 1 {
             count += 1;
@@ -153,22 +139,23 @@ impl Encodable for Segment {
 
 impl Encodable for EPath {
     #[inline(always)]
-    fn bytes_count(&self) -> usize {
-        self.iter().map(|v| v.bytes_count()).sum()
-    }
-
-    #[inline(always)]
-    fn encode(self: EPath, dst: &mut bytes::BytesMut) -> Result<()> {
+    fn encode(self: EPath, dst: &mut BytesMut) -> Result<()> {
         for item in self.into_vec() {
             item.encode(dst)?;
         }
         Ok(())
+    }
+
+    #[inline(always)]
+    fn bytes_count(&self) -> usize {
+        self.iter().map(|v| v.bytes_count()).sum()
     }
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::frame::cip::epath::EPATH_CONNECTION_MANAGER;
 
     #[test]
     fn test_epath_symbol() {
@@ -209,7 +196,7 @@ mod test {
         let mut buf = BytesMut::new();
         epath.encode(&mut buf).unwrap();
 
-        assert_eq!(&buf[..], &[0x20, 06, 0x24, 01]);
+        assert_eq!(&buf[..], EPATH_CONNECTION_MANAGER);
     }
 
     #[test]

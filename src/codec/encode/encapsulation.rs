@@ -26,7 +26,7 @@ impl<D: Encodable> Encodable for EncapsulationPacket<D> {
 
 impl Encodable for EncapsulationHeader {
     #[inline(always)]
-    fn encode(self, dst: &mut bytes::BytesMut) -> Result<()> {
+    fn encode(self, dst: &mut BytesMut) -> Result<()> {
         dst.put_u16_le(self.command);
         dst.put_u16_le(self.length);
         dst.put_u32_le(self.session_handle);

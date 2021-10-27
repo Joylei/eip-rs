@@ -8,7 +8,7 @@ pub struct ListServiceItem {
     pub capability: u16,
     /// name of service, NULL-terminated ASCII string;
     /// name = "Communications"
-    pub name: [u8; 16],
+    pub name: String,
 }
 
 impl ListServiceItem {

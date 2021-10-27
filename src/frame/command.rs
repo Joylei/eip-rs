@@ -81,7 +81,7 @@ pub struct SendRRData<D> {
     pub data: D,
 }
 
-impl<D: Encodable + Send> Command for SendRRData<D> {
+impl<D: Encodable> Command for SendRRData<D> {
     #[inline(always)]
     fn command_code() -> u16 {
         0x006F
@@ -99,7 +99,7 @@ pub struct SendUnitData<D> {
     pub data: D,
 }
 
-impl<D: Encodable + Send> Command for SendUnitData<D> {
+impl<D: Encodable> Command for SendUnitData<D> {
     #[inline(always)]
     fn command_code() -> u16 {
         0x0070

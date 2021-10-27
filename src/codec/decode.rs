@@ -1,5 +1,6 @@
 mod cip;
 mod command;
+mod connetion;
 mod unconnected_send;
 
 use super::ClientCodec;
@@ -14,7 +15,7 @@ use crate::{
     objects::{identity::IdentityObject, service::ListServiceItem, socket::SocketAddr, Revision},
 };
 use byteorder::{BigEndian, ByteOrder, LittleEndian};
-use bytes::Bytes;
+use bytes::{Bytes, BytesMut};
 use std::convert::TryFrom;
 use tokio_util::codec::Decoder;
 
@@ -23,7 +24,7 @@ impl Decoder for ClientCodec {
     type Error = Error;
 
     #[inline]
-    fn decode(&mut self, src: &mut bytes::BytesMut) -> Result<Option<Self::Item>, Self::Error> {
+    fn decode(&mut self, src: &mut BytesMut) -> Result<Option<Self::Item>, Self::Error> {
         if src.len() < ENCAPSULATION_HEADER_LEN {
             return Ok(None);
         }
@@ -81,7 +82,7 @@ impl TryFrom<Bytes> for CommonPacketFormat {
             buf = buf.slice(4 + item_length..);
         }
 
-        // no remaining left
+        // should no remaining left
         if buf.len() != 0 {
             return Err(Error::Response(ResponseError::InvalidData));
         }
@@ -116,8 +117,8 @@ impl TryFrom<Bytes> for IdentityObject {
             status: LittleEndian::read_u16(&data[26..28]),
             serial_number: LittleEndian::read_u32(&data[28..32]),
             product_name_len, //32
+            //TODO: no unsafe code
             product_name: unsafe {
-                //TODO: is it OK?
                 String::from_utf8_unchecked(data[33..33 + product_name_len as usize].to_vec())
             },
             state: *data.last().unwrap(),
@@ -134,7 +135,8 @@ impl TryFrom<Bytes> for ListServiceItem {
         let mut item = ListServiceItem::default();
         item.protocol_version = LittleEndian::read_u16(&buf[0..2]);
         item.capability = LittleEndian::read_u16(&buf[2..4]);
-        item.name.copy_from_slice(&buf[4..20]);
+        //TODO: no unsafe code
+        item.name = unsafe { String::from_utf8_unchecked(buf[4..20].to_vec()) };
         return Ok(item);
     }
 }
