@@ -16,15 +16,15 @@ use tokio_util::codec::Framed;
 pub struct Client<S: TcpService = State<TcpStream>>(S);
 
 impl Client {
-    /// connect with default port `0xAF12`
+    /// connect with default port `0xAF12`, creating a CIP session
     #[inline(always)]
     pub async fn connect<S: AsRef<str>>(host: S) -> Result<Self> {
-        Self::connection_with_port(host, EIP_DEFAULT_PORT).await
+        Self::connect_with_port(host, EIP_DEFAULT_PORT).await
     }
 
-    /// connect with specified port
+    /// connect with specified port, creating a CIP session
     #[inline]
-    pub async fn connection_with_port<S: AsRef<str>>(host: S, port: u16) -> Result<Self> {
+    pub async fn connect_with_port<S: AsRef<str>>(host: S, port: u16) -> Result<Self> {
         let addr = match lookup_host(format!("{}:{}", host.as_ref(), port))
             .await?
             .next()
