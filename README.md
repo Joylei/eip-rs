@@ -81,12 +81,6 @@ pub async fn main() -> Result<()> {
   
   Communications Protocol Python Parser and Originator -- EtherNet/IP CIP
 
-
-## Useful documents
-
-- https://www.odva.org/wp-content/uploads/2020/06/PUB00123R1_Common-Industrial_Protocol_and_Family_of_CIP_Networks.pdf
-- Programming Manual Logix5000 Data Access: http://literature.rockwellautomation.com/idc/groups/literature/documents/pm/1756-pm020_-en-p.pdf
-
 ## License
 
 MIT
