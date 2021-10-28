@@ -91,12 +91,16 @@ where
 
     /// open session
     #[inline(always)]
-    pub async fn open(&mut self) -> Result<()> {
-        if self.closed() {
-            let session_handle = self.0.register_session().await?;
-            *self.0.session_handle_mut() = Some(session_handle);
-        }
-        Ok(())
+    pub async fn open(&mut self) -> Result<u32> {
+        let session_handle = match self.session_handle() {
+            Some(h) => h,
+            None => {
+                let session_handle = self.0.register_session().await?;
+                *self.0.session_handle_mut() = Some(session_handle);
+                session_handle
+            }
+        };
+        Ok(session_handle)
     }
 
     /// close current session
@@ -111,6 +115,11 @@ where
     #[inline(always)]
     pub fn closed(&self) -> bool {
         self.0.session_handle().is_none()
+    }
+
+    #[inline(always)]
+    pub fn into_inner(self) -> S {
+        self.0
     }
 }
 

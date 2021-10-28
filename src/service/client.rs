@@ -2,7 +2,10 @@ use crate::{
     codec::{encode::LazyEncode, ClientCodec, Encodable},
     frame::{
         cip::{
-            connection::{ConnectionParameters, ForwardCloseRequest, ForwardOpenReply},
+            connection::{
+                ForwardCloseReply, ForwardCloseRequest, ForwardOpenReply, ForwardOpenRequest,
+                LargeForwardOpenRequest,
+            },
             epath::EPATH_CONNECTION_MANAGER,
             MessageRouterReply, MessageRouterRequest, UnconnectedSend, UnconnectedSendReply,
         },
@@ -21,6 +24,7 @@ use tokio_util::codec::Framed;
 pub trait Context {
     type Stream: AsyncRead + AsyncWrite;
 
+    /// create context from stream
     fn from_stream(stream: Self::Stream) -> Result<Self>
     where
         Self: Sized;
@@ -28,10 +32,13 @@ pub trait Context {
     /// session handle
     fn session_handle(&self) -> Option<u32>;
 
+    /// session handle
     fn session_handle_mut(&mut self) -> &mut Option<u32>;
 
+    /// framed service
     fn framed(&self) -> &Framed<Self::Stream, ClientCodec>;
 
+    /// framed service
     fn framed_mut(&mut self) -> &mut Framed<Self::Stream, ClientCodec>;
 }
 
@@ -152,10 +159,7 @@ pub trait TcpService: Context {
     }
 
     #[inline]
-    async fn forward_open<P>(
-        &mut self,
-        parameters: ConnectionParameters<P>,
-    ) -> Result<ForwardOpenReply>
+    async fn forward_open<P>(&mut self, request: ForwardOpenRequest<P>) -> Result<ForwardOpenReply>
     where
         Self::Stream: Unpin,
         P: Encodable,
@@ -169,7 +173,7 @@ pub trait TcpService: Context {
         let mr: MessageRouterRequest<&[u8], _> = MessageRouterRequest {
             service_code: SERVICE_FORWARD_OPEN,
             path: EPATH_CONNECTION_MANAGER,
-            data: parameters,
+            data: request,
         };
         let command = SendRRData {
             session_handle,
@@ -191,7 +195,49 @@ pub trait TcpService: Context {
     }
 
     #[inline]
-    async fn forward_close<P>(&mut self, request: ForwardCloseRequest<P>) -> Result<()>
+    async fn large_forward_open<P>(
+        &mut self,
+        request: LargeForwardOpenRequest<P>,
+    ) -> Result<ForwardOpenReply>
+    where
+        Self::Stream: Unpin,
+        P: Encodable,
+    {
+        const SERVICE_LARGE_FORWARD_OPEN: u8 = 0x5B;
+        let session_handle = match self.session_handle() {
+            Some(h) => h,
+            None => return Err(io::Error::new(io::ErrorKind::Other, "CIP session required").into()),
+        };
+        let service = self.framed_mut();
+        let mr: MessageRouterRequest<&[u8], _> = MessageRouterRequest {
+            service_code: SERVICE_LARGE_FORWARD_OPEN,
+            path: EPATH_CONNECTION_MANAGER,
+            data: request,
+        };
+        let command = SendRRData {
+            session_handle,
+            timeout: 0,
+            data: mr,
+        };
+        service.send(command).await?;
+        match service.next().await {
+            Some(resp) => {
+                let mr_reply: ForwardOpenReply = resp?.try_into()?;
+                Ok(mr_reply)
+            }
+            None => Err(io::Error::new(
+                io::ErrorKind::ConnectionAborted,
+                "ForwardOpen: connection lost",
+            )
+            .into()),
+        }
+    }
+
+    #[inline]
+    async fn forward_close<P>(
+        &mut self,
+        request: ForwardCloseRequest<P>,
+    ) -> Result<ForwardCloseReply>
     where
         Self::Stream: Unpin,
         P: Encodable,
@@ -215,8 +261,8 @@ pub trait TcpService: Context {
         service.send(command).await?;
         match service.next().await {
             Some(resp) => {
-                let _mr_reply: UnconnectedSendReply<Bytes> = resp?.try_into()?;
-                Ok(())
+                let mr_reply: ForwardCloseReply = resp?.try_into()?;
+                Ok(mr_reply)
             }
             None => Err(io::Error::new(
                 io::ErrorKind::ConnectionAborted,

@@ -50,10 +50,15 @@ where
     }
 }
 
+/// message router reply
 #[derive(Debug)]
 pub struct MessageRouterReply<D> {
+    /// reply service code
     pub reply_service: u8,
+    /// general status and extended status
     pub status: Status,
+    /// only present with routing type errors
+    pub remaining_path_size: Option<u8>,
     pub data: D,
 }
 
@@ -63,6 +68,7 @@ impl<D> MessageRouterReply<D> {
         Self {
             reply_service,
             status,
+            remaining_path_size: None,
             data,
         }
     }
@@ -152,6 +158,11 @@ impl<P, D> UnconnectedSend<P, D> {
 
 #[derive(Debug)]
 pub struct UnconnectedSendReply<D>(pub MessageRouterReply<D>);
+impl<D> UnconnectedSendReply<D> {
+    pub fn into_inner(self) -> MessageRouterReply<D> {
+        self.0
+    }
+}
 
 #[derive(Debug, Default)]
 pub struct ConnectedSend<D> {
@@ -170,5 +181,13 @@ impl<D> ConnectedSend<D> {
             sequence_number: None,
             data,
         }
+    }
+}
+
+#[derive(Debug)]
+pub struct ConnectedSendReply<D>(pub MessageRouterReply<D>);
+impl<D> ConnectedSendReply<D> {
+    pub fn into_inner(self) -> MessageRouterReply<D> {
+        self.0
     }
 }

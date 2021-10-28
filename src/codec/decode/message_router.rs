@@ -31,10 +31,25 @@ impl TryFrom<Bytes> for MessageRouterReply<Bytes> {
             general: general_status,
             extended: extended_status,
         };
-        if general_status != 0 {
-            return Err(Error::CIPError(status));
+        // //TODO: raise Error here?
+        // if general_status != 0 {
+        //     return Err(Error::CIPError(status));
+        // }
+        let pos = 4 + extended_status_size as usize;
+        if status.is_routing_error() {
+            if buf.len() != pos + 1 {
+                return Err(Error::Response(ResponseError::InvalidData));
+            }
+            let data = Self {
+                reply_service,
+                status,
+                remaining_path_size: Some(buf[pos]),
+                data: Bytes::new(),
+            };
+            Ok(data)
+        } else {
+            let data = buf.slice(pos..);
+            Ok(Self::new(reply_service, status, data))
         }
-        let data = buf.slice(4 + extended_status_size as usize..);
-        Ok(Self::new(reply_service, status, data))
     }
 }

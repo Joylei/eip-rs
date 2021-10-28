@@ -33,23 +33,26 @@ rseip={git="https://github.com/Joylei/eip-rs.git"}
 ### Read tag from Allen-bradley device
 
 ```rust
-use tokio;
-use rseip::{client::Client, frame::cip::{EPath, PortSegment, Segment}};
+use anyhow::Result;
+use byteorder::{ByteOrder, LittleEndian};
+use bytes::{BufMut, BytesMut};
+use rseip::{client::Client, codec::Encodable, frame::cip::*};
 
-tokio::block_on(async {
-      let connection_path = EPath::from(vec![Segment::Port(PortSegment::default())]);
-      let mut client = Client::connect("192.168.0.83").await?;
-      let mr_request = MessageRouterRequest::new(
-          0x4c,
-          EPath::from(vec![Segment::Symbol("test_car1_x".to_owned())]),
-          ElementCount(1),
-      );
-      let resp = client.send(mr_request, connection_path).await?;
-      assert_eq!(resp.reply_service, 0xCC); // read tag service reply
-      assert_eq!(LittleEndian::read_u16(&resp.data[0..2]), 0xC4); // DINT
-      client.close().await?;
-      Ok(())
-});
+#[tokio::main]
+pub async fn main() -> Result<()> {
+    let connection_path = EPath::from(vec![Segment::Port(PortSegment::default())]);
+    let mut client = Client::connect("192.168.0.83").await?;
+    let mr_request = MessageRouterRequest::new(
+        0x4c,
+        EPath::from(vec![Segment::Symbol("test_car1_x".to_owned())]),
+        ElementCount(1),
+    );
+    let resp = client.send(mr_request, connection_path).await?;
+    assert_eq!(resp.reply_service, 0xCC); // read tag service reply
+    assert_eq!(LittleEndian::read_u16(&resp.data[0..2]), 0xC4); // DINT
+    client.close().await?;
+    Ok(())
+}
 ```
 
 ## Related Projects
@@ -77,6 +80,12 @@ tokio::block_on(async {
 - [cpppo](https://github.com/pjkundert/cpppo/)
   
   Communications Protocol Python Parser and Originator -- EtherNet/IP CIP
+
+
+## Useful documents
+
+- https://www.odva.org/wp-content/uploads/2020/06/PUB00123R1_Common-Industrial_Protocol_and_Family_of_CIP_Networks.pdf
+- Programming Manual Logix5000 Data Access: http://literature.rockwellautomation.com/idc/groups/literature/documents/pm/1756-pm020_-en-p.pdf
 
 ## License
 

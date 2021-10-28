@@ -1,6 +1,7 @@
-mod cip;
 mod command;
-mod connetion;
+mod connected_send;
+mod connection;
+mod message_router;
 mod unconnected_send;
 
 use super::ClientCodec;
