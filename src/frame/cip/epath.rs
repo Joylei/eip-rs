@@ -1,6 +1,11 @@
-use std::ops::{Deref, DerefMut};
+// rseip
+//
+// rseip (eip-rs) - EtherNet/IP in pure Rust.
+// Copyright: 2020-2021, Joylei <leingliu@gmail.com>
+// License: MIT
 
 use bytes::Bytes;
+use std::ops::{Deref, DerefMut};
 
 /// EPATH for unconnected send
 pub const EPATH_CONNECTION_MANAGER: &'static [u8] = &[0x20, 0x06, 0x24, 0x01];

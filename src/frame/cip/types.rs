@@ -1,3 +1,9 @@
+// rseip
+//
+// rseip (eip-rs) - EtherNet/IP in pure Rust.
+// Copyright: 2020-2021, Joylei <leingliu@gmail.com>
+// License: MIT
+
 /// type code =  0xC1
 pub type BOOL = bool;
 

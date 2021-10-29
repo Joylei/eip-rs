@@ -1,3 +1,9 @@
+// rseip
+//
+// rseip (eip-rs) - EtherNet/IP in pure Rust.
+// Copyright: 2020-2021, Joylei <leingliu@gmail.com>
+// License: MIT
+
 use crate::{
     codec::{ClientCodec, Encodable},
     consts::EIP_DEFAULT_PORT,

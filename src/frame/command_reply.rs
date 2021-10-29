@@ -1,3 +1,9 @@
+// rseip
+//
+// rseip (eip-rs) - EtherNet/IP in pure Rust.
+// Copyright: 2020-2021, Joylei <leingliu@gmail.com>
+// License: MIT
+
 use crate::objects::{identity::IdentityObject, service::ListServiceItem};
 
 #[derive(Debug, Default)]

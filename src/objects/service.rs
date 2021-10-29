@@ -1,3 +1,9 @@
+// rseip
+//
+// rseip (eip-rs) - EtherNet/IP in pure Rust.
+// Copyright: 2020-2021, Joylei <leingliu@gmail.com>
+// License: MIT
+
 /// only one service for ListServices
 /// type code = 0x100
 /// encoded bytes count: 24

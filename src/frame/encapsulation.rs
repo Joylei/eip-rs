@@ -1,3 +1,9 @@
+// rseip
+//
+// rseip (eip-rs) - EtherNet/IP in pure Rust.
+// Copyright: 2020-2021, Joylei <leingliu@gmail.com>
+// License: MIT
+
 /// UCMM: 504 bytes
 /// max: 65535
 #[derive(Debug, Default)]
