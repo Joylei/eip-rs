@@ -43,6 +43,19 @@ pub async fn main() -> Result<()> {
     client.close().await?;
     Ok(())
 }
+
+struct ElementCount(u16);
+
+impl Encodable for ElementCount {
+    fn encode(self, dst: &mut BytesMut) -> rseip::Result<()> {
+        dst.put_u16_le(self.0);
+        Ok(())
+    }
+    fn bytes_count(&self) -> usize {
+        2
+    }
+}
+
 ```
 
 Please find more examples within [examples](https://github.com/Joylei/eip-rs/tree/main/examples).
