@@ -7,7 +7,7 @@ mod unconnected_send;
 use super::ClientCodec;
 use crate::{
     consts::ENCAPSULATION_HEADER_LEN,
-    error::{Error, ResponseError},
+    error::{EipError, Error},
     frame::{
         common_packet::{CommonPacketFormat, CommonPacketItem},
         encapsulation::EncapsulationHeader,
@@ -32,14 +32,14 @@ impl Decoder for ClientCodec {
         let data_len = LittleEndian::read_u16(&src[2..4]) as usize;
         //verify data length
         if ENCAPSULATION_HEADER_LEN + data_len > u16::MAX as usize {
-            return Err(Error::Response(ResponseError::InvalidLength));
+            return Err(Error::Eip(EipError::InvalidLength));
         }
         if src.len() < ENCAPSULATION_HEADER_LEN + data_len {
             return Ok(None);
         }
         if src.len() > ENCAPSULATION_HEADER_LEN + data_len {
             // should no remaining buffer
-            return Err(Error::Response(ResponseError::InvalidLength));
+            return Err(Error::Eip(EipError::InvalidLength));
         }
         let header_data = src.split_to(ENCAPSULATION_HEADER_LEN).freeze();
         let reply_data = src.split_to(data_len).freeze();
@@ -47,7 +47,7 @@ impl Decoder for ClientCodec {
         match hdr.status {
             0 => {}
             v if v > u16::MAX as u32 => unreachable!("unexpected status code: {}", v),
-            v => return Err(Error::Response(ResponseError::from(v as u16))),
+            v => return Err(Error::Eip(EipError::from(v as u16))),
         }
         return Ok(Some(EncapsulationPacket {
             hdr,
@@ -61,19 +61,19 @@ impl TryFrom<Bytes> for CommonPacketFormat {
     #[inline]
     fn try_from(mut buf: Bytes) -> Result<Self, Self::Error> {
         if buf.len() < 2 {
-            return Err(Error::Response(ResponseError::InvalidData));
+            return Err(Error::Eip(EipError::InvalidData));
         }
         let item_count = LittleEndian::read_u16(&buf[0..2]);
         buf = buf.slice(2..);
         let mut items = Vec::new();
         for _ in 0..item_count {
             if buf.len() < 4 {
-                return Err(Error::Response(ResponseError::InvalidData));
+                return Err(Error::Eip(EipError::InvalidData));
             }
             let type_code = LittleEndian::read_u16(&buf[0..2]);
             let item_length = LittleEndian::read_u16(&buf[2..4]) as usize;
             if buf.len() < 4 + item_length {
-                return Err(Error::Response(ResponseError::InvalidData));
+                return Err(Error::Eip(EipError::InvalidData));
             }
             let item_data = buf.slice(4..4 + item_length);
             items.push(CommonPacketItem {
@@ -85,7 +85,7 @@ impl TryFrom<Bytes> for CommonPacketFormat {
 
         // should no remaining left
         if buf.len() != 0 {
-            return Err(Error::Response(ResponseError::InvalidData));
+            return Err(Error::Eip(EipError::InvalidData));
         }
         Ok(CommonPacketFormat::from(items))
     }
@@ -97,13 +97,13 @@ impl TryFrom<Bytes> for IdentityObject {
     fn try_from(data: Bytes) -> Result<Self, Self::Error> {
         // dynamic size, so check size
         if data.len() < 33 {
-            return Err(Error::Response(ResponseError::InvalidData));
+            return Err(Error::Eip(EipError::InvalidData));
         }
         let product_name_len = data[32];
         //eprintln!("product_name_len: {}", product_name_len);
 
         if data.len() != 33 + product_name_len as usize + 1 {
-            return Err(Error::Response(ResponseError::InvalidData));
+            return Err(Error::Eip(EipError::InvalidData));
         }
         let identity = IdentityObject {
             protocol_version: LittleEndian::read_u16(&data[..2]),

@@ -1,5 +1,5 @@
 use crate::{
-    error::{Error, ResponseError},
+    error::{EipError, Error},
     frame::{
         cip::{MessageRouterReply, UnconnectedSendReply},
         CommonPacketFormat, EncapsulationPacket,
@@ -28,16 +28,16 @@ impl TryFrom<EncapsulationPacket<Bytes>> for UnconnectedSendReply<Bytes> {
         //TODO: verify buf length
         let mut cpf = CommonPacketFormat::try_from(src.data.slice(6..))?.into_vec();
         if cpf.len() != 2 {
-            return Err(Error::Response(ResponseError::InvalidData));
+            return Err(Error::Eip(EipError::InvalidData));
         }
         // should be null address
         if !cpf[0].is_null_addr() {
-            return Err(Error::Response(ResponseError::InvalidData));
+            return Err(Error::Eip(EipError::InvalidData));
         }
         let data_item = cpf.remove(1);
         // should be unconnected data item
         if data_item.type_code != 0xB2 {
-            return Err(Error::Response(ResponseError::InvalidData));
+            return Err(Error::Eip(EipError::InvalidData));
         }
         let mr_reply = MessageRouterReply::try_from(data_item.data.unwrap())?;
         Ok(Self(mr_reply))

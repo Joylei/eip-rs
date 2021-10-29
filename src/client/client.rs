@@ -23,7 +23,7 @@ impl Client {
     }
 
     /// connect with specified port, creating a CIP session
-    #[inline]
+    #[inline(always)]
     pub async fn connect_with_port<S: AsRef<str>>(host: S, port: u16) -> Result<Self> {
         let addr = match lookup_host(format!("{}:{}", host.as_ref(), port))
             .await?
@@ -44,6 +44,7 @@ impl Client {
         Ok(res)
     }
 
+    #[inline(always)]
     pub(crate) async fn internal_connect(addr: SocketAddr) -> Result<Self> {
         let socket = TcpSocket::new_v4()?;
         let stream = socket.connect(addr.into()).await?;
@@ -79,7 +80,7 @@ where
     }
 
     /// unconnected send
-    #[inline]
+    #[inline(always)]
     pub async fn send<P, D>(
         &mut self,
         mr: MessageRouterRequest<P, D>,

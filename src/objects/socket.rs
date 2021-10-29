@@ -1,6 +1,5 @@
 pub const AF_INET: i16 = 2;
 
-/// see EIP-CIP-V2-1.0 2-7.3.3
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct SocketAddr {
     /// big-endian, shall be AF_INET=2

@@ -1,5 +1,5 @@
 use crate::{
-    error::{Error, ResponseError},
+    error::{EipError, Error},
     frame::{
         cip::{
             connection::{
@@ -34,25 +34,25 @@ impl TryFrom<EncapsulationPacket<Bytes>> for ForwardOpenReply {
         //TODO: verify buf length
         let mut cpf = CommonPacketFormat::try_from(src.data.slice(6..))?.into_vec();
         if cpf.len() != 2 {
-            return Err(Error::Response(ResponseError::InvalidData));
+            return Err(Error::Eip(EipError::InvalidData));
         }
         // should be null address
         if !cpf[0].is_null_addr() {
-            return Err(Error::Response(ResponseError::InvalidData));
+            return Err(Error::Eip(EipError::InvalidData));
         }
         let data_item = cpf.remove(1);
         // should be unconnected data item
         if data_item.type_code != 0xB2 {
-            return Err(Error::Response(ResponseError::InvalidData));
+            return Err(Error::Eip(EipError::InvalidData));
         }
         let mr_reply = MessageRouterReply::try_from(data_item.data.unwrap())?;
         if mr_reply.reply_service != 0xD4 && mr_reply.reply_service != 0xDB {
-            return Err(Error::Response(ResponseError::InvalidData));
+            return Err(Error::Eip(EipError::InvalidData));
         }
         if mr_reply.status.is_ok() {
             let buf: Bytes = mr_reply.data;
             if buf.len() < 26 {
-                return Err(Error::Response(ResponseError::InvalidData));
+                return Err(Error::Eip(EipError::InvalidData));
             }
             let mut reply = ForwardOpenSuccess::default();
             reply.o_t_connection_id = LittleEndian::read_u32(&buf[0..4]);
@@ -65,7 +65,7 @@ impl TryFrom<EncapsulationPacket<Bytes>> for ForwardOpenReply {
             // buf[24], size in words
             let app_data_size = 2 * buf[24] as usize;
             if buf.len() != 26 + app_data_size {
-                return Err(Error::Response(ResponseError::InvalidData));
+                return Err(Error::Eip(EipError::InvalidData));
             }
             // reserved = buf[25]
             let app_data = buf.slice(26..);
@@ -101,25 +101,25 @@ impl TryFrom<EncapsulationPacket<Bytes>> for ForwardCloseReply {
         //TODO: verify buf length
         let mut cpf = CommonPacketFormat::try_from(src.data.slice(6..))?.into_vec();
         if cpf.len() != 2 {
-            return Err(Error::Response(ResponseError::InvalidData));
+            return Err(Error::Eip(EipError::InvalidData));
         }
         // should be null address
         if !cpf[0].is_null_addr() {
-            return Err(Error::Response(ResponseError::InvalidData));
+            return Err(Error::Eip(EipError::InvalidData));
         }
         let data_item = cpf.remove(1);
         // should be unconnected data item
         if data_item.type_code != 0xB2 {
-            return Err(Error::Response(ResponseError::InvalidData));
+            return Err(Error::Eip(EipError::InvalidData));
         }
         let mr_reply = MessageRouterReply::try_from(data_item.data.unwrap())?;
         if mr_reply.reply_service != 0xCE {
-            return Err(Error::Response(ResponseError::InvalidData));
+            return Err(Error::Eip(EipError::InvalidData));
         }
         if mr_reply.status.is_ok() {
             let buf: Bytes = mr_reply.data;
             if buf.len() < 10 {
-                return Err(Error::Response(ResponseError::InvalidData));
+                return Err(Error::Eip(EipError::InvalidData));
             }
             let mut reply = ForwardCloseSuccess::default();
             reply.connection_serial_number = LittleEndian::read_u16(&buf[0..2]);
@@ -129,7 +129,7 @@ impl TryFrom<EncapsulationPacket<Bytes>> for ForwardCloseReply {
             // buf[8], size in words
             let app_data_size = 2 * buf[8] as usize;
             if buf.len() != 10 + app_data_size {
-                return Err(Error::Response(ResponseError::InvalidData));
+                return Err(Error::Eip(EipError::InvalidData));
             }
             // reserved = buf[9]
             let app_data = buf.slice(10..);
@@ -148,7 +148,7 @@ impl TryFrom<EncapsulationPacket<Bytes>> for ForwardCloseReply {
 fn parse_forward_request_fail(buf: Bytes, is_routing_error: bool) -> Result<ForwardRequestFail> {
     let max_size = if is_routing_error { 9 } else { 8 };
     if buf.len() != max_size {
-        return Err(Error::Response(ResponseError::InvalidData));
+        return Err(Error::Eip(EipError::InvalidData));
     }
     let res = ForwardRequestFail {
         connection_serial_number: LittleEndian::read_u16(&buf[0..2]),

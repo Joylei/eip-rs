@@ -1,5 +1,5 @@
 use crate::{
-    error::{Error, ResponseError},
+    error::{EipError, Error},
     frame::cip::{MessageRouterReply, Status},
 };
 use byteorder::{ByteOrder, LittleEndian};
@@ -12,20 +12,20 @@ impl TryFrom<Bytes> for MessageRouterReply<Bytes> {
     #[inline]
     fn try_from(buf: Bytes) -> Result<Self, Self::Error> {
         if buf.len() < 4 {
-            return Err(Error::Response(ResponseError::InvalidData));
+            return Err(Error::Eip(EipError::InvalidData));
         }
         let reply_service = buf[0];
         //reserved buf[1]
         let general_status = buf[2];
         let extended_status_size = buf[3];
         if buf.len() < 4 + extended_status_size as usize {
-            return Err(Error::Response(ResponseError::InvalidData));
+            return Err(Error::Eip(EipError::InvalidData));
         }
         let extended_status = match extended_status_size {
             0 => 0,
             1 => buf[4] as u16,
             2 => LittleEndian::read_u16(&buf[4..6]),
-            _ => return Err(Error::Response(ResponseError::InvalidData)),
+            _ => return Err(Error::Eip(EipError::InvalidData)),
         };
         let status = Status {
             general: general_status,
@@ -38,7 +38,7 @@ impl TryFrom<Bytes> for MessageRouterReply<Bytes> {
         let pos = 4 + extended_status_size as usize;
         if status.is_routing_error() {
             if buf.len() != pos + 1 {
-                return Err(Error::Response(ResponseError::InvalidData));
+                return Err(Error::Eip(EipError::InvalidData));
             }
             let data = Self {
                 reply_service,

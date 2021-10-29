@@ -1,5 +1,5 @@
 use crate::{
-    error::{Error, ResponseError},
+    error::{EipError, Error},
     frame::{
         command_reply::{ListIdentityReply, ListServicesReply, RegisterSessionReply},
         CommonPacketFormat, EncapsulationPacket,
@@ -24,7 +24,7 @@ impl TryFrom<EncapsulationPacket<Bytes>> for RegisterSessionReply {
 
         //RegisterSession
         if reply_data.len() < 4 {
-            return Err(Error::Response(ResponseError::InvalidData));
+            return Err(Error::Eip(EipError::InvalidData));
         }
         debug_assert_eq!(reply_data.len(), 4);
         //TODO: validate sender context
@@ -50,7 +50,7 @@ impl TryFrom<EncapsulationPacket<Bytes>> for ListIdentityReply {
         }
         let cpf = CommonPacketFormat::try_from(src.data)?;
         if cpf.len() != 1 {
-            return Err(Error::Response(ResponseError::InvalidData));
+            return Err(Error::Eip(EipError::InvalidData));
         }
         // ListIdentity
         let res: Result<Vec<_>, _> = cpf
@@ -58,7 +58,7 @@ impl TryFrom<EncapsulationPacket<Bytes>> for ListIdentityReply {
             .into_iter()
             .map(|item| {
                 if item.type_code != 0x0C {
-                    return Err(Error::Response(ResponseError::InvalidData));
+                    return Err(Error::Eip(EipError::InvalidData));
                 }
                 let item_data = item.data.unwrap();
                 IdentityObject::try_from(item_data)
@@ -79,7 +79,7 @@ impl TryFrom<EncapsulationPacket<Bytes>> for ListServicesReply {
         }
         let cpf = CommonPacketFormat::try_from(src.data)?;
         if cpf.len() != 1 {
-            return Err(Error::Response(ResponseError::InvalidData));
+            return Err(Error::Eip(EipError::InvalidData));
         }
         // ListServices
         let res: Result<Vec<_>, _> = cpf
@@ -87,7 +87,7 @@ impl TryFrom<EncapsulationPacket<Bytes>> for ListServicesReply {
             .into_iter()
             .map(|item| {
                 if item.type_code != 0x0C {
-                    return Err(Error::Response(ResponseError::InvalidData));
+                    return Err(Error::Eip(EipError::InvalidData));
                 }
                 let item_data = item.data.unwrap();
                 ListServiceItem::try_from(item_data)

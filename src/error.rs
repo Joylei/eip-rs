@@ -6,8 +6,8 @@ use std::{fmt, io};
 #[derive(Debug)]
 pub enum Error {
     Io(io::Error),
-    CIPError(Status),
-    Response(ResponseError),
+    Cip(Status),
+    Eip(EipError),
     InvalidAddr(AddrParseError),
 }
 
@@ -29,11 +29,11 @@ impl fmt::Display for Error {
             Self::Io(e) => {
                 write!(f, "IO error: {}", e)?;
             }
-            Self::CIPError(e) => {
+            Self::Cip(e) => {
                 write!(f, "CIP error: {}", e)?;
             }
-            Self::Response(e) => {
-                write!(f, "ENIP reply error: {}", e)?;
+            Self::Eip(e) => {
+                write!(f, "EIP reply error: {}", e)?;
             }
             Self::InvalidAddr(e) => {
                 write!(f, "invalid IP address: {}", e)?;
@@ -50,10 +50,10 @@ impl From<io::Error> for Error {
     }
 }
 
-impl From<ResponseError> for Error {
+impl From<EipError> for Error {
     #[inline(always)]
-    fn from(e: ResponseError) -> Self {
-        Self::Response(e)
+    fn from(e: EipError) -> Self {
+        Self::Eip(e)
     }
 }
 
@@ -64,8 +64,9 @@ impl From<AddrParseError> for Error {
     }
 }
 
+/// EIP error
 #[derive(Debug)]
-pub enum ResponseError {
+pub enum EipError {
     InvalidCommand,
     /// failed to request memory
     InsufficientMemory,
@@ -80,7 +81,7 @@ pub enum ResponseError {
     Unknown(u16),
 }
 
-impl From<u16> for ResponseError {
+impl From<u16> for EipError {
     #[inline]
     fn from(status: u16) -> Self {
         match status {
@@ -96,7 +97,7 @@ impl From<u16> for ResponseError {
     }
 }
 
-impl fmt::Display for ResponseError {
+impl fmt::Display for EipError {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {

@@ -15,6 +15,7 @@ impl ListIdentityReply {
     }
 }
 
+#[derive(Debug, Default)]
 pub struct ListServicesReply(pub Vec<ListServiceItem>);
 impl ListServicesReply {
     #[inline(always)]
@@ -22,3 +23,7 @@ impl ListServicesReply {
         self.0
     }
 }
+
+pub struct SendRRDataReply;
+
+pub struct SendUnitDataReply;
