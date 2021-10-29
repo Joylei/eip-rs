@@ -7,9 +7,10 @@ use crate::{
                 LargeForwardOpenRequest,
             },
             epath::EPATH_CONNECTION_MANAGER,
-            MessageRouterReply, MessageRouterRequest, UnconnectedSend, UnconnectedSendReply,
+            ConnectedSendReply, MessageRouterReply, MessageRouterRequest, UnconnectedSend,
+            UnconnectedSendReply,
         },
-        command::{self, SendRRData},
+        command::{self, SendRRData, SendUnitData},
         command_reply::RegisterSessionReply,
     },
     Result,
@@ -86,6 +87,43 @@ pub trait TcpService: Context {
         Ok(())
     }
 
+    /// Connected send, Explicit Messaging
+    async fn connected_send<D>(
+        &mut self,
+        connection_id: u32,
+        sequence_number: u16,
+        request: D,
+    ) -> Result<MessageRouterReply<Bytes>>
+    where
+        Self::Stream: Unpin,
+        D: Encodable,
+    {
+        let session_handle = match self.session_handle() {
+            Some(h) => h,
+            None => return Err(io::Error::new(io::ErrorKind::Other, "CIP session required").into()),
+        };
+        let service = self.framed_mut();
+        let command = SendUnitData {
+            session_handle,
+            connection_id,
+            sequence_number,
+            data: request,
+        };
+        service.send(command).await?;
+        match service.next().await {
+            Some(resp) => {
+                let mr_reply: ConnectedSendReply<Bytes> = resp?.try_into()?;
+                Ok(mr_reply.0)
+            }
+            None => Err(io::Error::new(
+                io::ErrorKind::ConnectionAborted,
+                "UnconnectedSend: connection lost",
+            )
+            .into()),
+        }
+    }
+
+    /// Unconnected send, Explicit Messaging
     #[inline]
     async fn unconnected_send<P, D>(
         &mut self,

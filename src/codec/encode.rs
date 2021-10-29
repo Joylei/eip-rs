@@ -1,7 +1,6 @@
 mod cip;
 mod command;
 mod common_packet;
-mod connected_send;
 mod connection;
 mod encapsulation;
 mod epath;

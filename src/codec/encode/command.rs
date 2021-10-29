@@ -1,3 +1,4 @@
+use super::LazyEncode;
 use crate::{
     codec::Encodable,
     consts::ENCAPSULATION_HEADER_LEN,
@@ -5,8 +6,6 @@ use crate::{
     Result,
 };
 use bytes::{BufMut, BytesMut};
-
-use super::LazyEncode;
 
 impl<D: Encodable> Encodable for Nop<D> {
     #[inline(always)]
@@ -140,32 +139,25 @@ impl<D: Encodable> Encodable for SendUnitData<D> {
             data: data_item,
         } = self;
         let data_item_len = data_item.bytes_count();
-        let addr_size = if sequence_number.is_some() { 12 } else { 8 };
         let data = LazyEncode {
             f: move |buf: &mut BytesMut| {
                 buf.put_u32_le(0); // interface handle, shall be 0 for CIP
                 buf.put_u16_le(0); // timeout, 0 for SendUnitData
                 buf.put_u16_le(2); //  cpf item count
 
-                if let Some(seq_id) = sequence_number {
-                    buf.put_u16_le(0x8002); // sequenced address item
-                    buf.put_u16_le(8); // data len
-                    buf.put_u32_le(connection_id);
-                    buf.put_u32_le(seq_id);
-                } else {
-                    buf.put_u16_le(0xA1); // connected address item
-                    buf.put_u16_le(4); // data len
-                    buf.put_u32_le(connection_id);
-                }
+                buf.put_u16_le(0xA1); // connected address item
+                buf.put_u16_le(4); // data len
+                buf.put_u32_le(connection_id);
 
                 buf.put_u16_le(0xB1); // connected data item
-                buf.put_u16_le(data_item_len as u16); // data item len
-                                                      //buf.put_u32_le(sequence_number.unwrap()); // sequence number
+                buf.put_u16_le(data_item_len as u16 + 2); // data item len
+                                                          //buf.put_u32_le(sequence_number.unwrap()); // sequence number
 
+                buf.put_u16_le(sequence_number);
                 data_item.encode(buf)?; // data request
                 Ok(())
             },
-            bytes_count: 8 + addr_size + 4 + data_item_len,
+            bytes_count: 22 + data_item_len,
         };
         let mut pkt = EncapsulationPacket {
             hdr: Default::default(),
@@ -178,12 +170,7 @@ impl<D: Encodable> Encodable for SendUnitData<D> {
 
     #[inline(always)]
     fn bytes_count(&self) -> usize {
-        let addr_size = if self.sequence_number.is_some() {
-            12
-        } else {
-            8
-        };
-        ENCAPSULATION_HEADER_LEN + 8 + addr_size + 4 + self.data.bytes_count()
+        ENCAPSULATION_HEADER_LEN + 22 + self.data.bytes_count()
     }
 }
 

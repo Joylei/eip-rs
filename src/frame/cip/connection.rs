@@ -243,9 +243,9 @@ pub struct ForwardRequestFail {
 #[derive(Debug, Default)]
 pub struct ForwardCloseRequest<P> {
     pub priority_time_ticks: u8,
-    pub timeout_tick: u8,
+    pub timeout_ticks: u8,
     pub connection_serial_number: u16,
-    pub originator_vender_id: u16,
+    pub originator_vendor_id: u16,
     pub originator_serial_number: u32,
     // padded path
     pub connection_path: P,

@@ -91,9 +91,9 @@ impl<P: Encodable> Encodable for ForwardCloseRequest<P> {
     #[inline(always)]
     fn encode(self, dst: &mut BytesMut) -> Result<()> {
         dst.put_u8(self.priority_time_ticks);
-        dst.put_u8(self.timeout_tick);
+        dst.put_u8(self.timeout_ticks);
         dst.put_u16_le(self.connection_serial_number);
-        dst.put_u16_le(self.originator_vender_id);
+        dst.put_u16_le(self.originator_vendor_id);
         dst.put_u16_le(self.connection_serial_number);
 
         let path_len = self.connection_path.bytes_count();

@@ -1,21 +1,29 @@
 use anyhow::Result;
 use byteorder::{ByteOrder, LittleEndian};
 use bytes::{BufMut, BytesMut};
-use rseip::{client::Client, codec::Encodable, frame::cip::*};
+use rseip::{
+    client::Connection,
+    codec::Encodable,
+    frame::cip::{epath::*, MessageRouterRequest},
+};
 
 #[tokio::main]
 pub async fn main() -> Result<()> {
-    let connection_path = EPath::from(vec![Segment::Port(PortSegment::default())]);
-    let mut client = Client::connect("192.168.0.83").await?;
+    let mut connection = Connection::options()
+        .open("192.168.0.83:44818".parse()?)
+        .await?;
+
     let mr_request = MessageRouterRequest::new(
         0x4C,
         EPath::from(vec![Segment::Symbol("test_car1_x".to_owned())]),
         ElementCount(1),
     );
-    let resp = client.send(mr_request, connection_path).await?;
-    assert_eq!(resp.reply_service, 0xCC); // read tag service reply
+
+    let resp = connection.send(mr_request).await?;
+    assert_eq!(resp.reply_service, 0xCC); // tag read service
     assert_eq!(LittleEndian::read_u16(&resp.data[0..2]), 0xC4); // DINT
-    client.close().await?;
+
+    connection.close().await?;
     Ok(())
 }
 

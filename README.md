@@ -11,14 +11,21 @@ rseip (eip-rs) - EtherNet/IP in pure Rust
 
 ## Work In Progress
 
+### EIP Commands
+
+- [x] Nop
 - [x] ListIdentity
 - [x] RegisterSession
 - [x] UnregisterSession
 - [x] SendRRData
+- [x] ForwardOpen
+- [x] ForwardClose
+- [x] SendUnitData
+
+### Explicit Messaging
+
 - [x] UnconnectedSend
-- [ ] ForwardOpen
-- [ ] ForwardClose
-- [ ] SendUnitData 
+- [x] ConnectedSend
 
 ## How to use
 
@@ -54,6 +61,8 @@ pub async fn main() -> Result<()> {
     Ok(())
 }
 ```
+
+Please find more examples within [examples](https://github.com/Joylei/eip-rs/tree/main/examples).
 
 ## License
 

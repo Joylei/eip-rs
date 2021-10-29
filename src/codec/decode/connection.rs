@@ -20,7 +20,7 @@ impl TryFrom<EncapsulationPacket<Bytes>> for ForwardOpenReply {
     type Error = Error;
 
     fn try_from(src: EncapsulationPacket<Bytes>) -> Result<Self> {
-        if src.hdr.command != 0xD4 {
+        if src.hdr.command != 0x6F {
             return Err(io::Error::new(
                 io::ErrorKind::Other,
                 "SendRRData: unexpected reply command",
@@ -87,7 +87,7 @@ impl TryFrom<EncapsulationPacket<Bytes>> for ForwardOpenReply {
 impl TryFrom<EncapsulationPacket<Bytes>> for ForwardCloseReply {
     type Error = Error;
     fn try_from(src: EncapsulationPacket<Bytes>) -> Result<Self> {
-        if src.hdr.command != 0xD4 {
+        if src.hdr.command != 0x6F {
             return Err(io::Error::new(
                 io::ErrorKind::Other,
                 "SendRRData: unexpected reply command",

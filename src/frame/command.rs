@@ -93,8 +93,7 @@ impl<D: Encodable> Command for SendRRData<D> {
 pub struct SendUnitData<D> {
     pub session_handle: u32,
     pub connection_id: u32,
-    /// sequenced or not
-    pub sequence_number: Option<u32>,
+    pub sequence_number: u16,
     /// Data to be Sent via Connected Message
     pub data: D,
 }

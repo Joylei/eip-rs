@@ -6,14 +6,14 @@ use crate::{
     Result,
 };
 use bytes::Bytes;
-use std::io;
+use std::{io, net::SocketAddr};
 use tokio::io::{AsyncRead, AsyncWrite};
 use tokio::net::{lookup_host, TcpSocket, TcpStream};
 use tokio_util::codec::Framed;
 
-/// CIP client over TCP/IP
+/// CIP session over TCP/IP
 #[derive(Debug)]
-pub struct Client<S: TcpService = State<TcpStream>>(S);
+pub struct Client<S: TcpService = State<TcpStream>>(pub(crate) S);
 
 impl Client {
     /// connect with default port `0xAF12`, creating a CIP session
@@ -40,6 +40,11 @@ impl Client {
         };
         //let ipv4: Ipv4Addr = host.as_ref().parse()?;
         //let addr = SocketAddrV4::new(ipv4, port);
+        let res = Self::internal_connect(addr).await?;
+        Ok(res)
+    }
+
+    pub(crate) async fn internal_connect(addr: SocketAddr) -> Result<Self> {
         let socket = TcpSocket::new_v4()?;
         let stream = socket.connect(addr.into()).await?;
         let res = Self::new(stream).await?;
