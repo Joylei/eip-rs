@@ -1,7 +1,8 @@
 use bytes::Bytes;
 use std::ops::{Deref, DerefMut};
 
-/// item_count:u16 | item_count of CommonPacketItem
+// item_count:u16 | N of CommonPacketItem
+
 #[derive(Default, Debug)]
 pub struct CommonPacket(Vec<CommonPacketItem>);
 
@@ -34,7 +35,8 @@ impl From<Vec<CommonPacketItem>> for CommonPacket {
     }
 }
 
-/// type_code:u16 | item_length:u16 | item_data
+// type_code:u16 | item_length:u16 | item_data
+
 #[derive(Debug)]
 pub struct CommonPacketItem {
     pub type_code: u16,
