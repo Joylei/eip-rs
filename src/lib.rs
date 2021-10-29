@@ -82,7 +82,8 @@ pub mod frame;
 pub mod objects;
 pub mod service;
 
-pub type Result<T> = std::result::Result<T, error::Error>;
+pub use error::Error;
+pub type Result<T> = std::result::Result<T, Error>;
 
 #[cfg(test)]
 mod test {

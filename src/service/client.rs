@@ -6,6 +6,7 @@
 
 use crate::{
     codec::{encode::LazyEncode, ClientCodec, Encodable},
+    consts::*,
     frame::{
         cip::{
             connection::{
@@ -140,7 +141,6 @@ pub trait TcpService: Context {
         P: Encodable,
         D: Encodable,
     {
-        const SERVICE_UNCONNECTED_SEND: u8 = 0x52;
         let session_handle = match self.session_handle() {
             Some(h) => h,
             None => return Err(io::Error::new(io::ErrorKind::Other, "CIP session required").into()),
@@ -208,7 +208,6 @@ pub trait TcpService: Context {
         Self::Stream: Unpin,
         P: Encodable,
     {
-        const SERVICE_FORWARD_OPEN: u8 = 0x54;
         let session_handle = match self.session_handle() {
             Some(h) => h,
             None => return Err(io::Error::new(io::ErrorKind::Other, "CIP session required").into()),
@@ -247,7 +246,6 @@ pub trait TcpService: Context {
         Self::Stream: Unpin,
         P: Encodable,
     {
-        const SERVICE_LARGE_FORWARD_OPEN: u8 = 0x5B;
         let session_handle = match self.session_handle() {
             Some(h) => h,
             None => return Err(io::Error::new(io::ErrorKind::Other, "CIP session required").into()),
@@ -286,7 +284,6 @@ pub trait TcpService: Context {
         Self::Stream: Unpin,
         P: Encodable,
     {
-        const SERVICE_FORWARD_CLOSE: u8 = 0x4E;
         let session_handle = match self.session_handle() {
             Some(h) => h,
             None => return Err(io::Error::new(io::ErrorKind::Other, "CIP session required").into()),

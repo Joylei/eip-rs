@@ -5,6 +5,7 @@
 // License: MIT
 
 use crate::{
+    consts::EIP_COMMAND_SEND_UNIT_DATA,
     error::{EipError, Error},
     frame::{
         cip::{ConnectedSendReply, MessageRouterReply},
@@ -14,19 +15,13 @@ use crate::{
 use byteorder::{ByteOrder, LittleEndian};
 use bytes::Bytes;
 use std::convert::TryFrom;
-use std::io;
 
 impl TryFrom<EncapsulationPacket<Bytes>> for ConnectedSendReply<Bytes> {
     type Error = Error;
     #[inline]
     fn try_from(src: EncapsulationPacket<Bytes>) -> Result<Self, Self::Error> {
-        if src.hdr.command != 0x0070 {
-            return Err(io::Error::new(
-                io::ErrorKind::Other,
-                "SendRRData: unexpected reply command",
-            )
-            .into());
-        }
+        src.hdr.ensure_command(EIP_COMMAND_SEND_UNIT_DATA)?;
+
         let interface_handle = LittleEndian::read_u32(&src.data[0..4]); // interface handle
         debug_assert_eq!(interface_handle, 0);
         // timeout = &src.data[4..6]

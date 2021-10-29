@@ -4,7 +4,7 @@
 // Copyright: 2020-2021, Joylei <leingliu@gmail.com>
 // License: MIT
 
-use crate::codec::Encodable;
+use crate::{codec::Encodable, consts::*};
 
 /// EIP Command
 pub trait Command: Encodable {
@@ -19,7 +19,7 @@ pub struct Nop<D> {
 impl<D: Encodable> Command for Nop<D> {
     #[inline(always)]
     fn command_code() -> u16 {
-        0x0000
+        EIP_COMMAND_NOP
     }
 }
 
@@ -29,7 +29,7 @@ pub struct ListIdentity;
 impl Command for ListIdentity {
     #[inline(always)]
     fn command_code() -> u16 {
-        0x0063
+        EIP_COMMAND_LIST_IDENTITY
     }
 }
 
@@ -39,7 +39,7 @@ pub struct ListInterfaces;
 impl Command for ListInterfaces {
     #[inline(always)]
     fn command_code() -> u16 {
-        0x0064
+        EIP_COMMAND_LIST_INTERFACES
     }
 }
 
@@ -49,7 +49,7 @@ pub struct ListServices;
 impl Command for ListServices {
     #[inline(always)]
     fn command_code() -> u16 {
-        0x0004
+        EIP_COMMAND_LIST_SERVICE
     }
 }
 
@@ -59,7 +59,7 @@ pub struct RegisterSession;
 impl Command for RegisterSession {
     #[inline(always)]
     fn command_code() -> u16 {
-        0x0065
+        EIP_COMMAND_REGISTER_SESSION
     }
 }
 
@@ -71,7 +71,7 @@ pub struct UnRegisterSession {
 impl Command for UnRegisterSession {
     #[inline(always)]
     fn command_code() -> u16 {
-        0x0066
+        EIP_COMMAND_UNREGISTER_SESSION
     }
 }
 
@@ -90,7 +90,7 @@ pub struct SendRRData<D> {
 impl<D: Encodable> Command for SendRRData<D> {
     #[inline(always)]
     fn command_code() -> u16 {
-        0x006F
+        EIP_COMMAND_SEND_RRDATA
     }
 }
 
@@ -107,6 +107,6 @@ pub struct SendUnitData<D> {
 impl<D: Encodable> Command for SendUnitData<D> {
     #[inline(always)]
     fn command_code() -> u16 {
-        0x0070
+        EIP_COMMAND_SEND_UNIT_DATA
     }
 }

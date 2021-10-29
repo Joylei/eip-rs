@@ -1,3 +1,5 @@
+use crate::{Error, Result};
+
 // rseip
 //
 // rseip (eip-rs) - EtherNet/IP in pure Rust.
@@ -24,4 +26,17 @@ pub struct EncapsulationHeader {
     pub sender_context: [u8; 8],
     /// shall be 0, receiver should ignore the command if not zero
     pub options: u32,
+}
+
+impl EncapsulationHeader {
+    #[inline(always)]
+    pub fn ensure_command(&self, command_code: u16) -> Result<()> {
+        if self.command != command_code {
+            return Err(Error::InvalidCommandReply {
+                expect: command_code,
+                actual: self.command,
+            });
+        }
+        Ok(())
+    }
 }

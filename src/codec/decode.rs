@@ -52,7 +52,10 @@ impl Decoder for ClientCodec {
         let hdr = EncapsulationHeader::try_from(header_data)?;
         match hdr.status {
             0 => {}
-            v if v > u16::MAX as u32 => unreachable!("unexpected status code: {}", v),
+            v if v > u16::MAX as u32 => {
+                log::debug!("eip error - invalid status code: {}", v);
+                return Err(Error::Eip(EipError::InvalidData));
+            }
             v => return Err(Error::Eip(EipError::from(v as u16))),
         }
         return Ok(Some(EncapsulationPacket {
@@ -124,10 +127,8 @@ impl TryFrom<Bytes> for IdentityObject {
             status: LittleEndian::read_u16(&data[26..28]),
             serial_number: LittleEndian::read_u32(&data[28..32]),
             product_name_len, //32
-            //TODO: no unsafe code
-            product_name: unsafe {
-                String::from_utf8_unchecked(data[33..33 + product_name_len as usize].to_vec())
-            },
+            product_name: String::from_utf8(data[33..33 + product_name_len as usize].to_vec())
+                .map_err(|e| e.utf8_error())?,
             state: *data.last().unwrap(),
         };
 
@@ -142,8 +143,7 @@ impl TryFrom<Bytes> for ListServiceItem {
         let mut item = ListServiceItem::default();
         item.protocol_version = LittleEndian::read_u16(&buf[0..2]);
         item.capability = LittleEndian::read_u16(&buf[2..4]);
-        //TODO: no unsafe code
-        item.name = unsafe { String::from_utf8_unchecked(buf[4..20].to_vec()) };
+        item.name = String::from_utf8(buf[4..20].to_vec()).map_err(|e| e.utf8_error())?;
         return Ok(item);
     }
 }

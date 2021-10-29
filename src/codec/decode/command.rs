@@ -5,6 +5,7 @@
 // License: MIT
 
 use crate::{
+    consts::{EIP_COMMAND_LIST_IDENTITY, EIP_COMMAND_LIST_SERVICE, EIP_COMMAND_REGISTER_SESSION},
     error::{EipError, Error},
     frame::{
         command_reply::{ListIdentityReply, ListServicesReply, RegisterSessionReply},
@@ -14,17 +15,13 @@ use crate::{
 };
 use byteorder::{ByteOrder, LittleEndian};
 use bytes::Bytes;
-use std::{convert::TryFrom, io};
+use std::convert::TryFrom;
 
 impl TryFrom<EncapsulationPacket<Bytes>> for RegisterSessionReply {
     type Error = Error;
     #[inline]
     fn try_from(src: EncapsulationPacket<Bytes>) -> Result<Self, Self::Error> {
-        if src.hdr.command != 0x65 {
-            return Err(
-                io::Error::new(io::ErrorKind::Other, "RegisterSession: unexpected reply").into(),
-            );
-        }
+        src.hdr.ensure_command(EIP_COMMAND_REGISTER_SESSION)?;
         let session_handle = src.hdr.session_handle;
         let reply_data = src.data;
 
@@ -49,11 +46,7 @@ impl TryFrom<EncapsulationPacket<Bytes>> for ListIdentityReply {
     type Error = Error;
     #[inline]
     fn try_from(src: EncapsulationPacket<Bytes>) -> Result<Self, Self::Error> {
-        if src.hdr.command != 0x63 {
-            return Err(
-                io::Error::new(io::ErrorKind::Other, "ListIdentity: unexpected reply").into(),
-            );
-        }
+        src.hdr.ensure_command(EIP_COMMAND_LIST_IDENTITY)?;
         let cpf = CommonPacket::try_from(src.data)?;
         if cpf.len() != 1 {
             return Err(Error::Eip(EipError::InvalidData));
@@ -78,11 +71,7 @@ impl TryFrom<EncapsulationPacket<Bytes>> for ListServicesReply {
     type Error = Error;
     #[inline]
     fn try_from(src: EncapsulationPacket<Bytes>) -> Result<Self, Self::Error> {
-        if src.hdr.command != 0x0004 {
-            return Err(
-                io::Error::new(io::ErrorKind::Other, "ListServices: unexpected reply").into(),
-            );
-        }
+        src.hdr.ensure_command(EIP_COMMAND_LIST_SERVICE)?;
         let cpf = CommonPacket::try_from(src.data)?;
         if cpf.len() == 0 {
             log::debug!("expected at least 1 common packet item");

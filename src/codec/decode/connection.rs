@@ -5,6 +5,7 @@
 // License: MIT
 
 use crate::{
+    consts::EIP_COMMAND_SEND_RRDATA,
     error::{EipError, Error},
     frame::{
         cip::{
@@ -26,13 +27,7 @@ impl TryFrom<EncapsulationPacket<Bytes>> for ForwardOpenReply {
     type Error = Error;
 
     fn try_from(src: EncapsulationPacket<Bytes>) -> Result<Self> {
-        if src.hdr.command != 0x6F {
-            return Err(io::Error::new(
-                io::ErrorKind::Other,
-                "SendRRData: unexpected reply command",
-            )
-            .into());
-        }
+        src.hdr.ensure_command(EIP_COMMAND_SEND_RRDATA)?;
         let interface_handle = LittleEndian::read_u32(&src.data[0..4]); // interface handle
         debug_assert_eq!(interface_handle, 0);
         // timeout = &src.data[4..6]
@@ -93,13 +88,7 @@ impl TryFrom<EncapsulationPacket<Bytes>> for ForwardOpenReply {
 impl TryFrom<EncapsulationPacket<Bytes>> for ForwardCloseReply {
     type Error = Error;
     fn try_from(src: EncapsulationPacket<Bytes>) -> Result<Self> {
-        if src.hdr.command != 0x6F {
-            return Err(io::Error::new(
-                io::ErrorKind::Other,
-                "SendRRData: unexpected reply command",
-            )
-            .into());
-        }
+        src.hdr.ensure_command(EIP_COMMAND_SEND_RRDATA)?;
         let interface_handle = LittleEndian::read_u32(&src.data[0..4]); // interface handle
         debug_assert_eq!(interface_handle, 0);
         // timeout = &src.data[4..6]
