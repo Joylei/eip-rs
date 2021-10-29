@@ -16,6 +16,9 @@ use bytes::{BufMut, BytesMut};
 impl<D: Encodable> Encodable for Nop<D> {
     #[inline(always)]
     fn encode(self, dst: &mut BytesMut) -> Result<()> {
+        // reserve space for performance
+        dst.reserve(self.bytes_count());
+
         let mut pkt = EncapsulationPacket {
             hdr: Default::default(),
             data: self.data,
