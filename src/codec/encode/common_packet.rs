@@ -1,13 +1,13 @@
 use crate::{
     codec::Encodable,
-    frame::{CommonPacketFormat, CommonPacketItem},
+    frame::{CommonPacket, CommonPacketItem},
     Result,
 };
 use bytes::{BufMut, BytesMut};
 
-impl Encodable for CommonPacketFormat {
+impl Encodable for CommonPacket {
     #[inline(always)]
-    fn encode(self: CommonPacketFormat, dst: &mut BytesMut) -> Result<()> {
+    fn encode(self: CommonPacket, dst: &mut BytesMut) -> Result<()> {
         debug_assert!(self.len() > 0 && self.len() <= 4);
         dst.put_u16_le(self.len() as u16);
         for item in self.into_vec() {
@@ -74,7 +74,7 @@ mod test {
                 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09,
             ])),
         };
-        let cpf = CommonPacketFormat::from(vec![null_addr, data_item]);
+        let cpf = CommonPacket::from(vec![null_addr, data_item]);
         assert_eq!(cpf.bytes_count(), 2 + 4 + 2 + 4 + 9);
         let buf = cpf.try_into_bytes().unwrap();
         assert_eq!(

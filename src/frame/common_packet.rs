@@ -3,16 +3,16 @@ use std::ops::{Deref, DerefMut};
 
 /// item_count:u16 | item_count of CommonPacketItem
 #[derive(Default, Debug)]
-pub struct CommonPacketFormat(Vec<CommonPacketItem>);
+pub struct CommonPacket(Vec<CommonPacketItem>);
 
-impl CommonPacketFormat {
+impl CommonPacket {
     #[inline(always)]
     pub fn into_vec(self) -> Vec<CommonPacketItem> {
         self.0
     }
 }
 
-impl Deref for CommonPacketFormat {
+impl Deref for CommonPacket {
     type Target = [CommonPacketItem];
     #[inline(always)]
     fn deref(&self) -> &Self::Target {
@@ -20,14 +20,14 @@ impl Deref for CommonPacketFormat {
     }
 }
 
-impl DerefMut for CommonPacketFormat {
+impl DerefMut for CommonPacket {
     #[inline(always)]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
 }
 
-impl From<Vec<CommonPacketItem>> for CommonPacketFormat {
+impl From<Vec<CommonPacketItem>> for CommonPacket {
     #[inline(always)]
     fn from(src: Vec<CommonPacketItem>) -> Self {
         Self(src)

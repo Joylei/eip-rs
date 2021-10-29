@@ -2,7 +2,7 @@ use crate::{
     error::{EipError, Error},
     frame::{
         command_reply::{ListIdentityReply, ListServicesReply, RegisterSessionReply},
-        CommonPacketFormat, EncapsulationPacket,
+        CommonPacket, EncapsulationPacket,
     },
     objects::{identity::IdentityObject, service::ListServiceItem},
 };
@@ -48,7 +48,7 @@ impl TryFrom<EncapsulationPacket<Bytes>> for ListIdentityReply {
                 io::Error::new(io::ErrorKind::Other, "ListIdentity: unexpected reply").into(),
             );
         }
-        let cpf = CommonPacketFormat::try_from(src.data)?;
+        let cpf = CommonPacket::try_from(src.data)?;
         if cpf.len() != 1 {
             return Err(Error::Eip(EipError::InvalidData));
         }
@@ -77,8 +77,9 @@ impl TryFrom<EncapsulationPacket<Bytes>> for ListServicesReply {
                 io::Error::new(io::ErrorKind::Other, "ListServices: unexpected reply").into(),
             );
         }
-        let cpf = CommonPacketFormat::try_from(src.data)?;
-        if cpf.len() != 1 {
+        let cpf = CommonPacket::try_from(src.data)?;
+        if cpf.len() == 0 {
+            log::debug!("expected at least 1 common packet item");
             return Err(Error::Eip(EipError::InvalidData));
         }
         // ListServices

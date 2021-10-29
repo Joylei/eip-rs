@@ -8,7 +8,7 @@ use crate::{
             },
             MessageRouterReply,
         },
-        CommonPacketFormat, EncapsulationPacket,
+        CommonPacket, EncapsulationPacket,
     },
     Result,
 };
@@ -32,7 +32,7 @@ impl TryFrom<EncapsulationPacket<Bytes>> for ForwardOpenReply {
         // timeout = &src.data[4..6]
 
         //TODO: verify buf length
-        let mut cpf = CommonPacketFormat::try_from(src.data.slice(6..))?.into_vec();
+        let mut cpf = CommonPacket::try_from(src.data.slice(6..))?.into_vec();
         if cpf.len() != 2 {
             return Err(Error::Eip(EipError::InvalidData));
         }
@@ -99,7 +99,7 @@ impl TryFrom<EncapsulationPacket<Bytes>> for ForwardCloseReply {
         // timeout = &src.data[4..6]
 
         //TODO: verify buf length
-        let mut cpf = CommonPacketFormat::try_from(src.data.slice(6..))?.into_vec();
+        let mut cpf = CommonPacket::try_from(src.data.slice(6..))?.into_vec();
         if cpf.len() != 2 {
             return Err(Error::Eip(EipError::InvalidData));
         }

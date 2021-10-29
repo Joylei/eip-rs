@@ -9,7 +9,7 @@ use crate::{
     consts::ENCAPSULATION_HEADER_LEN,
     error::{EipError, Error},
     frame::{
-        common_packet::{CommonPacketFormat, CommonPacketItem},
+        common_packet::{CommonPacket, CommonPacketItem},
         encapsulation::EncapsulationHeader,
         EncapsulationPacket,
     },
@@ -56,7 +56,7 @@ impl Decoder for ClientCodec {
     }
 }
 
-impl TryFrom<Bytes> for CommonPacketFormat {
+impl TryFrom<Bytes> for CommonPacket {
     type Error = Error;
     #[inline]
     fn try_from(mut buf: Bytes) -> Result<Self, Self::Error> {
@@ -87,7 +87,7 @@ impl TryFrom<Bytes> for CommonPacketFormat {
         if buf.len() != 0 {
             return Err(Error::Eip(EipError::InvalidData));
         }
-        Ok(CommonPacketFormat::from(items))
+        Ok(CommonPacket::from(items))
     }
 }
 
