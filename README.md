@@ -7,25 +7,8 @@ rseip (eip-rs) - EtherNet/IP in pure Rust
 - Pure Rust Library
 - Asynchronous
 - Extensible
+- Explicit Messaging (Connected / Unconnected)
 - Open Source
-
-## Work In Progress
-
-### EIP Commands
-
-- [x] Nop
-- [x] ListIdentity
-- [x] RegisterSession
-- [x] UnregisterSession
-- [x] SendRRData
-- [x] ForwardOpen
-- [x] ForwardClose
-- [x] SendUnitData
-
-### Explicit Messaging
-
-- [x] UnconnectedSend
-- [x] ConnectedSend
 
 ## How to use
 
@@ -37,7 +20,7 @@ rseip={git="https://github.com/Joylei/eip-rs.git"}
 
 ## Example
 
-### Read tag from Allen-bradley device
+### Read tag from Allen-bradley CompactLogIx device
 
 ```rust
 use anyhow::Result;
