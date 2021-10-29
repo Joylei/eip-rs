@@ -55,6 +55,11 @@ pub async fn main() -> Result<()> {
 }
 ```
 
+## License
+
+MIT
+
+
 ## Related Projects
 
 - [EIPScanner](https://github.com/nimbuscontrols/EIPScanner)
@@ -80,7 +85,3 @@ pub async fn main() -> Result<()> {
 - [cpppo](https://github.com/pjkundert/cpppo/)
   
   Communications Protocol Python Parser and Originator -- EtherNet/IP CIP
-
-## License
-
-MIT
