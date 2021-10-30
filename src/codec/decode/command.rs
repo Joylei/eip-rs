@@ -56,9 +56,7 @@ impl TryFrom<EncapsulationPacket<Bytes>> for ListIdentityReply {
             .into_vec()
             .into_iter()
             .map(|item| {
-                if item.type_code != 0x0C {
-                    return Err(Error::Eip(EipError::InvalidData));
-                }
+                item.ensure_type_code(0x0C)?;
                 IdentityObject::try_from(item.data)
             })
             .collect();
@@ -81,9 +79,7 @@ impl TryFrom<EncapsulationPacket<Bytes>> for ListServicesReply {
             .into_vec()
             .into_iter()
             .map(|item| {
-                if item.type_code != 0x0C {
-                    return Err(Error::Eip(EipError::InvalidData));
-                }
+                item.ensure_type_code(0x0C)?;
                 ListServiceItem::try_from(item.data)
             })
             .collect();

@@ -32,14 +32,10 @@ impl TryFrom<EncapsulationPacket<Bytes>> for ConnectedSendReply<Bytes> {
             return Err(Error::Eip(EipError::InvalidData));
         }
         // should be connected address
-        if cpf[0].type_code != 0xA1 {
-            return Err(Error::Eip(EipError::InvalidData));
-        }
+        cpf[0].ensure_type_code(0xA1)?;
         let data_item = cpf.remove(1);
         // should be connected data item
-        if data_item.type_code != 0xB1 {
-            return Err(Error::Eip(EipError::InvalidData));
-        }
+        data_item.ensure_type_code(0xB1)?;
         if data_item.data.len() < 2 {
             return Err(Error::Eip(EipError::InvalidData));
         }

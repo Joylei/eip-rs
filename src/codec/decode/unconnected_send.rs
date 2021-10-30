@@ -31,14 +31,10 @@ impl TryFrom<EncapsulationPacket<Bytes>> for UnconnectedSendReply<Bytes> {
             return Err(Error::Eip(EipError::InvalidData));
         }
         // should be null address
-        if !cpf[0].is_null_addr() {
-            return Err(Error::Eip(EipError::InvalidData));
-        }
+        cpf[0].ensure_type_code(0)?;
         let data_item = cpf.remove(1);
         // should be unconnected data item
-        if data_item.type_code != 0xB2 {
-            return Err(Error::Eip(EipError::InvalidData));
-        }
+        data_item.ensure_type_code(0xB2)?;
         let mr_reply = MessageRouterReply::try_from(data_item.data)?;
         Ok(Self(mr_reply))
     }
