@@ -4,6 +4,7 @@
 // Copyright: 2021, Joylei <leingliu@gmail.com>
 // License: MIT
 
+use crate::{error::EipError, Error, Result};
 use bytes::Bytes;
 use std::ops::{Deref, DerefMut};
 
@@ -80,5 +81,13 @@ impl CommonPacketItem {
             return false;
         }
         self.data.len() == 0
+    }
+
+    #[inline(always)]
+    pub fn ensure_type_code(&self, type_code: u16) -> Result<()> {
+        if self.type_code != type_code {
+            return Err(Error::Eip(EipError::InvalidData));
+        }
+        Ok(())
     }
 }
