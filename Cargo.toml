@@ -29,3 +29,18 @@ env_logger = "0.9"
 futures = "0.3"
 tokio={version = "1", features = ["full"]}
 anyhow="1"
+
+[build]
+#rustc-wrapper = "sccache"
+
+[profile.release]
+lto = 'thin'
+panic = 'abort'
+codegen-units = 1
+
+[profile.bench]
+lto = 'thin'
+codegen-units = 1
+
+[profile.test]
+debug = 1
