@@ -19,15 +19,24 @@ use rand::Rng;
 use std::io;
 use std::net::SocketAddr;
 
+fn calc_timeout_ticks(timeout: u32) -> (u8, u8) {
+    let time_tick = timeout / 255;
+    let timeout_tick = timeout / (2_u32.pow(time_tick));
+    (time_tick as u8, timeout_tick as u8)
+}
+
 #[derive(Debug)]
 pub struct Options {
+    /// tick time in milliseconds
     priority_time_ticks: u8,
+    /// tick time in milliseconds
     timeout_ticks: u8,
     connection_serial_number: u16,
     vendor_id: u16,
     originator_serial_number: u32,
     o_t_rpi: u32,
     t_o_rpi: u32,
+    /// specifies the multiplier applied to the RPI to obtain the connection timeout value
     timeout_multiplier: u8,
     connection_size: u16,
     connection_path: EPath,
@@ -46,7 +55,7 @@ pub struct Options {
 impl Options {
     #[inline(always)]
     pub fn priority_time_ticks(mut self, val: u8) -> Self {
-        self.priority_time_ticks = val;
+        self.priority_time_ticks = val & 0xF; // only tick time part, ignore high byte
         self
     }
     #[inline(always)]
@@ -115,17 +124,17 @@ impl Options {
         self
     }
     #[inline(always)]
-    pub fn transport_direction(mut self, val: Direction) -> Self {
+    pub(crate) fn transport_direction(mut self, val: Direction) -> Self {
         self.transport_direction = val;
         self
     }
     #[inline(always)]
-    pub fn transport_class(mut self, val: TransportClass) -> Self {
+    pub(crate) fn transport_class(mut self, val: TransportClass) -> Self {
         self.transport_class = val;
         self
     }
     #[inline(always)]
-    pub fn transport_trigger(mut self, val: TriggerType) -> Self {
+    pub(crate) fn transport_trigger(mut self, val: TriggerType) -> Self {
         self.transport_trigger = val;
         self
     }
@@ -184,12 +193,12 @@ impl Default for Options {
 /// CIP connection
 pub struct Connection {
     client: Client,
+    sequence_number: u16,
     connection_serial_number: u16,
     originator_serial_number: u32,
     originator_vendor_id: u16,
     connection_path: EPath,
     o_t_connection_id: Option<u32>,
-    t_o_connection_id: u32,
 }
 
 impl Connection {
@@ -282,11 +291,11 @@ impl Connection {
             )),
             Ok(ForwardOpenReply::Success { reply, .. }) => Ok(Connection {
                 client,
+                sequence_number: 0,
                 connection_serial_number: reply.connection_serial_number,
                 originator_vendor_id: options.vendor_id,
                 originator_serial_number: options.originator_serial_number,
                 o_t_connection_id: reply.o_t_connection_id.into(),
-                t_o_connection_id: reply.t_o_connection_id,
                 connection_path: options.connection_path,
             }),
         }
@@ -317,16 +326,16 @@ impl Connection {
         };
 
         //generate new sequence number
-        self.connection_serial_number = if self.connection_serial_number == u16::MAX {
+        self.sequence_number = if self.sequence_number == u16::MAX {
             1
         } else {
-            self.connection_serial_number + 1
+            self.sequence_number + 1
         };
 
         let context = &mut self.client.0;
 
         let reply = context
-            .connected_send(connection_id, self.connection_serial_number, mr)
+            .connected_send(connection_id, self.sequence_number, mr)
             .await?;
         Ok(reply)
     }

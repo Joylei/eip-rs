@@ -100,7 +100,7 @@ impl<P: Encodable> Encodable for ForwardCloseRequest<P> {
         dst.put_u8(self.timeout_ticks);
         dst.put_u16_le(self.connection_serial_number);
         dst.put_u16_le(self.originator_vendor_id);
-        dst.put_u16_le(self.connection_serial_number);
+        dst.put_u32_le(self.originator_serial_number);
 
         let path_len = self.connection_path.bytes_count();
 
@@ -112,6 +112,6 @@ impl<P: Encodable> Encodable for ForwardCloseRequest<P> {
     }
     #[inline(always)]
     fn bytes_count(&self) -> usize {
-        10 + self.connection_path.bytes_count()
+        12 + self.connection_path.bytes_count()
     }
 }
