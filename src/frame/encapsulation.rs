@@ -3,7 +3,7 @@ use crate::{Error, Result};
 // rseip
 //
 // rseip (eip-rs) - EtherNet/IP in pure Rust.
-// Copyright: 2020-2021, Joylei <leingliu@gmail.com>
+// Copyright: 2021, Joylei <leingliu@gmail.com>
 // License: MIT
 
 /// UCMM: 504 bytes

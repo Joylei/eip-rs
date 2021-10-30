@@ -1,7 +1,7 @@
 // rseip
 //
 // rseip (eip-rs) - EtherNet/IP in pure Rust.
-// Copyright: 2020-2021, Joylei <leingliu@gmail.com>
+// Copyright: 2021, Joylei <leingliu@gmail.com>
 // License: MIT
 
 use crate::{
@@ -124,7 +124,7 @@ pub trait TcpService: Context {
             }
             None => Err(io::Error::new(
                 io::ErrorKind::ConnectionAborted,
-                "UnconnectedSend: connection lost",
+                "CIP connected send: connection lost",
             )
             .into()),
         }
@@ -196,7 +196,7 @@ pub trait TcpService: Context {
             }
             None => Err(io::Error::new(
                 io::ErrorKind::ConnectionAborted,
-                "UnconnectedSend: connection lost",
+                "CIP unconnected send: connection lost",
             )
             .into()),
         }

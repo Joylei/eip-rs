@@ -1,7 +1,7 @@
 // rseip
 //
 // rseip (eip-rs) - EtherNet/IP in pure Rust.
-// Copyright: 2020-2021, Joylei <leingliu@gmail.com>
+// Copyright: 2021, Joylei <leingliu@gmail.com>
 // License: MIT
 
 use super::Client;
@@ -320,7 +320,7 @@ impl Connection {
             Some(id) => id,
             None => {
                 return Err(
-                    io::Error::new(io::ErrorKind::Other, "connection has been closed").into(),
+                    io::Error::new(io::ErrorKind::Other, "CIP connection has been closed").into(),
                 )
             }
         };
