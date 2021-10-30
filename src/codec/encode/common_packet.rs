@@ -35,19 +35,15 @@ impl Encodable for CommonPacketItem {
         let bytes_count = self.bytes_count();
         dst.reserve(bytes_count);
         dst.put_u16_le(self.type_code);
-        if let Some(data) = self.data {
-            debug_assert!(data.len() <= u16::MAX as usize);
-            dst.put_u16_le(data.len() as u16);
-            dst.put_slice(&data);
-        } else {
-            dst.put_u16_le(0);
-        }
+        debug_assert!(self.data.len() <= u16::MAX as usize);
+        dst.put_u16_le(self.data.len() as u16);
+        dst.put_slice(&self.data);
         Ok(())
     }
 
     #[inline(always)]
     fn bytes_count(&self) -> usize {
-        4 + self.data.as_ref().map(|v| v.len()).unwrap_or_default()
+        4 + self.data.len()
     }
 }
 

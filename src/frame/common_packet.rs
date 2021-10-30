@@ -46,36 +46,39 @@ impl From<Vec<CommonPacketItem>> for CommonPacket {
 #[derive(Debug)]
 pub struct CommonPacketItem {
     pub type_code: u16,
-    pub data: Option<Bytes>,
+    pub data: Bytes,
 }
 
 impl CommonPacketItem {
+    #[inline(always)]
     pub fn with_null_addr() -> Self {
         Self {
             type_code: 0,
-            data: Some(Bytes::from_static(&[0x00, 0x00])),
+            data: Bytes::from_static(&[0x00, 0x00]),
         }
     }
 
+    #[inline(always)]
     pub fn with_unconnected_data(data: Bytes) -> Self {
         Self {
             type_code: 0xB2,
-            data: Some(data),
+            data: data,
         }
     }
 
+    #[inline(always)]
     pub fn with_connected_data(data: Bytes) -> Self {
         Self {
             type_code: 0xB1,
-            data: Some(data),
+            data: data,
         }
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn is_null_addr(&self) -> bool {
         if self.type_code != 0 {
             return false;
         }
-        self.data.as_ref().map(|v| v.len()).unwrap_or_default() == 0
+        self.data.len() == 0
     }
 }

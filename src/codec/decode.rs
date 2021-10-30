@@ -87,7 +87,7 @@ impl TryFrom<Bytes> for CommonPacket {
             let item_data = buf.slice(4..4 + item_length);
             items.push(CommonPacketItem {
                 type_code,
-                data: Some(item_data),
+                data: item_data,
             });
             buf = buf.slice(4 + item_length..);
         }

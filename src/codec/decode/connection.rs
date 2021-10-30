@@ -46,7 +46,7 @@ impl TryFrom<EncapsulationPacket<Bytes>> for ForwardOpenReply {
         if data_item.type_code != 0xB2 {
             return Err(Error::Eip(EipError::InvalidData));
         }
-        let mr_reply = MessageRouterReply::try_from(data_item.data.unwrap())?;
+        let mr_reply = MessageRouterReply::try_from(data_item.data)?;
         if mr_reply.reply_service != 0xD4 && mr_reply.reply_service != 0xDB {
             return Err(Error::Eip(EipError::InvalidData));
         }
@@ -107,7 +107,7 @@ impl TryFrom<EncapsulationPacket<Bytes>> for ForwardCloseReply {
         if data_item.type_code != 0xB2 {
             return Err(Error::Eip(EipError::InvalidData));
         }
-        let mr_reply = MessageRouterReply::try_from(data_item.data.unwrap())?;
+        let mr_reply = MessageRouterReply::try_from(data_item.data)?;
         if mr_reply.reply_service != 0xCE {
             return Err(Error::Eip(EipError::InvalidData));
         }

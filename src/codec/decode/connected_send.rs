@@ -40,7 +40,12 @@ impl TryFrom<EncapsulationPacket<Bytes>> for ConnectedSendReply<Bytes> {
         if data_item.type_code != 0xB1 {
             return Err(Error::Eip(EipError::InvalidData));
         }
-        let mr_reply = MessageRouterReply::try_from(data_item.data.unwrap())?;
+        if data_item.data.len() < 2 {
+            return Err(Error::Eip(EipError::InvalidData));
+        }
+        //TODO: validate sequence count
+        let _sequence_count = LittleEndian::read_u16(&data_item.data[0..2]);
+        let mr_reply = MessageRouterReply::try_from(data_item.data.slice(2..))?;
         Ok(Self(mr_reply))
     }
 }

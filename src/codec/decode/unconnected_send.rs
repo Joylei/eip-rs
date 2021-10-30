@@ -39,7 +39,7 @@ impl TryFrom<EncapsulationPacket<Bytes>> for UnconnectedSendReply<Bytes> {
         if data_item.type_code != 0xB2 {
             return Err(Error::Eip(EipError::InvalidData));
         }
-        let mr_reply = MessageRouterReply::try_from(data_item.data.unwrap())?;
+        let mr_reply = MessageRouterReply::try_from(data_item.data)?;
         Ok(Self(mr_reply))
     }
 }

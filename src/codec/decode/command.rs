@@ -59,8 +59,7 @@ impl TryFrom<EncapsulationPacket<Bytes>> for ListIdentityReply {
                 if item.type_code != 0x0C {
                     return Err(Error::Eip(EipError::InvalidData));
                 }
-                let item_data = item.data.unwrap();
-                IdentityObject::try_from(item_data)
+                IdentityObject::try_from(item.data)
             })
             .collect();
         Ok(Self(res?))
@@ -85,8 +84,7 @@ impl TryFrom<EncapsulationPacket<Bytes>> for ListServicesReply {
                 if item.type_code != 0x0C {
                     return Err(Error::Eip(EipError::InvalidData));
                 }
-                let item_data = item.data.unwrap();
-                ListServiceItem::try_from(item_data)
+                ListServiceItem::try_from(item.data)
             })
             .collect();
         Ok(Self(res?))
