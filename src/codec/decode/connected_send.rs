@@ -26,7 +26,6 @@ impl TryFrom<EncapsulationPacket<Bytes>> for ConnectedSendReply<Bytes> {
         debug_assert_eq!(interface_handle, 0);
         // timeout = &src.data[4..6]
 
-        //TODO: verify buf length
         let mut cpf = CommonPacket::try_from(src.data.slice(6..))?.into_vec();
         if cpf.len() != 2 {
             return Err(Error::Eip(EipError::InvalidData));

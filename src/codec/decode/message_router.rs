@@ -37,10 +37,7 @@ impl TryFrom<Bytes> for MessageRouterReply<Bytes> {
             general: general_status,
             extended: extended_status,
         };
-        // //TODO: raise Error here?
-        // if general_status != 0 {
-        //     return Err(Error::CIPError(status));
-        // }
+
         let pos = 4 + extended_status_size as usize;
         if status.is_routing_error() {
             if buf.len() != pos + 1 {
