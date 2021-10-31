@@ -19,11 +19,11 @@ use rand::Rng;
 use std::io;
 use std::net::SocketAddr;
 
-fn calc_timeout_ticks(timeout: u32) -> (u8, u8) {
-    let time_tick = timeout / 255;
-    let timeout_tick = timeout / (2_u32.pow(time_tick));
-    (time_tick as u8, timeout_tick as u8)
-}
+// fn calc_timeout_ticks(timeout: u32) -> (u8, u8) {
+//     let time_tick = timeout / 255;
+//     let timeout_tick = timeout / (2_u32.pow(time_tick));
+//     (time_tick as u8, timeout_tick as u8)
+// }
 
 #[derive(Debug)]
 pub struct Options {
@@ -58,91 +58,107 @@ impl Options {
         self.priority_time_ticks = val & 0xF; // only tick time part, ignore high byte
         self
     }
+
     #[inline(always)]
     pub fn timeout_ticks(mut self, val: u8) -> Self {
         self.timeout_ticks = val;
         self
     }
+
     #[inline(always)]
     pub fn connection_serial_number(mut self, val: u16) -> Self {
         self.connection_serial_number = val;
         self
     }
+
     #[inline(always)]
     pub fn originator_vendor_id(mut self, val: u16) -> Self {
         self.vendor_id = val;
         self
     }
+
     #[inline(always)]
     pub fn originator_serial_number(mut self, val: u32) -> Self {
         self.originator_serial_number = val;
         self
     }
+
     #[inline(always)]
     pub fn o_t_rpi(mut self, val: u32) -> Self {
         self.o_t_rpi = val;
         self
     }
+
     #[inline(always)]
     pub fn t_o_rpi(mut self, val: u32) -> Self {
         self.t_o_rpi = val;
         self
     }
+
     #[inline(always)]
     pub fn timeout_multiplier(mut self, val: u8) -> Self {
         self.timeout_multiplier = val;
         self
     }
+
     #[inline(always)]
     pub fn connection_size(mut self, val: u16) -> Self {
         self.connection_size = val;
         self
     }
+
     #[inline(always)]
     pub fn connection_path(mut self, path: EPath) -> Self {
         self.connection_path = path;
         self
     }
+
     #[inline(always)]
     pub fn o_t_priority(mut self, val: Priority) -> Self {
         self.o_t_priority = val;
         self
     }
+
     #[inline(always)]
     pub fn t_o_priority(mut self, val: Priority) -> Self {
         self.t_o_priority = val;
         self
     }
+
     #[inline(always)]
     pub fn o_t_variable_length(mut self, val: VariableLength) -> Self {
         self.o_t_variable_length = val;
         self
     }
+
     #[inline(always)]
     pub fn t_o_variable_length(mut self, val: VariableLength) -> Self {
         self.t_o_variable_length = val;
         self
     }
-    #[inline(always)]
-    pub(crate) fn transport_direction(mut self, val: Direction) -> Self {
-        self.transport_direction = val;
-        self
-    }
-    #[inline(always)]
-    pub(crate) fn transport_class(mut self, val: TransportClass) -> Self {
-        self.transport_class = val;
-        self
-    }
-    #[inline(always)]
-    pub(crate) fn transport_trigger(mut self, val: TriggerType) -> Self {
-        self.transport_trigger = val;
-        self
-    }
+
+    // #[inline(always)]
+    // pub(crate) fn transport_direction(mut self, val: Direction) -> Self {
+    //     self.transport_direction = val;
+    //     self
+    // }
+    // #[inline(always)]
+    // pub(crate) fn transport_class(mut self, val: TransportClass) -> Self {
+    //     self.transport_class = val;
+    //     self
+    // }
+    // #[inline(always)]
+    // pub(crate) fn transport_trigger(mut self, val: TriggerType) -> Self {
+    //     self.transport_trigger = val;
+    //     self
+    // }
+
     #[inline(always)]
     pub fn large_open(mut self, val: bool) -> Self {
         self.large_open = val;
         self
     }
+
     #[inline(always)]
     pub async fn open(self, addr: SocketAddr) -> Result<Connection> {
         let client = Client::internal_connect(addr).await?;
