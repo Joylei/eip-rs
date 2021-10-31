@@ -57,7 +57,7 @@ mod test {
     fn test_common_packet_item() {
         let item = CommonPacketItem {
             type_code: 0x00,
-            data: Some(Bytes::from_static(&[0, 0])),
+            data: Bytes::from_static(&[0, 0]),
         };
         assert_eq!(item.bytes_count(), 6);
         let buf = item.try_into_bytes().unwrap();
@@ -68,13 +68,11 @@ mod test {
     fn test_common_packet() {
         let null_addr = CommonPacketItem {
             type_code: 0x00,
-            data: Some(Bytes::from_static(&[0, 0])),
+            data: Bytes::from_static(&[0, 0]),
         };
         let data_item = CommonPacketItem {
             type_code: 0xB2,
-            data: Some(Bytes::from_static(&[
-                0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09,
-            ])),
+            data: Bytes::from_static(&[0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09]),
         };
         let cpf = CommonPacket::from(vec![null_addr, data_item]);
         assert_eq!(cpf.bytes_count(), 2 + 4 + 2 + 4 + 9);
