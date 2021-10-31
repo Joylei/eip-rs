@@ -12,7 +12,7 @@ mod unconnected_send;
 
 use super::ClientCodec;
 use crate::{
-    consts::ENCAPSULATION_HEADER_LEN,
+    consts::{COMMON_PACKET_MAX_ITEM_COUNT, ENCAPSULATION_HEADER_LEN},
     error::{EipError, Error},
     frame::{
         common_packet::{CommonPacket, CommonPacketItem},
@@ -73,6 +73,10 @@ impl TryFrom<Bytes> for CommonPacket {
             return Err(Error::Eip(EipError::InvalidData));
         }
         let item_count = LittleEndian::read_u16(&buf[0..2]);
+        if item_count > COMMON_PACKET_MAX_ITEM_COUNT {
+            return Err(Error::Eip(EipError::InvalidData));
+        }
+
         buf = buf.slice(2..);
         let mut items = Vec::new();
         for _ in 0..item_count {
