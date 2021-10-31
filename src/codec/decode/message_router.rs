@@ -28,9 +28,9 @@ impl TryFrom<Bytes> for MessageRouterReply<Bytes> {
             return Err(Error::Eip(EipError::InvalidData));
         }
         let extended_status = match extended_status_size {
-            0 => 0,
-            1 => buf[4] as u16,
-            2 => LittleEndian::read_u16(&buf[4..6]),
+            0 => None,
+            1 => Some(buf[4] as u16),
+            2 => Some(LittleEndian::read_u16(&buf[4..6])),
             _ => return Err(Error::Eip(EipError::InvalidData)),
         };
         let status = Status {
