@@ -5,34 +5,26 @@
 // License: MIT
 
 use crate::{
-    consts::EIP_COMMAND_SEND_RRDATA,
-    error::{EipError, Error},
-    frame::{
-        cip::{
-            connection::{
-                ForwardCloseReply, ForwardCloseSuccess, ForwardOpenReply, ForwardOpenSuccess,
-                ForwardRequestFail,
-            },
-            MessageRouterReply,
+    cip::{
+        connection::{
+            ForwardCloseReply, ForwardCloseSuccess, ForwardOpenReply, ForwardOpenSuccess,
+            ForwardRequestFail,
         },
-        CommonPacket, EncapsulationPacket,
+        MessageRouterReply,
     },
+    eip::{CommonPacket, EipError},
+    error::Error,
     Result,
 };
 use byteorder::{ByteOrder, LittleEndian};
 use bytes::Bytes;
 use std::convert::TryFrom;
 
-impl TryFrom<EncapsulationPacket<Bytes>> for ForwardOpenReply {
+impl TryFrom<CommonPacket> for ForwardOpenReply {
     type Error = Error;
 
-    fn try_from(src: EncapsulationPacket<Bytes>) -> Result<Self> {
-        src.hdr.ensure_command(EIP_COMMAND_SEND_RRDATA)?;
-        let interface_handle = LittleEndian::read_u32(&src.data[0..4]); // interface handle
-        debug_assert_eq!(interface_handle, 0);
-        // timeout = &src.data[4..6]
-
-        let mut cpf = CommonPacket::try_from(src.data.slice(6..))?.into_vec();
+    fn try_from(cpf: CommonPacket) -> Result<Self> {
+        let mut cpf = cpf.into_vec();
         if cpf.len() != 2 {
             return Err(Error::Eip(EipError::InvalidData));
         }
@@ -80,15 +72,10 @@ impl TryFrom<EncapsulationPacket<Bytes>> for ForwardOpenReply {
     }
 }
 
-impl TryFrom<EncapsulationPacket<Bytes>> for ForwardCloseReply {
+impl TryFrom<CommonPacket> for ForwardCloseReply {
     type Error = Error;
-    fn try_from(src: EncapsulationPacket<Bytes>) -> Result<Self> {
-        src.hdr.ensure_command(EIP_COMMAND_SEND_RRDATA)?;
-        let interface_handle = LittleEndian::read_u32(&src.data[0..4]); // interface handle
-        debug_assert_eq!(interface_handle, 0);
-        // timeout = &src.data[4..6]
-
-        let mut cpf = CommonPacket::try_from(src.data.slice(6..))?.into_vec();
+    fn try_from(cpf: CommonPacket) -> Result<Self> {
+        let mut cpf = cpf.into_vec();
         if cpf.len() != 2 {
             return Err(Error::Eip(EipError::InvalidData));
         }

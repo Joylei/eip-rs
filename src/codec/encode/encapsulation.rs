@@ -7,7 +7,7 @@
 use crate::{
     codec::Encodable,
     consts::{ENCAPSULATION_DATA_MAX_LEN, ENCAPSULATION_HEADER_LEN},
-    frame::{EncapsulationHeader, EncapsulationPacket},
+    eip::{EncapsulationHeader, EncapsulationPacket},
     Result,
 };
 use bytes::{BufMut, BytesMut};

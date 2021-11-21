@@ -5,10 +5,10 @@
 // License: MIT
 
 use crate::{
+    cip::socket::SocketAddr,
+    cip::{AddressItem, DataItem},
     codec::Encodable,
     error::Error,
-    frame::cip::{AddressItem, DataItem},
-    objects::socket::SocketAddr,
 };
 use bytes::{BufMut, Bytes, BytesMut};
 

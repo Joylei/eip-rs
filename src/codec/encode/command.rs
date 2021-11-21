@@ -8,7 +8,7 @@ use super::LazyEncode;
 use crate::{
     codec::Encodable,
     consts::ENCAPSULATION_HEADER_LEN,
-    frame::{command::*, EncapsulationPacket},
+    eip::{command::*, EncapsulationPacket},
     Result,
 };
 use bytes::{BufMut, BytesMut};
@@ -160,8 +160,6 @@ impl<D: Encodable> Encodable for SendUnitData<D> {
 
                 buf.put_u16_le(0xB1); // connected data item
                 buf.put_u16_le(data_item_len as u16 + 2); // data item len
-                                                          //buf.put_u32_le(sequence_number.unwrap()); // sequence number
-
                 buf.put_u16_le(sequence_number);
                 data_item.encode(buf)?; // data request
                 Ok(())

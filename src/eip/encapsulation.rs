@@ -1,10 +1,10 @@
-use crate::{Error, Result};
-
 // rseip
 //
 // rseip (eip-rs) - EtherNet/IP in pure Rust.
 // Copyright: 2021, Joylei <leingliu@gmail.com>
 // License: MIT
+
+use crate::{Error, Result};
 
 /// UCMM: 504 bytes
 /// max: 65535

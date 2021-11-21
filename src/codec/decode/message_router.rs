@@ -5,8 +5,9 @@
 // License: MIT
 
 use crate::{
-    error::{EipError, Error},
-    frame::cip::{MessageRouterReply, Status},
+    cip::{MessageRouterReply, Status},
+    eip::EipError,
+    error::Error,
 };
 use byteorder::{ByteOrder, LittleEndian};
 use bytes::Bytes;

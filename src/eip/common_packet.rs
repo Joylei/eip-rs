@@ -4,7 +4,7 @@
 // Copyright: 2021, Joylei <leingliu@gmail.com>
 // License: MIT
 
-use crate::{error::EipError, Error, Result};
+use crate::{eip::EipError, Error, Result};
 use bytes::Bytes;
 use std::ops::{Deref, DerefMut};
 
@@ -17,6 +17,11 @@ impl CommonPacket {
     #[inline(always)]
     pub fn into_vec(self) -> Vec<CommonPacketItem> {
         self.0
+    }
+
+    #[inline(always)]
+    pub fn into_iter(self) -> impl IntoIterator<Item = CommonPacketItem> {
+        self.0.into_iter()
     }
 }
 

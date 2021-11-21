@@ -6,11 +6,12 @@
 
 use crate::{codec::Encodable, consts::*};
 
-/// EIP Command
+/// encapsulation command
 pub trait Command: Encodable {
     fn command_code() -> u16;
 }
 
+/// NOP command
 #[derive(Debug, Default)]
 pub struct Nop<D> {
     pub data: D,
@@ -23,6 +24,7 @@ impl<D: Encodable> Command for Nop<D> {
     }
 }
 
+/// List_Identity command
 #[derive(Debug)]
 pub struct ListIdentity;
 
@@ -33,6 +35,7 @@ impl Command for ListIdentity {
     }
 }
 
+/// ListInterface command
 #[derive(Debug)]
 pub struct ListInterfaces;
 
@@ -43,6 +46,7 @@ impl Command for ListInterfaces {
     }
 }
 
+/// ListService command
 #[derive(Debug)]
 pub struct ListServices;
 
@@ -53,6 +57,7 @@ impl Command for ListServices {
     }
 }
 
+/// RegisterSession command
 #[derive(Debug)]
 pub struct RegisterSession;
 
@@ -63,6 +68,7 @@ impl Command for RegisterSession {
     }
 }
 
+/// UnRegisterSession command
 #[derive(Debug)]
 pub struct UnRegisterSession {
     pub session_handle: u32,
@@ -75,7 +81,7 @@ impl Command for UnRegisterSession {
     }
 }
 
-/// for UCMM (unconnected message), sent by originator
+/// SendRRData command, for UCMM (unconnected message), sent by originator
 #[derive(Debug)]
 pub struct SendRRData<D> {
     pub session_handle: u32,
@@ -94,7 +100,7 @@ impl<D: Encodable> Command for SendRRData<D> {
     }
 }
 
-/// for connected message, sent by either end, no reply
+/// SendUnitData command, for connected message, sent by either end, no reply
 #[derive(Debug)]
 pub struct SendUnitData<D> {
     pub session_handle: u32,

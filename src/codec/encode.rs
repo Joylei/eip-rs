@@ -20,7 +20,7 @@ use tokio_util::codec::Encoder;
 
 impl Encodable for () {
     #[inline(always)]
-    fn encode(self, _: &mut BytesMut) -> crate::Result<()> {
+    fn encode(self, _: &mut BytesMut) -> Result<()> {
         Ok(())
     }
     #[inline(always)]
@@ -35,7 +35,7 @@ where
     D2: Encodable,
 {
     #[inline(always)]
-    fn encode(self, dst: &mut BytesMut) -> crate::Result<()> {
+    fn encode(self, dst: &mut BytesMut) -> Result<()> {
         self.0.encode(dst)?;
         self.1.encode(dst)?;
         Ok(())
@@ -53,7 +53,7 @@ where
     D3: Encodable,
 {
     #[inline(always)]
-    fn encode(self, dst: &mut BytesMut) -> crate::Result<()> {
+    fn encode(self, dst: &mut BytesMut) -> Result<()> {
         self.0.encode(dst)?;
         self.1.encode(dst)?;
         self.2.encode(dst)?;
@@ -67,7 +67,7 @@ where
 
 impl Encodable for &[u8] {
     #[inline(always)]
-    fn encode(self, dst: &mut BytesMut) -> crate::Result<()> {
+    fn encode(self, dst: &mut BytesMut) -> Result<()> {
         dst.put_slice(self);
         Ok(())
     }
@@ -77,17 +77,31 @@ impl Encodable for &[u8] {
     }
 }
 
+impl<T: Encodable> Encodable for Vec<T> {
+    #[inline(always)]
+    fn encode(self, dst: &mut BytesMut) -> Result<()> {
+        for item in self {
+            item.encode(dst)?;
+        }
+        Ok(())
+    }
+    #[inline(always)]
+    fn bytes_count(&self) -> usize {
+        self.iter().map(|v| v.bytes_count()).sum()
+    }
+}
+
 impl<E: Encodable> Encoder<E> for ClientCodec {
     type Error = Error;
     #[inline(always)]
-    fn encode(&mut self, item: E, dst: &mut BytesMut) -> Result<(), Self::Error> {
+    fn encode(&mut self, item: E, dst: &mut BytesMut) -> Result<()> {
         item.encode(dst)
     }
 }
 
 impl Encodable for Bytes {
     #[inline(always)]
-    fn encode(self, dst: &mut BytesMut) -> Result<(), Error> {
+    fn encode(self, dst: &mut BytesMut) -> Result<()> {
         dst.put_slice(&self);
         Ok(())
     }
@@ -100,7 +114,7 @@ impl Encodable for Bytes {
 
 impl<D: Encodable> Encodable for Option<D> {
     #[inline(always)]
-    fn encode(self, dst: &mut BytesMut) -> crate::Result<()> {
+    fn encode(self, dst: &mut BytesMut) -> Result<()> {
         if let Some(item) = self {
             item.encode(dst)
         } else {

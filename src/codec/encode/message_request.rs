@@ -4,7 +4,7 @@
 // Copyright: 2021, Joylei <leingliu@gmail.com>
 // License: MIT
 
-use crate::{codec::Encodable, frame::cip::MessageRouterRequest, Result};
+use crate::{cip::MessageRouterRequest, codec::Encodable, Result};
 use bytes::{BufMut, BytesMut};
 
 impl<P, D> Encodable for MessageRouterRequest<P, D>
@@ -35,7 +35,7 @@ where
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::frame::cip::{EPath, Segment};
+    use crate::cip::epath::{EPath, Segment};
     use bytes::Bytes;
 
     #[test]

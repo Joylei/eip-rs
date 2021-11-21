@@ -6,7 +6,7 @@
 
 use crate::{
     codec::Encodable,
-    frame::{CommonPacket, CommonPacketItem},
+    eip::{CommonPacket, CommonPacketItem},
     Result,
 };
 use bytes::{BufMut, BytesMut};

@@ -74,14 +74,14 @@ MIT
 
 */
 
+pub mod adapters;
+pub mod cip;
 pub mod client;
 pub mod codec;
 pub mod consts;
+pub mod eip;
 pub mod error;
-pub mod frame;
-pub mod objects;
 pub mod service;
-
 pub use error::Error;
 pub type Result<T> = std::result::Result<T, Error>;
 

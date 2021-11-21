@@ -4,22 +4,19 @@
 // Copyright: 2021, Joylei <leingliu@gmail.com>
 // License: MIT
 
-mod command;
-mod connected_send;
 mod connection;
 mod message_router;
-mod unconnected_send;
 
 use super::ClientCodec;
 use crate::{
+    cip::{identity::IdentityObject, socket::SocketAddr, ListServiceItem, Revision},
     consts::{COMMON_PACKET_MAX_ITEM_COUNT, ENCAPSULATION_HEADER_LEN},
-    error::{EipError, Error},
-    frame::{
+    eip::{
         common_packet::{CommonPacket, CommonPacketItem},
         encapsulation::EncapsulationHeader,
-        EncapsulationPacket,
+        EipError, EncapsulationPacket,
     },
-    objects::{identity::IdentityObject, service::ListServiceItem, socket::SocketAddr, Revision},
+    error::Error,
 };
 use byteorder::{BigEndian, ByteOrder, LittleEndian};
 use bytes::{Bytes, BytesMut};

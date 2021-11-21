@@ -5,8 +5,8 @@
 // License: MIT
 
 use crate::{
+    cip::epath::{EPath, PortSegment, Segment},
     codec::Encodable,
-    frame::cip::{EPath, PortSegment, Segment},
     Result,
 };
 use bytes::{BufMut, BytesMut};
@@ -161,7 +161,7 @@ impl Encodable for EPath {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::frame::cip::epath::EPATH_CONNECTION_MANAGER;
+    use crate::cip::epath::EPATH_CONNECTION_MANAGER;
 
     #[test]
     fn test_epath_symbol() {
