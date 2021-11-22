@@ -229,7 +229,7 @@ pub struct Options<P = EPath> {
     pub(crate) o_t_connection_id: u32,
     pub(crate) t_o_connection_id: u32,
     /// tick time in milliseconds
-    pub(crate) priority_time_ticks: u8,
+    pub(crate) priority_tick_time: u8,
     /// tick time in milliseconds
     pub(crate) timeout_ticks: u8,
     pub(crate) connection_serial_number: u16,
@@ -262,8 +262,8 @@ impl<P> Options<P> {
     }
 
     #[inline]
-    pub fn priority_time_ticks(mut self, val: u8) -> Self {
-        self.priority_time_ticks = val & 0xF; // only tick time part, ignore high byte
+    pub fn priority_tick_time(mut self, val: u8) -> Self {
+        self.priority_tick_time = val & 0xF; // only tick time part, ignore high byte
         self
     }
 
@@ -417,7 +417,7 @@ impl Default for Options<EPath> {
         Self {
             o_t_connection_id: 0,
             t_o_connection_id: 0,
-            priority_time_ticks: 0x03,
+            priority_tick_time: 0x03,
             timeout_ticks: 0xfa,
             connection_serial_number,
             vendor_id: 0xFF,
