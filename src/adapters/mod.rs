@@ -37,22 +37,24 @@ pub trait Service {
     }
 
     /// unconnected send
-    async fn unconnected_send<P, D>(
+    async fn unconnected_send<CP, P, D>(
         &mut self,
-        request: UnconnectedSend<P, D>,
+        request: UnconnectedSend<CP, MessageRouterRequest<P, D>>,
     ) -> Result<MessageRouterReply<Bytes>>
     where
+        CP: Encodable,
         P: Encodable,
         D: Encodable;
 
     /// connected send
-    async fn connected_send<D>(
+    async fn connected_send<P, D>(
         &mut self,
         connection_id: u32,
         sequence_number: u16,
-        request: D,
+        request: MessageRouterRequest<P, D>,
     ) -> Result<MessageRouterReply<Bytes>>
     where
+        P: Encodable,
         D: Encodable;
 
     /// forward open
