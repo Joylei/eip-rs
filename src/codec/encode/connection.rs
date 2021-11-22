@@ -35,7 +35,7 @@ impl<P: Encodable> Encodable for Options<P> {
 
         let transport_class_trigger = self.transport_class_trigger();
 
-        dst.put_u8(self.priority_time_ticks);
+        dst.put_u8(self.priority_tick_time);
         dst.put_u8(self.timeout_ticks);
         dst.put_u32_le(self.o_t_connection_id);
         dst.put_u32_le(self.t_o_connection_id);
