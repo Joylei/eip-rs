@@ -89,7 +89,6 @@ mod test {
     use super::*;
     use crate::{
         cip::epath::{PortSegment, Segment},
-        consts::EIP_DEFAULT_PORT,
         test::block_on,
     };
     use byteorder::{ByteOrder, LittleEndian};
@@ -98,9 +97,9 @@ mod test {
     #[test]
     fn ab_read_tag() {
         block_on(async {
-            let connection_path = EPath::from(vec![Segment::Port(PortSegment::default())]);
-            let mut client =
-                EipClient::new_host_lookup("192.168.0.83").with_connection_path(connection_path);
+            let mut client = EipClient::new_host_lookup("192.168.0.83")
+                .await?
+                .with_connection_path(PortSegment::default());
             let mr_request = MessageRouterRequest::new(
                 0x4c,
                 EPath::from(vec![Segment::Symbol("test_car1_x".to_owned())]),
