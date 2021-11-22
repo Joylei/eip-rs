@@ -1,14 +1,12 @@
 // rseip
 //
-// rseip (eip-rs) - EtherNet/IP in pure Rust.
+// rseip - EIP&CIP in pure Rust.
 // Copyright: 2021, Joylei <leingliu@gmail.com>
 // License: MIT
 
 use super::{socket::SocketAddr, Revision};
 
-/// class code = 0x01
-/// type code =  0x0C
-/// type_code: u16 | item_len: u16 | item_data
+/// Identity Object
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct IdentityObject {
     /// encapsulation protocol version supported

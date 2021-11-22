@@ -1,10 +1,11 @@
 // rseip
 //
-// rseip (eip-rs) - EtherNet/IP in pure Rust.
+// rseip - EIP&CIP in pure Rust.
 // Copyright: 2021, Joylei <leingliu@gmail.com>
 // License: MIT
 
-mod eip;
+pub mod ab_eip;
+pub mod eip;
 
 use crate::{
     adapters::Service,
@@ -18,8 +19,8 @@ use crate::{
 use bytes::Bytes;
 use futures_util::future::BoxFuture;
 use std::{io, sync::atomic::AtomicU16};
-//pub use discovery::discover;
 
+pub use ab_eip::{AbEipClient, AbEipConnection, AbEipDriver, AbService};
 pub use eip::*;
 
 use crate::{
@@ -64,8 +65,8 @@ impl<B: Driver> Client<B> {
 
     /// set connection path
     #[inline]
-    pub fn with_connection_path(mut self, path: EPath) -> Self {
-        self.connection_path = path;
+    pub fn with_connection_path(mut self, path: impl Into<EPath>) -> Self {
+        self.connection_path = path.into();
         self
     }
 

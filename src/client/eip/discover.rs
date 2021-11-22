@@ -1,3 +1,9 @@
+// rseip
+//
+// rseip - EIP&CIP in pure Rust.
+// Copyright: 2021, Joylei <leingliu@gmail.com>
+// License: MIT
+
 use crate::{
     cip::identity::IdentityObject,
     codec::ClientCodec,
@@ -18,6 +24,7 @@ use std::{
 use tokio::{net::UdpSocket, sync::Notify, time};
 use tokio_util::udp::UdpFramed;
 
+/// device discovery
 #[derive(Debug)]
 pub struct EipDiscovery<I = IdentityObject> {
     listen_addr: SocketAddrV4,
@@ -28,6 +35,7 @@ pub struct EipDiscovery<I = IdentityObject> {
 }
 
 impl<I> EipDiscovery<I> {
+    /// create [`EipDiscovery`]
     #[inline]
     pub fn new(listen_addr: Ipv4Addr) -> Self {
         Self {
@@ -39,24 +47,28 @@ impl<I> EipDiscovery<I> {
         }
     }
 
+    /// set broadcast address
     #[inline]
-    pub fn broadcast_addr(mut self, ip: Ipv4Addr) -> Self {
+    pub fn broadcast(mut self, ip: Ipv4Addr) -> Self {
         self.broadcast_addr = SocketAddrV4::new(ip, EIP_DEFAULT_PORT);
         self
     }
 
+    /// repeatedly send requests with limited times
     #[inline]
     pub fn repeat(mut self, times: usize) -> Self {
         self.times = Some(times);
         self
     }
 
+    /// repeatedly send requests forever
     #[inline]
     pub fn forever(mut self) -> Self {
         self.times = None;
         self
     }
 
+    /// request interval
     #[inline]
     pub fn interval(mut self, interval: Duration) -> Self {
         self.interval = interval;
@@ -69,6 +81,7 @@ where
     I: TryFrom<Bytes>,
     I::Error: Into<crate::Error> + std::error::Error,
 {
+    /// send requests to discover devices
     pub async fn run(self) -> io::Result<impl Stream<Item = (I, SocketAddr)>> {
         let socket = UdpSocket::bind(self.listen_addr).await?;
         socket.set_broadcast(true)?;

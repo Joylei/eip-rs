@@ -1,6 +1,6 @@
 # rseip
 
-rseip (eip-rs) - EtherNet/IP in pure Rust
+rseip - EIP&CIP in pure Rust
 
 ## Features
 

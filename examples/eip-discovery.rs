@@ -1,3 +1,9 @@
+// rseip
+//
+// rseip - EIP&CIP in pure Rust.
+// Copyright: 2021, Joylei <leingliu@gmail.com>
+// License: MIT
+
 use anyhow::Result;
 use futures_util::StreamExt;
 use rseip::{cip::identity::IdentityObject, client::EipDiscovery};

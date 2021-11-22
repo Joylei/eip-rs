@@ -1,6 +1,6 @@
 // rseip
 //
-// rseip (eip-rs) - EtherNet/IP in pure Rust.
+// rseip - EIP&CIP in pure Rust.
 // Copyright: 2021, Joylei <leingliu@gmail.com>
 // License: MIT
 
@@ -144,7 +144,7 @@ impl Encodable for Segment {
 }
 
 impl Encodable for EPath {
-    #[inline(always)]
+    #[inline]
     fn encode(self: EPath, dst: &mut BytesMut) -> Result<()> {
         for item in self.into_vec() {
             item.encode(dst)?;
@@ -155,6 +155,13 @@ impl Encodable for EPath {
     #[inline(always)]
     fn bytes_count(&self) -> usize {
         self.iter().map(|v| v.bytes_count()).sum()
+    }
+}
+
+impl From<PortSegment> for EPath {
+    #[inline]
+    fn from(port: PortSegment) -> Self {
+        Self::from(vec![Segment::Port(port)])
     }
 }
 
