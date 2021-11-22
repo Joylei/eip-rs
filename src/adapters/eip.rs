@@ -12,6 +12,7 @@ use crate::{
     service::reply::{ConnectedSendReply, UnconnectedSendReply},
     Result,
 };
+use std::io;
 use tokio::io::{AsyncRead, AsyncWrite};
 
 #[async_trait::async_trait(?Send)]
@@ -49,11 +50,12 @@ where
 
     /// send message router request without CIP connection
     #[inline]
-    async fn unconnected_send<P, D>(
+    async fn unconnected_send<CP, P, D>(
         &mut self,
-        request: UnconnectedSend<P, D>,
+        request: UnconnectedSend<CP, MessageRouterRequest<P, D>>,
     ) -> Result<MessageRouterReply<Bytes>>
     where
+        CP: Encodable,
         P: Encodable,
         D: Encodable,
     {
@@ -63,6 +65,7 @@ where
             path: route_path,
             data: mr_data,
         } = request;
+        let service_code = mr_data.service_code;
         let mr_data_len = mr_data.bytes_count();
         let path_len = route_path.bytes_count();
 
@@ -94,23 +97,39 @@ where
         };
 
         let res: UnconnectedSendReply<Bytes> = self.send_rrdata(unconnected_send).await?;
+        if res.0.reply_service != (service_code + 0x80) {
+            return Err(io::Error::new(
+                io::ErrorKind::Other,
+                format!("unexpected reply service: {}", res.0.reply_service),
+            )
+            .into());
+        }
         Ok(res.0)
     }
 
     /// send message router request with CIP explicit messaging connection
     #[inline]
-    async fn connected_send<D>(
+    async fn connected_send<P, D>(
         &mut self,
         connection_id: u32,
         sequence_number: u16,
-        request: D,
+        request: MessageRouterRequest<P, D>,
     ) -> Result<MessageRouterReply<Bytes>>
     where
+        P: Encodable,
         D: Encodable,
     {
+        let service_code = request.service_code;
         let res: ConnectedSendReply<Bytes> = self
             .send_unit_data(connection_id, sequence_number, request)
             .await?;
+        if res.0.reply_service != (service_code + 0x80) {
+            return Err(io::Error::new(
+                io::ErrorKind::Other,
+                format!("unexpected reply service: {}", res.0.reply_service),
+            )
+            .into());
+        }
         Ok(res.0)
     }
 
