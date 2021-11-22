@@ -189,8 +189,15 @@ impl<B: Driver> Connection<B> {
     /// generate next sequence number
     #[inline]
     fn next_sequence_number(&mut self) -> u16 {
-        self.seq_id
-            .fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+        loop {
+            let v = self
+                .seq_id
+                .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+            if v == 0 {
+                continue;
+            }
+            return v;
+        }
     }
 
     /// close current connection and open a new connection
@@ -252,7 +259,7 @@ impl<B: Driver> Connection<B> {
         if let Some(conn) = self.connected_options.take() {
             if let Some(service) = self.service.as_mut() {
                 let request = ForwardCloseRequest {
-                    priority_time_ticks: self.origin_options.priority_time_ticks,
+                    priority_time_ticks: self.origin_options.priority_tick_time,
                     timeout_ticks: self.origin_options.timeout_ticks,
                     connection_serial_number: conn.connection_serial_number,
                     originator_serial_number: conn.originator_serial_number,
