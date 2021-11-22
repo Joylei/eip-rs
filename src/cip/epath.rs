@@ -4,7 +4,7 @@
 // Copyright: 2021, Joylei <leingliu@gmail.com>
 // License: MIT
 
-use bytes::Bytes;
+use bytes::{BufMut, Bytes, BytesMut};
 use std::ops::{Deref, DerefMut};
 
 /// EPATH for unconnected send
@@ -22,6 +22,7 @@ pub enum Segment {
 
 impl Segment {
     /// is port segment?
+    #[inline]
     pub fn is_port(&self) -> bool {
         match self {
             Self::Port(_) => true,
@@ -34,33 +35,85 @@ impl Segment {
 pub struct EPath(Vec<Segment>);
 
 impl EPath {
-    #[inline(always)]
+    #[inline]
     pub fn new() -> Self {
         Self::default()
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn into_vec(self) -> Vec<Segment> {
         self.0
+    }
+
+    #[inline]
+    pub fn into_iter(self) -> impl IntoIterator<Item = Segment> {
+        self.0.into_iter()
+    }
+
+    #[inline]
+    pub fn with_class(mut self, class_id: u16) -> Self {
+        self.0.push(Segment::Class(class_id));
+        self
+    }
+
+    #[inline]
+    pub fn with_symbol(mut self, symbol: impl Into<String>) -> Self {
+        self.0.push(Segment::Symbol(symbol.into()));
+        self
+    }
+
+    #[inline]
+    pub fn with_instance(mut self, instance_id: u16) -> Self {
+        self.0.push(Segment::Instance(instance_id));
+        self
+    }
+
+    #[inline]
+    pub fn with_element(mut self, element_idx: u32) -> Self {
+        self.0.push(Segment::Element(element_idx));
+        self
+    }
+
+    /// with port & default slot 0
+    #[inline]
+    pub fn with_port(mut self, port: u16) -> Self {
+        self.0.push(Segment::Port(PortSegment {
+            port,
+            link: Bytes::from_static(&[0]),
+        }));
+        self
+    }
+
+    /// with port & slot
+    #[inline]
+    pub fn with_port_slot(mut self, port: u16, slot: u8) -> Self {
+        let mut buf = BytesMut::new();
+        buf.put_u8(slot);
+        self.0.push(Segment::Port(PortSegment {
+            port,
+            link: buf.freeze(),
+        }));
+        self
     }
 }
 
 impl Deref for EPath {
     type Target = [Segment];
-    #[inline(always)]
+    #[inline]
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
 impl DerefMut for EPath {
-    #[inline(always)]
+    #[inline]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
 }
 
 impl From<Vec<Segment>> for EPath {
+    #[inline]
     fn from(src: Vec<Segment>) -> Self {
         Self(src)
     }
@@ -76,11 +129,11 @@ pub struct PortSegment {
 }
 
 impl Default for PortSegment {
-    #[inline(always)]
+    #[inline]
     fn default() -> Self {
         Self {
-            port: 1,
-            link: Bytes::from_static(&[0]),
+            port: 1,                        // Backplane
+            link: Bytes::from_static(&[0]), // slot 0
         }
     }
 }
