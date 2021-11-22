@@ -1,6 +1,6 @@
 // rseip
 //
-// rseip (eip-rs) - EtherNet/IP in pure Rust.
+// rseip - EIP&CIP in pure Rust.
 // Copyright: 2021, Joylei <leingliu@gmail.com>
 // License: MIT
 
@@ -26,13 +26,17 @@ where
 
     /// open context
     async fn open(&mut self) -> Result<()> {
-        self.register_session().await?;
+        if !self.has_session() {
+            self.register_session().await?;
+        }
         Ok(())
     }
 
     /// close context
     async fn close(&mut self) -> Result<()> {
-        self.unregister_session().await?;
+        if self.has_session() {
+            self.unregister_session().await?;
+        }
         Ok(())
     }
 
