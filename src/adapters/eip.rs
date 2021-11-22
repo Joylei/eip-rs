@@ -60,7 +60,6 @@ where
         let UnconnectedSend {
             priority_ticks,
             timeout_ticks,
-            timeout,
             path: route_path,
             data: mr_data,
         } = request;
