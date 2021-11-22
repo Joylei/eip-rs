@@ -134,7 +134,7 @@ where
                             } else {
                                 decode_identity::<I>(pkt.data)
                                     .ok()
-                                    .map(|v| v.into_iter().nth(0))
+                                    .map(|v| v.into_iter().next())
                                     .flatten()
                                     .map(|v| (v, addr))
                             }
