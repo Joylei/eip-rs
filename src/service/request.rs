@@ -7,7 +7,6 @@
 /// parameters for Unconnected Send
 #[derive(Debug)]
 pub struct UnconnectedSend<P, D> {
-    pub timeout: u16,
     pub priority_ticks: u8,
     pub timeout_ticks: u8,
     /// connection path
@@ -20,7 +19,6 @@ impl<P, D> UnconnectedSend<P, D> {
     #[inline]
     pub fn new(path: P, data: D) -> Self {
         Self {
-            timeout: 0,
             priority_ticks: 0x03,
             timeout_ticks: 0xFA,
             path,
