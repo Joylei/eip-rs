@@ -27,6 +27,7 @@ tokio-util = { version = "0.6", features = ["codec", "net"] }
 futures-util="0.3"
 async-trait="0.1"
 rand="0.8"
+smallvec="1"
 
 [dev-dependencies]
 env_logger = "0.9"

@@ -42,7 +42,7 @@ pub async fn main() -> Result<()> {
     let mut client = Client::connect("192.168.0.83").await?;
     let mr_request = MessageRouterRequest::new(
         0x4c,
-        EPath::from(vec![Segment::Symbol("test_car1_x".to_owned())]),
+        EPath::from_symbol("test_car1_x"),
         ElementCount(1),
     );
     let resp = client.send(mr_request, connection_path).await?;

@@ -116,7 +116,7 @@ where
             .send_and_reply(command::ListIdentity, |pkt| {
                 let cpf = CommonPacket::try_from(pkt.data)?;
                 let res: Result<Vec<_>> = cpf
-                    .into_vec()
+                    .into_inner()
                     .into_iter()
                     .map(|item| R::try_from(item).map_err(|e| e.into()))
                     .collect();
@@ -138,7 +138,7 @@ where
             .send_and_reply(command::ListServices, |pkt| {
                 let cpf = CommonPacket::try_from(pkt.data)?;
                 let res: Result<Vec<_>> = cpf
-                    .into_vec()
+                    .into_inner()
                     .into_iter()
                     .map(|item| R::try_from(item).map_err(|e| e.into()))
                     .collect();
@@ -160,7 +160,7 @@ where
             .send_and_reply(command::ListInterfaces, |pkt| {
                 let cpf = CommonPacket::try_from(pkt.data)?;
                 let res: Result<Vec<_>> = cpf
-                    .into_vec()
+                    .into_inner()
                     .into_iter()
                     .map(|item| R::try_from(item).map_err(|e| e.into()))
                     .collect();

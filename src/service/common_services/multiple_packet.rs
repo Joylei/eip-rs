@@ -5,10 +5,7 @@
 // License: MIT
 
 use crate::{
-    cip::{
-        epath::{EPath, Segment},
-        MessageRouterReply, MessageRouterRequest,
-    },
+    cip::{epath::EPath, MessageRouterReply, MessageRouterRequest},
     codec::{
         encode::{DynamicEncode, LazyEncode},
         Encodable,
@@ -49,7 +46,10 @@ impl<'a, T: MessageRouter> MultipleServicePacket<'a, T> {
     }
 
     /// append all service requests
-    pub fn push_all<P, D>(mut self, items: Vec<MessageRouterRequest<P, D>>) -> Self
+    pub fn push_all<P, D>(
+        mut self,
+        items: impl IntoIterator<Item = MessageRouterRequest<P, D>>,
+    ) -> Self
     where
         P: Encodable + 'static,
         D: Encodable + 'static,
@@ -75,7 +75,7 @@ impl<'a, T: MessageRouter> MultipleServicePacket<'a, T> {
         let bytes_count = items.iter().map(|v| v.bytes_count).sum::<usize>() + start_offset;
         let mr = MessageRouterRequest {
             service_code: 0x0A,
-            path: EPath::from(vec![Segment::Class(2), Segment::Instance(1)]),
+            path: EPath::default().with_class(2).with_instance(1),
             data: LazyEncode {
                 f: |buf: &mut BytesMut| {
                     buf.put_u16_le(items.len() as u16);

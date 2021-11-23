@@ -15,6 +15,7 @@ mod message_request;
 use super::{ClientCodec, Encodable};
 use crate::{error::Error, Result};
 use bytes::{BufMut, Bytes, BytesMut};
+use smallvec::{Array, SmallVec};
 use std::fmt;
 use tokio_util::codec::Encoder;
 
@@ -78,6 +79,24 @@ impl Encodable for &[u8] {
 }
 
 impl<T: Encodable> Encodable for Vec<T> {
+    #[inline(always)]
+    fn encode(self, dst: &mut BytesMut) -> Result<()> {
+        for item in self {
+            item.encode(dst)?;
+        }
+        Ok(())
+    }
+    #[inline(always)]
+    fn bytes_count(&self) -> usize {
+        self.iter().map(|v| v.bytes_count()).sum()
+    }
+}
+
+impl<A> Encodable for SmallVec<A>
+where
+    A: Array,
+    A::Item: Encodable,
+{
     #[inline(always)]
     fn encode(self, dst: &mut BytesMut) -> Result<()> {
         for item in self {

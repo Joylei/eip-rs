@@ -6,6 +6,7 @@
 
 use bytes::{BufMut, Bytes, BytesMut};
 use rseip_core::String;
+use smallvec::{smallvec, SmallVec};
 use std::ops::{Deref, DerefMut};
 
 /// EPATH for unconnected send
@@ -33,7 +34,7 @@ impl Segment {
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
-pub struct EPath(Vec<Segment>);
+pub struct EPath(SmallVec<[Segment; 2]>);
 
 impl EPath {
     #[inline]
@@ -42,7 +43,7 @@ impl EPath {
     }
 
     #[inline]
-    pub fn into_vec(self) -> Vec<Segment> {
+    pub fn into_inner(self) -> SmallVec<[Segment; 2]> {
         self.0
     }
 
@@ -96,6 +97,11 @@ impl EPath {
         }));
         self
     }
+
+    #[inline]
+    pub fn from_symbol(symbol: impl Into<String>) -> Self {
+        EPath(smallvec![Segment::Symbol(symbol.into())])
+    }
 }
 
 impl Deref for EPath {
@@ -116,7 +122,7 @@ impl DerefMut for EPath {
 impl From<Vec<Segment>> for EPath {
     #[inline]
     fn from(src: Vec<Segment>) -> Self {
-        Self(src)
+        Self(SmallVec::from_vec(src))
     }
 }
 

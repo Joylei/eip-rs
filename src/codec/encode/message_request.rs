@@ -42,7 +42,7 @@ mod test {
     fn test_encode_message_router_request() {
         let mr = MessageRouterRequest::new(
             0x52,
-            EPath::from(vec![Segment::Class(0x06), Segment::Instance(0x01)]),
+            EPath::default().with_class(0x06).with_instance(0x01),
             Bytes::from_static(&[0x10, 0x00]),
         );
         assert_eq!(mr.bytes_count(), 8);

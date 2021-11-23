@@ -16,7 +16,7 @@ impl Encodable for CommonPacket {
     fn encode(self: CommonPacket, dst: &mut BytesMut) -> Result<()> {
         debug_assert!(self.len() > 0 && self.len() <= 4);
         dst.put_u16_le(self.len() as u16);
-        for item in self.into_vec() {
+        for item in self.into_inner() {
             item.encode(dst)?;
         }
         Ok(())

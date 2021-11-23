@@ -132,11 +132,7 @@ where
                             if pkt.hdr.command != EIP_COMMAND_LIST_IDENTITY {
                                 None
                             } else {
-                                decode_identity::<I>(pkt.data)
-                                    .ok()
-                                    .map(|v| v.into_iter().next())
-                                    .flatten()
-                                    .map(|v| (v, addr))
+                                decode_identity::<I>(pkt.data).ok().flatten().map(|v| (v, addr))
                             }
                         });
                         match res {
@@ -169,21 +165,18 @@ impl<S> Drop for State<S> {
 }
 
 #[inline]
-fn decode_identity<I>(data: Bytes) -> Result<Vec<I>>
+fn decode_identity<I>(data: Bytes) -> Result<Option<I>>
 where
     I: TryFrom<Bytes>,
     I::Error: Into<crate::Error> + std::error::Error,
 {
     let cpf = CommonPacket::try_from(data)?;
     debug_assert_eq!(cpf.len(), 1);
-    // ListIdentity
-    let res: Result<Vec<_>> = cpf
-        .into_vec()
-        .into_iter()
-        .map(|item| {
-            item.ensure_type_code(0x0C)?;
-            I::try_from(item.data).map_err(|e| e.into())
-        })
-        .collect();
-    res
+
+    for item in cpf.into_iter() {
+        item.ensure_type_code(0x0C)?;
+        let res = I::try_from(item.data).map_err(|e| e.into())?;
+        return Ok(Some(res));
+    }
+    Ok(None)
 }

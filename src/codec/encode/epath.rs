@@ -146,7 +146,7 @@ impl Encodable for Segment {
 impl Encodable for EPath {
     #[inline]
     fn encode(self: EPath, dst: &mut BytesMut) -> Result<()> {
-        for item in self.into_vec() {
+        for item in self.into_inner() {
             item.encode(dst)?;
         }
         Ok(())
@@ -172,7 +172,7 @@ mod test {
 
     #[test]
     fn test_epath_symbol() {
-        let epath = EPath::from(vec![Segment::Symbol("TotalCount".to_owned())]);
+        let epath = EPath::from_symbol("TotalCount");
 
         assert_eq!(epath.bytes_count(), 12);
 
@@ -187,8 +187,7 @@ mod test {
 
     #[test]
     fn test_epath_symbol_odd() {
-        let epath = EPath::from(vec![Segment::Symbol("TotalCountt".to_owned())]);
-
+        let epath = EPath::from_symbol("TotalCountt");
         assert_eq!(epath.bytes_count(), 14);
 
         let mut buf = BytesMut::new();

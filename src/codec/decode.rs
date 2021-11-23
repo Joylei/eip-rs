@@ -76,7 +76,7 @@ impl TryFrom<Bytes> for CommonPacket {
         }
 
         buf = buf.slice(2..);
-        let mut items = Vec::new();
+        let mut cpf = CommonPacket::new();
         for _ in 0..item_count {
             if buf.len() < 4 {
                 return Err(Error::Eip(EipError::InvalidData));
@@ -87,7 +87,7 @@ impl TryFrom<Bytes> for CommonPacket {
                 return Err(Error::Eip(EipError::InvalidData));
             }
             let item_data = buf.slice(4..4 + item_length);
-            items.push(CommonPacketItem {
+            cpf.push(CommonPacketItem {
                 type_code,
                 data: item_data,
             });
@@ -98,7 +98,7 @@ impl TryFrom<Bytes> for CommonPacket {
         if buf.len() != 0 {
             return Err(Error::Eip(EipError::InvalidData));
         }
-        Ok(CommonPacket::from(items))
+        Ok(cpf)
     }
 }
 

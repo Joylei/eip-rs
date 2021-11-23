@@ -6,22 +6,30 @@
 
 use crate::{eip::EipError, Error, Result};
 use bytes::Bytes;
+use smallvec::SmallVec;
 use std::ops::{Deref, DerefMut};
-
-// item_count:u16 | N of CommonPacketItem
-
 #[derive(Default, Debug)]
-pub struct CommonPacket(Vec<CommonPacketItem>);
+pub struct CommonPacket(SmallVec<[CommonPacketItem; 2]>);
 
 impl CommonPacket {
     #[inline(always)]
-    pub fn into_vec(self) -> Vec<CommonPacketItem> {
+    pub fn new() -> Self {
+        Self(Default::default())
+    }
+
+    #[inline(always)]
+    pub fn into_inner(self) -> SmallVec<[CommonPacketItem; 2]> {
         self.0
     }
 
     #[inline(always)]
     pub fn into_iter(self) -> impl IntoIterator<Item = CommonPacketItem> {
         self.0.into_iter()
+    }
+
+    #[inline(always)]
+    pub fn push(&mut self, item: CommonPacketItem) {
+        self.0.push(item);
     }
 }
 
@@ -43,7 +51,7 @@ impl DerefMut for CommonPacket {
 impl From<Vec<CommonPacketItem>> for CommonPacket {
     #[inline(always)]
     fn from(src: Vec<CommonPacketItem>) -> Self {
-        Self(src)
+        Self(SmallVec::from_vec(src))
     }
 }
 

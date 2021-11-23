@@ -87,10 +87,7 @@ pub(crate) async fn resolve_host(host: impl AsRef<str>) -> io::Result<SocketAddr
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::{
-        cip::epath::{PortSegment, Segment},
-        test::block_on,
-    };
+    use crate::{cip::epath::PortSegment, test::block_on};
     use byteorder::{ByteOrder, LittleEndian};
     use bytes::{BufMut, BytesMut};
 
@@ -100,11 +97,8 @@ mod test {
             let mut client = EipClient::new_host_lookup("192.168.0.83")
                 .await?
                 .with_connection_path(PortSegment::default());
-            let mr_request = MessageRouterRequest::new(
-                0x4c,
-                EPath::from(vec![Segment::Symbol("test_car1_x".to_owned())]),
-                ElementCount(1),
-            );
+            let mr_request =
+                MessageRouterRequest::new(0x4c, EPath::from_symbol("test_car1_x"), ElementCount(1));
             let resp = client.send(mr_request).await?;
             assert_eq!(resp.reply_service, 0xCC); // read tag service reply
             assert_eq!(LittleEndian::read_u16(&resp.data[0..2]), 0xC4); // DINT

@@ -20,7 +20,7 @@ impl TryFrom<CommonPacket> for ConnectedSendReply<Bytes> {
     type Error = Error;
     #[inline]
     fn try_from(cpf: CommonPacket) -> Result<Self> {
-        let mut cpf = cpf.into_vec();
+        let mut cpf = cpf.into_inner();
         if cpf.len() != 2 {
             return Err(Error::Eip(EipError::InvalidData));
         }
@@ -47,7 +47,7 @@ impl TryFrom<CommonPacket> for UnconnectedSendReply<Bytes> {
     type Error = Error;
     #[inline]
     fn try_from(cpf: CommonPacket) -> Result<Self> {
-        let mut cpf = cpf.into_vec();
+        let mut cpf = cpf.into_inner();
         if cpf.len() != 2 {
             return Err(Error::Eip(EipError::InvalidData));
         }
