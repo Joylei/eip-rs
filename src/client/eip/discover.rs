@@ -91,19 +91,23 @@ where
         {
             let broadcast_addr = self.broadcast_addr;
             let interval = self.interval;
-            let times = self.times.unwrap_or(usize::MAX);
+            let mut times = self.times;
             let notify = notify.clone();
 
             tokio::spawn(async move {
                 let fut = async {
-                    let mut i = 0;
-                    while i < times {
+                    loop {
+                        if let Some(ref mut v) = times {
+                            if *v == 0 {
+                                break;
+                            }
+                            *v -= 1;
+                        }
+
                         if let Err(_) = tx.send((ListIdentity, broadcast_addr.into())).await {
                             break;
                         }
                         time::sleep(interval).await;
-
-                        i += 1;
                     }
                 };
                 tokio::select! {
