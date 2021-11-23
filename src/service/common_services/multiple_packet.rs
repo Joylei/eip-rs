@@ -23,7 +23,7 @@ pub struct MultipleServicePacket<'a, T> {
     items: Vec<DynamicEncode>,
 }
 
-impl<'a, T: MessageRouter> MultipleServicePacket<'a, T> {
+impl<'a, T: MessageService> MultipleServicePacket<'a, T> {
     pub(crate) fn new(inner: &'a mut T) -> Self {
         Self {
             inner,

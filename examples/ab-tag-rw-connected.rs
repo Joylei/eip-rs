@@ -11,7 +11,7 @@ use rseip::{
         epath::{EPath, Segment},
     },
     client::{ab_eip::TagValue, AbEipConnection, AbService},
-    service::MessageRouter,
+    service::MessageService,
 };
 
 #[tokio::main]

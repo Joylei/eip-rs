@@ -8,7 +8,7 @@ use anyhow::Result;
 use rseip::{
     cip::epath::{EPath, PortSegment, Segment},
     client::{ab_eip::TagValue, AbEipClient, AbService},
-    service::MessageRouter,
+    service::MessageService,
 };
 
 #[tokio::main]

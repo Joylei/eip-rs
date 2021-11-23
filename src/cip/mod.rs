@@ -8,14 +8,14 @@ pub mod connection;
 mod cpf;
 pub mod epath;
 pub mod identity;
-pub mod mr;
+pub mod message_request;
 mod revision;
 mod service;
 pub mod socket;
 mod status;
 
 pub use cpf::*;
-pub use mr::*;
+pub use message_request::*;
 pub use revision::Revision;
 pub use service::ListServiceItem;
 pub use status::Status;

@@ -14,7 +14,7 @@ use std::convert::TryFrom;
 
 /// common services
 #[async_trait::async_trait(?Send)]
-pub trait CommonServices: MessageRouter {
+pub trait CommonServices: MessageService {
     /// invoke the Get_Attribute_All service
     async fn get_attribute_all<R>(&mut self, path: EPath) -> Result<R>
     where
@@ -354,7 +354,7 @@ pub trait CommonServices: MessageRouter {
 }
 
 #[async_trait::async_trait(?Send)]
-impl<T: MessageRouter> CommonServices for T {}
+impl<T: MessageService> CommonServices for T {}
 
 fn decode_get_attr_list(
     mut buf: Bytes,

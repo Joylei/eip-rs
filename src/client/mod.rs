@@ -26,7 +26,7 @@ pub use eip::*;
 use crate::{
     cip::{MessageReply, MessageRequest},
     codec::Encodable,
-    service::MessageRouter,
+    service::MessageService,
 };
 
 /// driver for specified protocol
@@ -100,7 +100,7 @@ impl<B: Driver> Client<B> {
 
 /// message router request handler
 #[async_trait::async_trait(?Send)]
-impl<B: Driver> MessageRouter for Client<B> {
+impl<B: Driver> MessageService for Client<B> {
     /// send Heartbeat message to keep underline transport alive
     #[inline]
     async fn heartbeat(&mut self) -> Result<()> {
@@ -271,7 +271,7 @@ impl<B: Driver> Connection<B> {
 }
 
 #[async_trait::async_trait(?Send)]
-impl<B: Driver> MessageRouter for Connection<B> {
+impl<B: Driver> MessageService for Connection<B> {
     /// send Heartbeat message to keep underline transport alive
     #[inline]
     async fn heartbeat(&mut self) -> Result<()> {
@@ -322,7 +322,7 @@ pub enum MaybeConnected<B: Driver> {
 }
 
 #[async_trait::async_trait(?Send)]
-impl<B: Driver> MessageRouter for MaybeConnected<B> {
+impl<B: Driver> MessageService for MaybeConnected<B> {
     /// send Heartbeat message to keep underline connection/transport alive
     #[inline]
     async fn heartbeat(&mut self) -> Result<()> {

@@ -116,7 +116,7 @@ impl_service!(MaybeConnected<AbEipDriver>);
 
 /// Read Tag Service,
 /// CIP Data Table Read
-async fn ab_read_tag<C: MessageRouter, P, R>(client: &mut C, req: P) -> Result<R>
+async fn ab_read_tag<C: MessageService, P, R>(client: &mut C, req: P) -> Result<R>
 where
     P: Into<TagRequest>,
     R: TryFrom<Bytes>,
@@ -137,7 +137,7 @@ where
 
 /// Write Tag Service,
 /// CIP Data Table Write
-async fn ab_write_tag<C: MessageRouter, P, D>(
+async fn ab_write_tag<C: MessageService, P, D>(
     client: &mut C,
     req: P,
     value: TagValue<D>,
@@ -160,7 +160,7 @@ where
 }
 
 /// Read Tag Fragmented Service
-async fn ab_read_tag_fragmented<C: MessageRouter, F, R>(
+async fn ab_read_tag_fragmented<C: MessageService, F, R>(
     client: &mut C,
     req: ReadFragmentedRequest<F, R>,
 ) -> Result<(bool, R)>
@@ -207,7 +207,7 @@ where
 
 /// Write Tag Fragmented Service, enables client applications to write to a tag
 /// in the controller whose data will not fit into a single packet (approximately 500 bytes)
-async fn ab_write_tag_fragmented<C: MessageRouter, D: Encodable>(
+async fn ab_write_tag_fragmented<C: MessageService, D: Encodable>(
     client: &mut C,
     req: WriteFragmentedRequest<D>,
 ) -> Result<bool> {
@@ -250,7 +250,7 @@ async fn ab_write_tag_fragmented<C: MessageRouter, D: Encodable>(
 }
 
 /// Read Modify Write Tag Service, modifies Tag data with individual bit resolution
-async fn ab_read_modify_write<C: MessageRouter, const N: usize>(
+async fn ab_read_modify_write<C: MessageService, const N: usize>(
     client: &mut C,
     req: ReadModifyWriteRequest<N>,
 ) -> Result<()> {

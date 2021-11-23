@@ -7,11 +7,11 @@
 //! CIP services
 
 mod common_services;
-mod message_router;
+mod message_service;
 pub mod reply;
 pub mod request;
 
 #[doc(inline)]
 pub use common_services::CommonServices;
 #[doc(inline)]
-pub use message_router::MessageRouter;
+pub use message_service::MessageService;

@@ -5,7 +5,7 @@
 // License: MIT
 
 mod connection;
-mod message_router;
+mod message_request;
 
 use super::ClientCodec;
 use crate::{

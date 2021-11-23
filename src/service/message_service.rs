@@ -10,7 +10,7 @@ use crate::Result;
 use bytes::Bytes;
 
 #[async_trait::async_trait(?Send)]
-pub trait MessageRouter {
+pub trait MessageService {
     /// send Heartbeat message to keep underline transport alive
     async fn heartbeat(&mut self) -> Result<()>;
 
