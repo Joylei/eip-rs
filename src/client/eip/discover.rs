@@ -79,7 +79,7 @@ impl<I> EipDiscovery<I> {
 impl<I> EipDiscovery<I>
 where
     I: TryFrom<Bytes>,
-    I::Error: Into<crate::Error> + std::error::Error,
+    I::Error: Into<crate::Error>,
 {
     /// send requests to discover devices
     pub async fn run(self) -> io::Result<impl Stream<Item = (I, SocketAddr)>> {
@@ -178,7 +178,7 @@ impl<S> Drop for State<S> {
 fn decode_identity<I>(data: Bytes) -> Result<Option<I>>
 where
     I: TryFrom<Bytes>,
-    I::Error: Into<crate::Error> + std::error::Error,
+    I::Error: Into<crate::Error>,
 {
     let cpf = CommonPacket::try_from(data)?;
     debug_assert_eq!(cpf.len(), 1);

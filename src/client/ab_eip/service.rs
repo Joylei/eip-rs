@@ -12,7 +12,7 @@ pub trait AbService {
     where
         P: Into<TagRequest>,
         R: TryFrom<Bytes>,
-        R::Error: Into<crate::Error> + std::error::Error;
+        R::Error: Into<crate::Error>;
 
     /// Write Tag Service,
     /// CIP Data Table Write
@@ -55,7 +55,7 @@ macro_rules! impl_service {
             where
                 P: Into<TagRequest>,
                 R: TryFrom<Bytes>,
-                R::Error: Into<crate::Error> + std::error::Error,
+                R::Error: Into<crate::Error>,
             {
                 let res = ab_read_tag(self, req).await?;
                 Ok(res)
@@ -120,7 +120,7 @@ async fn ab_read_tag<C: MessageService, P, R>(client: &mut C, req: P) -> Result<
 where
     P: Into<TagRequest>,
     R: TryFrom<Bytes>,
-    R::Error: Into<crate::Error> + std::error::Error,
+    R::Error: Into<crate::Error>,
 {
     let req: TagRequest = req.into();
     let mr_request = MessageRequest::new(0x4C, req.tag, ElementCount(req.count));

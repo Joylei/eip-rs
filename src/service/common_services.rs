@@ -19,7 +19,7 @@ pub trait CommonServices: MessageService {
     async fn get_attribute_all<R>(&mut self, path: EPath) -> Result<R>
     where
         R: TryFrom<Bytes>,
-        R::Error: Into<crate::Error> + std::error::Error,
+        R::Error: Into<crate::Error>,
     {
         let mr = MessageRequest {
             service_code: 0x01,
@@ -181,7 +181,7 @@ pub trait CommonServices: MessageService {
     where
         D: Encodable,
         R: TryFrom<Bytes>,
-        R::Error: Into<crate::Error> + std::error::Error,
+        R::Error: Into<crate::Error>,
     {
         let mr = MessageRequest {
             service_code: 0x0D,
@@ -199,7 +199,7 @@ pub trait CommonServices: MessageService {
     async fn get_attribute_single<R>(&mut self, path: EPath) -> Result<R>
     where
         R: TryFrom<Bytes>,
-        R::Error: Into<crate::Error> + std::error::Error,
+        R::Error: Into<crate::Error>,
     {
         let mr = MessageRequest {
             service_code: 0x0E,
@@ -273,7 +273,7 @@ pub trait CommonServices: MessageService {
     async fn get_member<R>(&mut self, path: EPath) -> Result<R>
     where
         R: TryFrom<Bytes>,
-        R::Error: Into<crate::Error> + std::error::Error,
+        R::Error: Into<crate::Error>,
     {
         let mr = MessageRequest {
             service_code: 0x18,
