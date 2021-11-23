@@ -1,3 +1,9 @@
+// rseip
+//
+// rseip - EIP&CIP in pure Rust.
+// Copyright: 2021, Joylei <leingliu@gmail.com>
+// License: MIT
+
 pub use alloc::string::{FromUtf8Error, String as StdString};
 #[cfg(not(feature = "feat-inlinable-string"))]
 pub use alloc::string::{String, String as StringExt};

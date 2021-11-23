@@ -18,7 +18,7 @@ all-features = true
 members = ["./core", "."]
 
 [dependencies]
-rseip-core={path = "./core"}
+rseip-core={path = "./core", default-features = false}
 bytes = "1"
 byteorder="1"
 log="0.4"
@@ -34,6 +34,10 @@ env_logger = "0.9"
 futures = "0.3"
 tokio={version = "1", features = ["full"]}
 anyhow="1"
+
+[features]
+default=["inlinable-string"]
+inlinable-string=["rseip-core/feat-inlinable-string"]
 
 [build]
 #rustc-wrapper = "sccache"

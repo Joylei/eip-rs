@@ -6,8 +6,10 @@
 
 use bytes::Bytes;
 
-use crate::cip::{MessageReply, Status};
-use crate::eip::EipError;
+use crate::{
+    cip::{MessageReply, Status},
+    eip::EipError,
+};
 use std::{error, fmt, io, net::AddrParseError, str::Utf8Error};
 
 #[derive(Debug)]
