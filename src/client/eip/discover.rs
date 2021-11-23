@@ -85,7 +85,7 @@ where
     pub async fn run(self) -> io::Result<impl Stream<Item = (I, SocketAddr)>> {
         let socket = UdpSocket::bind(self.listen_addr).await?;
         socket.set_broadcast(true)?;
-        let service = UdpFramed::new(socket, ClientCodec::default());
+        let service = UdpFramed::new(socket, ClientCodec {});
         let (mut tx, rx) = service.split();
         let notify = Arc::new(Notify::new());
         {
@@ -96,18 +96,24 @@ where
 
             tokio::spawn(async move {
                 let fut = async {
-                    loop {
-                        if let Some(ref mut v) = times {
-                            if *v == 0 {
-                                break;
-                            }
+                    let rng = std::iter::from_fn(move || match times {
+                        Some(0) => None,
+                        Some(ref mut v) => {
                             *v -= 1;
+                            Some(())
                         }
-
+                        None => Some(()),
+                    });
+                    let mut first = true;
+                    for _ in rng {
+                        if first {
+                            first = false;
+                        } else {
+                            time::sleep(interval).await;
+                        }
                         if let Err(_) = tx.send((ListIdentity, broadcast_addr.into())).await {
                             break;
                         }
-                        time::sleep(interval).await;
                     }
                 };
                 tokio::select! {
