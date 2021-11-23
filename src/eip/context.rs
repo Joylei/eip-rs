@@ -110,7 +110,7 @@ where
     pub async fn list_identity<R>(&mut self) -> Result<Vec<R>>
     where
         R: TryFrom<CommonPacketItem>,
-        R::Error: Into<crate::Error> + std::error::Error,
+        R::Error: Into<crate::Error>,
     {
         let res = self
             .send_and_reply(command::ListIdentity, |pkt| {
@@ -132,7 +132,7 @@ where
     pub async fn list_service<R>(&mut self) -> Result<Vec<R>>
     where
         R: TryFrom<CommonPacketItem>,
-        R::Error: Into<crate::Error> + std::error::Error,
+        R::Error: Into<crate::Error>,
     {
         let res = self
             .send_and_reply(command::ListServices, |pkt| {
@@ -154,7 +154,7 @@ where
     pub async fn list_interface<R>(&mut self) -> Result<Vec<R>>
     where
         R: TryFrom<CommonPacketItem>,
-        R::Error: Into<crate::Error> + std::error::Error,
+        R::Error: Into<crate::Error>,
     {
         let res = self
             .send_and_reply(command::ListInterfaces, |pkt| {
@@ -219,7 +219,7 @@ where
     where
         D: Encodable,
         R: TryFrom<CommonPacket>,
-        R::Error: Into<crate::Error> + std::error::Error,
+        R::Error: Into<crate::Error>,
     {
         let res = self
             .send_and_reply(
@@ -251,7 +251,7 @@ where
     where
         D: Encodable,
         R: TryFrom<CommonPacket>,
-        R::Error: Into<crate::Error> + std::error::Error,
+        R::Error: Into<crate::Error>,
     {
         let res = self
             .send_and_reply(
