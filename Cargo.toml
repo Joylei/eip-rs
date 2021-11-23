@@ -10,6 +10,7 @@ repository = "https://github.com/Joylei/eip-rs.git"
 keywords = ["ethernet","codec", "industry", "eip", "cip"]
 categories = ["asynchronous", "hardware-support"]
 authors = ["joylei <leingliu@gmail.com>"]
+resolver = "2"
 
 [package.metadata.docs.rs]
 all-features = true
