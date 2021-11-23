@@ -40,7 +40,7 @@ impl<I> EipDiscovery<I> {
     pub fn new(listen_addr: Ipv4Addr) -> Self {
         Self {
             listen_addr: SocketAddrV4::new(listen_addr, 0),
-            broadcast_addr: SocketAddrV4::new(Ipv4Addr::new(255, 255, 255, 255), EIP_DEFAULT_PORT),
+            broadcast_addr: SocketAddrV4::new(Ipv4Addr::BROADCAST, EIP_DEFAULT_PORT),
             times: Some(1),
             interval: Duration::from_secs(1),
             _marker: Default::default(),
