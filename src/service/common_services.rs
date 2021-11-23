@@ -3,7 +3,7 @@ mod multiple_packet;
 use super::*;
 use super::{reply::*, request::*};
 use crate::{
-    cip::{epath::EPath, MessageRouterRequest},
+    cip::{epath::EPath, MessageRequest},
     codec::{encode::LazyEncode, Encodable},
     eip::EipError,
     Error, Result,
@@ -21,7 +21,7 @@ pub trait CommonServices: MessageRouter {
         R: TryFrom<Bytes>,
         R::Error: Into<crate::Error> + std::error::Error,
     {
-        let mr = MessageRouterRequest {
+        let mr = MessageRequest {
             service_code: 0x01,
             path,
             data: (),
@@ -35,7 +35,7 @@ pub trait CommonServices: MessageRouter {
 
     /// invoke the Set_Attribute_All service
     async fn set_attribute_all<D: Encodable>(&mut self, path: EPath, attrs: D) -> Result<()> {
-        let mr = MessageRouterRequest {
+        let mr = MessageRequest {
             service_code: 0x02,
             path,
             data: attrs,
@@ -55,7 +55,7 @@ pub trait CommonServices: MessageRouter {
     ) -> Result<Vec<AttributeReply>> {
         let attrs_len = attrs.len();
         assert!(attrs_len <= u16::MAX as usize);
-        let mr = MessageRouterRequest {
+        let mr = MessageRequest {
             service_code: 0x03,
             path,
             data: LazyEncode {
@@ -85,7 +85,7 @@ pub trait CommonServices: MessageRouter {
     ) -> Result<Vec<AttributeReply>> {
         let attrs_len = attrs.len();
         assert!(attrs_len <= u16::MAX as usize);
-        let mr = MessageRouterRequest {
+        let mr = MessageRequest {
             service_code: 0x04,
             path,
             data: LazyEncode {
@@ -108,7 +108,7 @@ pub trait CommonServices: MessageRouter {
 
     /// invoke the Reset service
     async fn reset(&mut self, path: EPath) -> Result<()> {
-        let mr = MessageRouterRequest {
+        let mr = MessageRequest {
             service_code: 0x05,
             path,
             data: (),
@@ -122,7 +122,7 @@ pub trait CommonServices: MessageRouter {
 
     /// invoke the Start service
     async fn start(&mut self, path: EPath) -> Result<()> {
-        let mr = MessageRouterRequest {
+        let mr = MessageRequest {
             service_code: 0x06,
             path,
             data: (),
@@ -136,7 +136,7 @@ pub trait CommonServices: MessageRouter {
 
     /// invoke the Stop service
     async fn stop(&mut self, path: EPath) -> Result<()> {
-        let mr = MessageRouterRequest {
+        let mr = MessageRequest {
             service_code: 0x07,
             path,
             data: (),
@@ -150,7 +150,7 @@ pub trait CommonServices: MessageRouter {
 
     /// invoke the Create service
     async fn create<D: Encodable>(&mut self, path: EPath, data: D) -> Result<()> {
-        let mr = MessageRouterRequest {
+        let mr = MessageRequest {
             service_code: 0x08,
             path,
             data,
@@ -164,7 +164,7 @@ pub trait CommonServices: MessageRouter {
 
     /// invoke the Delete service
     async fn delete(&mut self, path: EPath) -> Result<()> {
-        let mr = MessageRouterRequest {
+        let mr = MessageRequest {
             service_code: 0x09,
             path,
             data: (),
@@ -183,7 +183,7 @@ pub trait CommonServices: MessageRouter {
         R: TryFrom<Bytes>,
         R::Error: Into<crate::Error> + std::error::Error,
     {
-        let mr = MessageRouterRequest {
+        let mr = MessageRequest {
             service_code: 0x0D,
             path,
             data,
@@ -201,7 +201,7 @@ pub trait CommonServices: MessageRouter {
         R: TryFrom<Bytes>,
         R::Error: Into<crate::Error> + std::error::Error,
     {
-        let mr = MessageRouterRequest {
+        let mr = MessageRequest {
             service_code: 0x0E,
             path,
             data: (),
@@ -215,7 +215,7 @@ pub trait CommonServices: MessageRouter {
 
     /// invoke the Set_Attribute_Single service
     async fn set_attribute_single<D: Encodable>(&mut self, path: EPath, data: D) -> Result<()> {
-        let mr = MessageRouterRequest {
+        let mr = MessageRequest {
             service_code: 0x10,
             path,
             data,
@@ -229,7 +229,7 @@ pub trait CommonServices: MessageRouter {
 
     /// invoke the Restore service
     async fn restore(&mut self, path: EPath) -> Result<()> {
-        let mr = MessageRouterRequest {
+        let mr = MessageRequest {
             service_code: 0x15,
             path,
             data: (),
@@ -243,7 +243,7 @@ pub trait CommonServices: MessageRouter {
 
     /// invoke the Save service
     async fn save(&mut self, path: EPath) -> Result<()> {
-        let mr = MessageRouterRequest {
+        let mr = MessageRequest {
             service_code: 0x16,
             path,
             data: (),
@@ -257,7 +257,7 @@ pub trait CommonServices: MessageRouter {
 
     /// invoke the Nop service
     async fn no_operation(&mut self, path: EPath) -> Result<()> {
-        let mr = MessageRouterRequest {
+        let mr = MessageRequest {
             service_code: 0x17,
             path,
             data: (),
@@ -275,7 +275,7 @@ pub trait CommonServices: MessageRouter {
         R: TryFrom<Bytes>,
         R::Error: Into<crate::Error> + std::error::Error,
     {
-        let mr = MessageRouterRequest {
+        let mr = MessageRequest {
             service_code: 0x18,
             path,
             data: (),
@@ -289,7 +289,7 @@ pub trait CommonServices: MessageRouter {
 
     /// invoke the Set_Member service
     async fn set_member<D: Encodable>(&mut self, path: EPath, data: D) -> Result<()> {
-        let mr = MessageRouterRequest {
+        let mr = MessageRequest {
             service_code: 0x19,
             path,
             data,
@@ -303,7 +303,7 @@ pub trait CommonServices: MessageRouter {
 
     /// invoke the Insert_Member service
     async fn insert_member<D: Encodable>(&mut self, path: EPath, data: D) -> Result<()> {
-        let mr = MessageRouterRequest {
+        let mr = MessageRequest {
             service_code: 0x1A,
             path,
             data,
@@ -317,7 +317,7 @@ pub trait CommonServices: MessageRouter {
 
     /// invoke the Remove_Member service
     async fn remove_member(&mut self, path: EPath) -> Result<()> {
-        let mr = MessageRouterRequest {
+        let mr = MessageRequest {
             service_code: 0x1B,
             path,
             data: (),
@@ -331,7 +331,7 @@ pub trait CommonServices: MessageRouter {
 
     /// invoke the Group_Sync service
     async fn group_sync(&mut self, path: EPath) -> Result<()> {
-        let mr = MessageRouterRequest {
+        let mr = MessageRequest {
             service_code: 0x1B,
             path,
             data: (),

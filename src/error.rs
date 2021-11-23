@@ -6,7 +6,7 @@
 
 use bytes::Bytes;
 
-use crate::cip::{MessageRouterReply, Status};
+use crate::cip::{MessageReply, Status};
 use crate::eip::EipError;
 use std::{error, fmt, io, net::AddrParseError, str::Utf8Error};
 
@@ -26,7 +26,7 @@ pub enum Error {
         /// actual command code returned
         actual: u16,
     },
-    MessageRequestError(MessageRouterReply<Bytes>),
+    MessageRequestError(MessageReply<Bytes>),
 }
 
 impl error::Error for Error {

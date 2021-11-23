@@ -52,8 +52,8 @@ where
     #[inline]
     async fn unconnected_send<CP, P, D>(
         &mut self,
-        request: UnconnectedSend<CP, MessageRouterRequest<P, D>>,
-    ) -> Result<MessageRouterReply<Bytes>>
+        request: UnconnectedSend<CP, MessageRequest<P, D>>,
+    ) -> Result<MessageReply<Bytes>>
     where
         CP: Encodable,
         P: Encodable,
@@ -73,7 +73,7 @@ where
         debug_assert!(path_len % 2 == 0);
         assert!(path_len <= u8::MAX as usize);
 
-        let unconnected_send: MessageRouterRequest<&[u8], _> = MessageRouterRequest {
+        let unconnected_send: MessageRequest<&[u8], _> = MessageRequest {
             service_code: SERVICE_UNCONNECTED_SEND,
             path: EPATH_CONNECTION_MANAGER,
             data: LazyEncode {
@@ -113,8 +113,8 @@ where
         &mut self,
         connection_id: u32,
         sequence_number: u16,
-        request: MessageRouterRequest<P, D>,
-    ) -> Result<MessageRouterReply<Bytes>>
+        request: MessageRequest<P, D>,
+    ) -> Result<MessageReply<Bytes>>
     where
         P: Encodable,
         D: Encodable,
@@ -139,7 +139,7 @@ where
     where
         P: Encodable,
     {
-        let mr: MessageRouterRequest<&[u8], _> = MessageRouterRequest {
+        let mr: MessageRequest<&[u8], _> = MessageRequest {
             service_code: SERVICE_FORWARD_OPEN,
             path: EPATH_CONNECTION_MANAGER,
             data: request,
@@ -157,7 +157,7 @@ where
     where
         P: Encodable,
     {
-        let mr: MessageRouterRequest<&[u8], _> = MessageRouterRequest {
+        let mr: MessageRequest<&[u8], _> = MessageRequest {
             service_code: SERVICE_FORWARD_CLOSE,
             path: EPATH_CONNECTION_MANAGER,
             data: request,

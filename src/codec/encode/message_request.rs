@@ -4,10 +4,10 @@
 // Copyright: 2021, Joylei <leingliu@gmail.com>
 // License: MIT
 
-use crate::{cip::MessageRouterRequest, codec::Encodable, Result};
+use crate::{cip::MessageRequest, codec::Encodable, Result};
 use bytes::{BufMut, BytesMut};
 
-impl<P, D> Encodable for MessageRouterRequest<P, D>
+impl<P, D> Encodable for MessageRequest<P, D>
 where
     P: Encodable,
     D: Encodable,
@@ -35,12 +35,12 @@ where
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::cip::epath::{EPath, Segment};
+    use crate::cip::epath::EPath;
     use bytes::Bytes;
 
     #[test]
     fn test_encode_message_router_request() {
-        let mr = MessageRouterRequest::new(
+        let mr = MessageRequest::new(
             0x52,
             EPath::default().with_class(0x06).with_instance(0x01),
             Bytes::from_static(&[0x10, 0x00]),

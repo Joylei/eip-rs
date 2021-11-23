@@ -123,7 +123,7 @@ where
     R::Error: Into<crate::Error> + std::error::Error,
 {
     let req: TagRequest = req.into();
-    let mr_request = MessageRouterRequest::new(0x4C, req.tag, ElementCount(req.count));
+    let mr_request = MessageRequest::new(0x4C, req.tag, ElementCount(req.count));
     let resp = client.send(mr_request).await?;
     if resp.reply_service != 0xCC {
         return Err(io::Error::new(
@@ -147,7 +147,7 @@ where
     D: Encodable,
 {
     let req: TagRequest = req.into();
-    let mr_request = MessageRouterRequest::new(0x4D, req.tag, value);
+    let mr_request = MessageRequest::new(0x4D, req.tag, value);
     let resp = client.send(mr_request).await?;
     if resp.reply_service != 0xCD {
         return Err(io::Error::new(
@@ -174,7 +174,7 @@ where
         offset,
         decoder,
     } = req;
-    let mr_request = MessageRouterRequest::new(
+    let mr_request = MessageRequest::new(
         0x52,
         tag,
         LazyEncode {
@@ -219,7 +219,7 @@ async fn ab_write_tag_fragmented<C: MessageRouter, D: Encodable>(
         offset,
         data,
     } = req;
-    let mr_request = MessageRouterRequest::new(
+    let mr_request = MessageRequest::new(
         0x53,
         tag,
         LazyEncode {
@@ -259,7 +259,7 @@ async fn ab_read_modify_write<C: MessageRouter, const N: usize>(
         or_mask,
         and_mask,
     } = req;
-    let mr_request = MessageRouterRequest::new(
+    let mr_request = MessageRequest::new(
         0x4E,
         tag,
         LazyEncode {

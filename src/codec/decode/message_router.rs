@@ -5,7 +5,7 @@
 // License: MIT
 
 use crate::{
-    cip::{MessageRouterReply, Status},
+    cip::{MessageReply, Status},
     eip::EipError,
     error::Error,
 };
@@ -13,7 +13,7 @@ use byteorder::{ByteOrder, LittleEndian};
 use bytes::Bytes;
 use std::convert::TryFrom;
 
-impl TryFrom<Bytes> for MessageRouterReply<Bytes> {
+impl TryFrom<Bytes> for MessageReply<Bytes> {
     type Error = Error;
 
     #[inline]

@@ -10,7 +10,7 @@ use crate::{
             ForwardCloseReply, ForwardCloseSuccess, ForwardOpenReply, ForwardOpenSuccess,
             ForwardRequestFail,
         },
-        MessageRouterReply,
+        MessageReply,
     },
     eip::{CommonPacket, EipError},
     error::Error,
@@ -33,7 +33,7 @@ impl TryFrom<CommonPacket> for ForwardOpenReply {
         let data_item = cpf.remove(1);
         // should be unconnected data item
         data_item.ensure_type_code(0xB2)?;
-        let mr_reply = MessageRouterReply::try_from(data_item.data)?;
+        let mr_reply = MessageReply::try_from(data_item.data)?;
         if mr_reply.reply_service != 0xD4 && mr_reply.reply_service != 0xDB {
             return Err(Error::Eip(EipError::InvalidData));
         }
@@ -84,7 +84,7 @@ impl TryFrom<CommonPacket> for ForwardCloseReply {
         let data_item = cpf.remove(1);
         // should be unconnected data item
         data_item.ensure_type_code(0xB2)?;
-        let mr_reply = MessageRouterReply::try_from(data_item.data)?;
+        let mr_reply = MessageReply::try_from(data_item.data)?;
         if mr_reply.reply_service != 0xCE {
             return Err(Error::Eip(EipError::InvalidData));
         }

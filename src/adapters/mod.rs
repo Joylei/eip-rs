@@ -9,7 +9,7 @@ mod eip;
 use crate::{
     cip::{
         connection::{ForwardCloseReply, ForwardCloseRequest, ForwardOpenReply, Options},
-        MessageRouterReply, MessageRouterRequest,
+        MessageReply, MessageRequest,
     },
     codec::{encode::LazyEncode, Encodable},
     consts::*,
@@ -39,8 +39,8 @@ pub trait Service {
     /// unconnected send
     async fn unconnected_send<CP, P, D>(
         &mut self,
-        request: UnconnectedSend<CP, MessageRouterRequest<P, D>>,
-    ) -> Result<MessageRouterReply<Bytes>>
+        request: UnconnectedSend<CP, MessageRequest<P, D>>,
+    ) -> Result<MessageReply<Bytes>>
     where
         CP: Encodable,
         P: Encodable,
@@ -51,8 +51,8 @@ pub trait Service {
         &mut self,
         connection_id: u32,
         sequence_number: u16,
-        request: MessageRouterRequest<P, D>,
-    ) -> Result<MessageRouterReply<Bytes>>
+        request: MessageRequest<P, D>,
+    ) -> Result<MessageReply<Bytes>>
     where
         P: Encodable,
         D: Encodable;

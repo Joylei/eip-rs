@@ -24,7 +24,7 @@ pub use ab_eip::{AbEipClient, AbEipConnection, AbEipDriver, AbService};
 pub use eip::*;
 
 use crate::{
-    cip::{MessageRouterReply, MessageRouterRequest},
+    cip::{MessageReply, MessageRequest},
     codec::Encodable,
     service::MessageRouter,
 };
@@ -112,10 +112,7 @@ impl<B: Driver> MessageRouter for Client<B> {
 
     /// unconnected send
     #[inline]
-    async fn send<P, D>(
-        &mut self,
-        mr: MessageRouterRequest<P, D>,
-    ) -> Result<MessageRouterReply<Bytes>>
+    async fn send<P, D>(&mut self, mr: MessageRequest<P, D>) -> Result<MessageReply<Bytes>>
     where
         P: Encodable,
         D: Encodable,
@@ -287,10 +284,7 @@ impl<B: Driver> MessageRouter for Connection<B> {
 
     /// connected send
     #[inline]
-    async fn send<P, D>(
-        &mut self,
-        mr: MessageRouterRequest<P, D>,
-    ) -> Result<MessageRouterReply<Bytes>>
+    async fn send<P, D>(&mut self, mr: MessageRequest<P, D>) -> Result<MessageReply<Bytes>>
     where
         P: Encodable,
         D: Encodable,
@@ -340,10 +334,7 @@ impl<B: Driver> MessageRouter for MaybeConnected<B> {
 
     /// send message request
     #[inline]
-    async fn send<P, D>(
-        &mut self,
-        mr: MessageRouterRequest<P, D>,
-    ) -> Result<MessageRouterReply<Bytes>>
+    async fn send<P, D>(&mut self, mr: MessageRequest<P, D>) -> Result<MessageReply<Bytes>>
     where
         P: Encodable,
         D: Encodable,

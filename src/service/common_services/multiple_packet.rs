@@ -5,7 +5,7 @@
 // License: MIT
 
 use crate::{
-    cip::{epath::EPath, MessageRouterReply, MessageRouterRequest},
+    cip::{epath::EPath, MessageReply, MessageRequest},
     codec::{
         encode::{DynamicEncode, LazyEncode},
         Encodable,
@@ -32,7 +32,7 @@ impl<'a, T: MessageRouter> MultipleServicePacket<'a, T> {
     }
 
     /// append service request
-    pub fn push<P, D>(mut self, mr: MessageRouterRequest<P, D>) -> Self
+    pub fn push<P, D>(mut self, mr: MessageRequest<P, D>) -> Self
     where
         P: Encodable + 'static,
         D: Encodable + 'static,
@@ -46,10 +46,7 @@ impl<'a, T: MessageRouter> MultipleServicePacket<'a, T> {
     }
 
     /// append all service requests
-    pub fn push_all<P, D>(
-        mut self,
-        items: impl IntoIterator<Item = MessageRouterRequest<P, D>>,
-    ) -> Self
+    pub fn push_all<P, D>(mut self, items: impl IntoIterator<Item = MessageRequest<P, D>>) -> Self
     where
         P: Encodable + 'static,
         D: Encodable + 'static,
@@ -65,7 +62,7 @@ impl<'a, T: MessageRouter> MultipleServicePacket<'a, T> {
     }
 
     /// build and send requests
-    pub async fn send(self) -> Result<Vec<MessageRouterReply<Bytes>>> {
+    pub async fn send(self) -> Result<Vec<MessageReply<Bytes>>> {
         let Self { inner, items } = self;
         if items.len() == 0 {
             return Ok(Default::default());
@@ -73,7 +70,7 @@ impl<'a, T: MessageRouter> MultipleServicePacket<'a, T> {
 
         let start_offset = 2 + 2 * items.len();
         let bytes_count = items.iter().map(|v| v.bytes_count).sum::<usize>() + start_offset;
-        let mr = MessageRouterRequest {
+        let mr = MessageRequest {
             service_code: 0x0A,
             path: EPath::default().with_class(2).with_instance(1),
             data: LazyEncode {
@@ -100,7 +97,7 @@ impl<'a, T: MessageRouter> MultipleServicePacket<'a, T> {
     }
 }
 
-fn decode_replies(mut buf: Bytes) -> Result<Vec<MessageRouterReply<Bytes>>> {
+fn decode_replies(mut buf: Bytes) -> Result<Vec<MessageReply<Bytes>>> {
     if buf.len() < 2 {
         return Err(Error::Eip(EipError::InvalidData));
     }
@@ -126,14 +123,14 @@ fn decode_replies(mut buf: Bytes) -> Result<Vec<MessageRouterReply<Bytes>>> {
                 return Err(Error::Eip(EipError::InvalidData));
             }
             let buf = data.split_to(size);
-            let reply: MessageRouterReply<Bytes> = buf.try_into()?;
+            let reply: MessageReply<Bytes> = buf.try_into()?;
             results.push(reply);
         }
     }
 
     // process remaining
     if data.len() > 0 {
-        let reply: MessageRouterReply<Bytes> = data.try_into()?;
+        let reply: MessageReply<Bytes> = data.try_into()?;
         results.push(reply);
     }
 

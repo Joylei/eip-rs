@@ -4,7 +4,7 @@ use super::Status;
 
 /// Message request
 #[derive(Debug, Default, PartialEq, Eq)]
-pub struct MessageRouterRequest<P, D> {
+pub struct MessageRequest<P, D> {
     /// service request code
     pub service_code: u8,
     /// service request path
@@ -13,7 +13,7 @@ pub struct MessageRouterRequest<P, D> {
     pub data: D,
 }
 
-impl<P, D> MessageRouterRequest<P, D>
+impl<P, D> MessageRequest<P, D>
 where
     P: Encodable,
     D: Encodable,
@@ -46,7 +46,7 @@ where
 
 /// message router reply
 #[derive(Debug)]
-pub struct MessageRouterReply<D> {
+pub struct MessageReply<D> {
     /// reply service code
     pub reply_service: u8,
     /// general status and extended status
@@ -56,7 +56,7 @@ pub struct MessageRouterReply<D> {
     pub data: D,
 }
 
-impl<D> MessageRouterReply<D> {
+impl<D> MessageReply<D> {
     #[inline(always)]
     pub fn new(reply_service: u8, status: Status, data: D) -> Self {
         Self {

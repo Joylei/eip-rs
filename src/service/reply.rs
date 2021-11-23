@@ -5,7 +5,7 @@
 // License: MIT
 
 use crate::{
-    cip::MessageRouterReply,
+    cip::MessageReply,
     eip::{CommonPacket, EipError},
     Error, Result,
 };
@@ -14,7 +14,7 @@ use bytes::Bytes;
 use std::convert::TryFrom;
 
 #[derive(Debug)]
-pub(crate) struct ConnectedSendReply<D>(pub MessageRouterReply<D>);
+pub(crate) struct ConnectedSendReply<D>(pub MessageReply<D>);
 
 impl TryFrom<CommonPacket> for ConnectedSendReply<Bytes> {
     type Error = Error;
@@ -35,13 +35,13 @@ impl TryFrom<CommonPacket> for ConnectedSendReply<Bytes> {
 
         //TODO: validate sequence count
         let _sequence_count = LittleEndian::read_u16(&data_item.data[0..2]);
-        let mr_reply = MessageRouterReply::try_from(data_item.data.slice(2..))?;
+        let mr_reply = MessageReply::try_from(data_item.data.slice(2..))?;
         Ok(Self(mr_reply))
     }
 }
 
 #[derive(Debug)]
-pub(crate) struct UnconnectedSendReply<D>(pub MessageRouterReply<D>);
+pub(crate) struct UnconnectedSendReply<D>(pub MessageReply<D>);
 
 impl TryFrom<CommonPacket> for UnconnectedSendReply<Bytes> {
     type Error = Error;
@@ -56,7 +56,7 @@ impl TryFrom<CommonPacket> for UnconnectedSendReply<Bytes> {
         let data_item = cpf.remove(1);
         // should be unconnected data item
         data_item.ensure_type_code(0xB2)?;
-        let mr_reply = MessageRouterReply::try_from(data_item.data)?;
+        let mr_reply = MessageReply::try_from(data_item.data)?;
         Ok(Self(mr_reply))
     }
 }

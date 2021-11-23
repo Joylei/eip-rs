@@ -98,7 +98,7 @@ mod test {
                 .await?
                 .with_connection_path(PortSegment::default());
             let mr_request =
-                MessageRouterRequest::new(0x4c, EPath::from_symbol("test_car1_x"), ElementCount(1));
+                MessageRequest::new(0x4c, EPath::from_symbol("test_car1_x"), ElementCount(1));
             let resp = client.send(mr_request).await?;
             assert_eq!(resp.reply_service, 0xCC); // read tag service reply
             assert_eq!(LittleEndian::read_u16(&resp.data[0..2]), 0xC4); // DINT

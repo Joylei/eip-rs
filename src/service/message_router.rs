@@ -4,7 +4,7 @@
 // Copyright: 2021, Joylei <leingliu@gmail.com>
 // License: MIT
 
-use crate::cip::{MessageRouterReply, MessageRouterRequest};
+use crate::cip::{MessageReply, MessageRequest};
 use crate::codec::Encodable;
 use crate::Result;
 use bytes::Bytes;
@@ -15,10 +15,7 @@ pub trait MessageRouter {
     async fn heartbeat(&mut self) -> Result<()>;
 
     /// send message router request
-    async fn send<P, D>(
-        &mut self,
-        mr: MessageRouterRequest<P, D>,
-    ) -> Result<MessageRouterReply<Bytes>>
+    async fn send<P, D>(&mut self, mr: MessageRequest<P, D>) -> Result<MessageReply<Bytes>>
     where
         P: Encodable,
         D: Encodable;
