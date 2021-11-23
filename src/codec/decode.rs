@@ -20,7 +20,9 @@ use crate::{
 };
 use byteorder::{BigEndian, ByteOrder, LittleEndian};
 use bytes::{Bytes, BytesMut};
-use rseip_core::{String, StringExt};
+use rseip_core::String;
+#[cfg(feature = "inlinable-string")]
+use rseip_core::StringExt;
 use std::convert::TryFrom;
 use tokio_util::codec::Decoder;
 

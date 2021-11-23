@@ -40,6 +40,7 @@ impl Status {
 }
 
 impl fmt::Display for Status {
+    #[cfg(feature = "error-explain")]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self.general {
             0x00 => write!(f, "Success"),
@@ -105,7 +106,16 @@ impl fmt::Display for Status {
                     }
                 }
             }
-            _ => write!(f, "General Error: Unknown"),
+            v => write!(f, "General Error: Unknown: {:#0x}", v),
         }
+    }
+
+    #[cfg(not(feature = "error-explain"))]
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "CIP general status: {}", self.general)?;
+        if let Some(v) = self.extended {
+            write!(f, ", extended status: {}", v)?;
+        }
+        Ok(())
     }
 }

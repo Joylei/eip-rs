@@ -36,8 +36,9 @@ tokio={version = "1", features = ["full"]}
 anyhow="1"
 
 [features]
-default=["inlinable-string"]
+default=["inlinable-string", "error-explain"]
 inlinable-string=["rseip-core/feat-inlinable-string"]
+error-explain=[]
 
 [build]
 #rustc-wrapper = "sccache"

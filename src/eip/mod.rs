@@ -15,7 +15,7 @@ pub use encapsulation::{EncapsulationHeader, EncapsulationPacket};
 use std::fmt;
 
 /// EIP error
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum EipError {
     InvalidCommand,
     /// failed to request memory
@@ -29,6 +29,21 @@ pub enum EipError {
     /// unsupported encapsulation protocol revision
     UnsupportedRevision,
     Unknown(u16),
+}
+
+impl EipError {
+    #[inline]
+    pub fn status(&self) -> u16 {
+        match self {
+            Self::InvalidCommand => 0x0001,
+            Self::InsufficientMemory => 0x0002,
+            Self::InvalidData => 0x0003,
+            Self::InvalidSession => 0x0064,
+            Self::InvalidLength => 0x0065,
+            Self::UnsupportedRevision => 0x0069,
+            Self::Unknown(v) => *v,
+        }
+    }
 }
 
 impl From<u16> for EipError {
@@ -50,6 +65,7 @@ impl From<u16> for EipError {
 impl fmt::Display for EipError {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        #[cfg(feature = "error-explain")]
         match self {
             Self::InvalidCommand => write!(f, "The sender issued an invalid or unsupported encapsulation command"),
             Self::InsufficientMemory => write!(f, "Insufficient memory resources in the receiver to handle the command"),
@@ -59,5 +75,8 @@ impl fmt::Display for EipError {
             Self::UnsupportedRevision => write!(f, "Unsupported encapsulation protocol revision"),
             Self::Unknown(v) => write!(f, "Unknown command error: {:#0x}", v),
         }
+
+        #[cfg(not(feature = "error-explain"))]
+        write!(f, "eip error: {:#0x}", self.status())
     }
 }
