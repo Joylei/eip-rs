@@ -5,6 +5,7 @@
 // License: MIT
 
 use bytes::{BufMut, Bytes, BytesMut};
+use rseip_core::String;
 use std::ops::{Deref, DerefMut};
 
 /// EPATH for unconnected send

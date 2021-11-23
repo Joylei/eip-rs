@@ -1,3 +1,5 @@
+pub use rseip_core::String;
+
 /// only one service for ListServices
 /// type code = 0x100
 /// encoded bytes count: 24

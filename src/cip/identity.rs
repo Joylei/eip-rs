@@ -5,6 +5,7 @@
 // License: MIT
 
 use super::{socket::SocketAddr, Revision};
+use rseip_core::String;
 
 /// Identity Object
 #[derive(Debug, Clone, PartialEq, Eq)]

@@ -20,6 +20,7 @@ use crate::{
 };
 use byteorder::{BigEndian, ByteOrder, LittleEndian};
 use bytes::{Bytes, BytesMut};
+use rseip_core::{String, StringExt};
 use std::convert::TryFrom;
 use tokio_util::codec::Decoder;
 
@@ -129,7 +130,8 @@ impl TryFrom<Bytes> for IdentityObject {
             serial_number: LittleEndian::read_u32(&data[28..32]),
             product_name_len, //32
             product_name: String::from_utf8(data[33..33 + product_name_len as usize].to_vec())
-                .map_err(|e| e.utf8_error())?,
+                .map_err(|e| e.utf8_error())?
+                .into(),
             state: *data.last().unwrap(),
         };
 
@@ -144,7 +146,9 @@ impl TryFrom<Bytes> for ListServiceItem {
         let mut item = ListServiceItem::default();
         item.protocol_version = LittleEndian::read_u16(&buf[0..2]);
         item.capability = LittleEndian::read_u16(&buf[2..4]);
-        item.name = String::from_utf8(buf[4..20].to_vec()).map_err(|e| e.utf8_error())?;
+        item.name = String::from_utf8(buf[4..20].to_vec())
+            .map_err(|e| e.utf8_error())?
+            .into();
         return Ok(item);
     }
 }

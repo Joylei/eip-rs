@@ -14,7 +14,11 @@ authors = ["joylei <leingliu@gmail.com>"]
 [package.metadata.docs.rs]
 all-features = true
 
+[workspace]
+members = ["./core", "."]
+
 [dependencies]
+rseip-core={path = "./core"}
 bytes = "1"
 byteorder="1"
 log="0.4"
