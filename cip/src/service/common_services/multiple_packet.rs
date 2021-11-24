@@ -12,12 +12,13 @@ use crate::{
 };
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 use core::convert::TryInto;
+use smallvec::SmallVec;
 use std::io;
 
 /// build and send multiple service packet
 pub struct MultipleServicePacket<'a, T> {
     inner: &'a mut T,
-    items: Vec<DynamicEncode>,
+    items: SmallVec<[DynamicEncode; 8]>,
 }
 
 impl<'a, T: MessageService> MultipleServicePacket<'a, T> {
@@ -59,7 +60,7 @@ impl<'a, T: MessageService> MultipleServicePacket<'a, T> {
     }
 
     /// build and send requests
-    pub async fn send(self) -> StdResult<Vec<MessageReply<Bytes>>, T::Error> {
+    pub async fn send(self) -> StdResult<SmallVec<[MessageReply<Bytes>; 8]>, T::Error> {
         let Self { inner, items } = self;
         if items.len() == 0 {
             return Ok(Default::default());
@@ -95,11 +96,11 @@ impl<'a, T: MessageService> MultipleServicePacket<'a, T> {
     }
 }
 
-fn decode_replies(mut buf: Bytes) -> Result<Vec<MessageReply<Bytes>>> {
+fn decode_replies(mut buf: Bytes) -> Result<SmallVec<[MessageReply<Bytes>; 8]>> {
     if buf.len() < 2 {
         return Err(io::ErrorKind::InvalidData.into());
     }
-    let mut results = Vec::new();
+    let mut results = SmallVec::new();
     let count = buf.get_u16_le();
     if count == 0 {
         return Ok(results);

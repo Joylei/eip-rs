@@ -14,6 +14,7 @@ use crate::{
 };
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 pub use multiple_packet::MultipleServicePacket;
+use smallvec::SmallVec;
 use std::{convert::TryFrom, io};
 
 /// common services
@@ -59,8 +60,8 @@ pub trait CommonServices: MessageService {
     async fn get_attribute_list(
         &mut self,
         path: EPath,
-        attrs: Vec<GetAttributeRequestItem>,
-    ) -> StdResult<Vec<AttributeReply>, Self::Error> {
+        attrs: &[GetAttributeRequestItem],
+    ) -> StdResult<SmallVec<[AttributeReply; 8]>, Self::Error> {
         let attrs_len = attrs.len();
         assert!(attrs_len <= u16::MAX as usize);
         let mr = MessageRequest {
@@ -90,8 +91,8 @@ pub trait CommonServices: MessageService {
     async fn set_attribute_list<D: Encodable, R: Encodable>(
         &mut self,
         path: EPath,
-        attrs: Vec<SetAttributeRequestItem<D>>,
-    ) -> StdResult<Vec<AttributeReply>, Self::Error> {
+        attrs: &[SetAttributeRequestItem<D>],
+    ) -> StdResult<SmallVec<[AttributeReply; 8]>, Self::Error> {
         let attrs_len = attrs.len();
         assert!(attrs_len <= u16::MAX as usize);
         let mr = MessageRequest {
@@ -380,8 +381,8 @@ impl<T: MessageService> CommonServices for T {}
 
 fn decode_get_attr_list(
     mut buf: Bytes,
-    attrs: &Vec<GetAttributeRequestItem>,
-) -> Result<Vec<AttributeReply>> {
+    attrs: &[GetAttributeRequestItem],
+) -> Result<SmallVec<[AttributeReply; 8]>> {
     if buf.len() < 2 {
         return Err(io::ErrorKind::InvalidData.into());
     }
@@ -389,7 +390,7 @@ fn decode_get_attr_list(
     if count != attrs.len() {
         return Err(io::ErrorKind::InvalidData.into());
     }
-    let mut results = vec![];
+    let mut results = SmallVec::new();
     for attr in attrs {
         if buf.len() < 4 + attr.size as usize {
             return Err(io::ErrorKind::InvalidData.into());
@@ -420,8 +421,8 @@ fn decode_get_attr_list(
 
 fn decode_set_attr_list<T>(
     mut buf: Bytes,
-    attrs: &Vec<SetAttributeRequestItem<T>>,
-) -> Result<Vec<AttributeReply>> {
+    attrs: &[SetAttributeRequestItem<T>],
+) -> Result<SmallVec<[AttributeReply; 8]>> {
     if buf.len() < 2 {
         return Err(io::ErrorKind::InvalidData.into());
     }
@@ -429,7 +430,7 @@ fn decode_set_attr_list<T>(
     if count != attrs.len() {
         return Err(io::ErrorKind::InvalidData.into());
     }
-    let mut results = vec![];
+    let mut results = SmallVec::new();
     for attr in attrs {
         if buf.len() < 4 + attr.size as usize {
             return Err(io::ErrorKind::InvalidData.into());
