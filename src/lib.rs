@@ -75,15 +75,12 @@ MIT
 */
 
 pub mod adapters;
-pub mod cip;
 pub mod client;
-pub mod codec;
-pub mod consts;
-pub mod eip;
-pub mod error;
-pub mod service;
-pub use error::Error;
-pub type Result<T> = std::result::Result<T, Error>;
+mod error;
+
+pub use error::ClientError as Error;
+pub use rseip_cip as cip;
+pub type Result<T> = core::result::Result<T, Error>;
 
 #[cfg(test)]
 mod test {

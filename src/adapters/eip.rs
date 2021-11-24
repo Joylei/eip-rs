@@ -6,13 +6,11 @@
 
 use super::*;
 use crate::{
-    cip::epath::EPATH_CONNECTION_MANAGER,
-    codec::Encodable,
-    eip::context::EipContext,
-    service::reply::{ConnectedSendReply, UnconnectedSendReply},
-    Result,
+    cip::codec::Encodable, cip::epath::EPATH_CONNECTION_MANAGER, cip::service::reply::*,
+    cip::service::*, Result,
 };
-use std::io;
+use rseip_eip::{EipContext, Frame};
+use std::{convert::Infallible, io};
 use tokio::io::{AsyncRead, AsyncWrite};
 
 #[async_trait::async_trait(?Send)]
@@ -44,7 +42,7 @@ where
     /// send Heartbeat message to keep underline transport alive
     #[inline]
     async fn heartbeat(&mut self) -> Result<()> {
-        self.nop(()).await?;
+        self.nop(Frame::<_, Infallible>::new(0, |_| Ok(()))).await?;
         Ok(())
     }
 
@@ -96,7 +94,13 @@ where
             },
         };
 
-        let res: UnconnectedSendReply<Bytes> = self.send_rrdata(unconnected_send).await?;
+        let frame = Frame::new(unconnected_send.bytes_count(), |buf| {
+            unconnected_send
+                .encode(buf)
+                .map_err(|e| crate::Error::from(e))
+        });
+
+        let res: UnconnectedSendReply<Bytes> = self.send_rrdata(frame).await?;
         if res.0.reply_service != (service_code + 0x80) {
             return Err(io::Error::new(
                 io::ErrorKind::Other,
@@ -120,8 +124,11 @@ where
         D: Encodable,
     {
         let service_code = request.service_code;
+        let frame = Frame::new(request.bytes_count(), |buf| {
+            request.encode(buf).map_err(|e| crate::Error::from(e))
+        });
         let res: ConnectedSendReply<Bytes> = self
-            .send_unit_data(connection_id, sequence_number, request)
+            .send_unit_data(connection_id, sequence_number, frame)
             .await?;
         if res.0.reply_service != (service_code + 0x80) {
             return Err(io::Error::new(
@@ -144,7 +151,10 @@ where
             path: EPATH_CONNECTION_MANAGER,
             data: request,
         };
-        let res: ForwardOpenReply = self.send_rrdata(mr).await?;
+        let frame = Frame::new(mr.bytes_count(), |buf| {
+            mr.encode(buf).map_err(|e| crate::Error::from(e))
+        });
+        let res: ForwardOpenReply = self.send_rrdata(frame).await?;
         Ok(res)
     }
 
@@ -162,7 +172,10 @@ where
             path: EPATH_CONNECTION_MANAGER,
             data: request,
         };
-        let res: ForwardCloseReply = self.send_rrdata(mr).await?;
+        let frame = Frame::new(mr.bytes_count(), |buf| {
+            mr.encode(buf).map_err(|e| crate::Error::from(e))
+        });
+        let res: ForwardCloseReply = self.send_rrdata(frame).await?;
         Ok(res)
     }
 }

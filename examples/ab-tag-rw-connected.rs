@@ -6,12 +6,9 @@
 
 use anyhow::Result;
 use rseip::{
-    cip::{
-        connection::Options,
-        epath::{EPath, Segment},
-    },
+    cip::service::MessageService,
+    cip::{connection::Options, epath::EPath},
     client::{ab_eip::TagValue, AbEipConnection, AbService},
-    service::MessageService,
 };
 
 #[tokio::main]

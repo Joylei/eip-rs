@@ -12,30 +12,33 @@ use crate::{
     cip::{
         connection::{ForwardCloseRequest, ForwardOpenReply, Options},
         epath::EPath,
+        service::request::UnconnectedSend,
     },
-    service::request::UnconnectedSend,
     Error, Result,
 };
 use bytes::Bytes;
+use core::fmt;
 use futures_util::future::BoxFuture;
-use std::{io, sync::atomic::AtomicU16};
+use rseip_cip::service::Heartbeat;
+use rseip_core::Either;
+use std::{
+    io,
+    ops::{Deref, DerefMut},
+    sync::atomic::AtomicU16,
+};
 
 pub use ab_eip::{AbEipClient, AbEipConnection, AbEipDriver, AbService};
 pub use eip::*;
 
-use crate::{
-    cip::{MessageReply, MessageRequest},
-    codec::Encodable,
-    service::MessageService,
-};
+use crate::cip::{codec::Encodable, service::MessageService, MessageReply, MessageRequest};
 
 /// driver for specified protocol
 pub trait Driver {
     /// endpoint, eg: IP address for EIP
-    type Endpoint;
+    type Endpoint: fmt::Debug;
 
     /// driver specific service for CIP
-    type Service: Service;
+    type Service: Service + fmt::Debug;
 
     /// create service
     fn build_service(addr: &Self::Endpoint) -> BoxFuture<Result<Self::Service>>;
@@ -98,17 +101,23 @@ impl<B: Driver> Client<B> {
     }
 }
 
-/// message router request handler
 #[async_trait::async_trait(?Send)]
-impl<B: Driver> MessageService for Client<B> {
+impl<B: Driver> Heartbeat for Client<B> {
+    type Error = Error;
     /// send Heartbeat message to keep underline transport alive
     #[inline]
     async fn heartbeat(&mut self) -> Result<()> {
         if let Some(ref mut service) = self.service {
-            let _ = service.heartbeat().await;
+            service.heartbeat().await?;
         }
         Ok(())
     }
+}
+
+/// message  request handler
+#[async_trait::async_trait(?Send)]
+impl<B: Driver> MessageService for Client<B> {
+    type Error = Error;
 
     /// unconnected send
     #[inline]
@@ -121,7 +130,8 @@ impl<B: Driver> MessageService for Client<B> {
         self.ensure_service().await?;
         let service = self.service.as_mut().expect("expected service");
         let req = UnconnectedSend::new(self.connection_path.clone(), mr);
-        service.unconnected_send(req).await
+        let res = service.unconnected_send(req).await?;
+        Ok(res)
     }
 
     /// close underline transport
@@ -240,7 +250,7 @@ impl<B: Driver> Connection<B> {
                     self.connected_options = Some(opts);
                 }
                 ForwardOpenReply::Fail(_) => {
-                    return Err(Error::Io(io::Error::new(
+                    return Err(Error::from(io::Error::new(
                         io::ErrorKind::Other,
                         "ForwardOpen failed",
                     )))
@@ -271,17 +281,23 @@ impl<B: Driver> Connection<B> {
 }
 
 #[async_trait::async_trait(?Send)]
-impl<B: Driver> MessageService for Connection<B> {
+impl<B: Driver> Heartbeat for Connection<B> {
+    type Error = Error;
+
     /// send Heartbeat message to keep underline transport alive
     #[inline]
     async fn heartbeat(&mut self) -> Result<()> {
         if let Some(ref mut service) = self.service {
-            let _ = service.heartbeat().await;
+            service.heartbeat().await?;
             //TODO: is there a way to keep CIP connection alive?
         }
         Ok(())
     }
+}
 
+#[async_trait::async_trait(?Send)]
+impl<B: Driver> MessageService for Connection<B> {
+    type Error = Error;
     /// connected send
     #[inline]
     async fn send<P, D>(&mut self, mr: MessageRequest<P, D>) -> Result<MessageReply<Bytes>>
@@ -313,25 +329,38 @@ impl<B: Driver> MessageService for Connection<B> {
     }
 }
 
-/// explicit messaging with or without CIP connection
-pub enum MaybeConnected<B: Driver> {
-    /// unconnected messaging
-    Unconnected(Client<B>),
-    /// connected messaging
-    Connected(Connection<B>),
+#[derive(Debug)]
+pub struct MaybeConnected<B: Driver>(Either<Client<B>, Connection<B>>);
+
+impl<B: Driver> Deref for MaybeConnected<B> {
+    type Target = Either<Client<B>, Connection<B>>;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl<B: Driver> DerefMut for MaybeConnected<B> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+#[async_trait::async_trait(?Send)]
+impl<B: Driver> Heartbeat for MaybeConnected<B> {
+    type Error = Error;
+    /// send Heartbeat message to keep underline connection/transport alive
+    #[inline]
+    async fn heartbeat(&mut self) -> Result<()> {
+        match self.0 {
+            Either::Left(ref mut c) => c.heartbeat().await,
+            Either::Right(ref mut c) => c.heartbeat().await,
+        }
+    }
 }
 
 #[async_trait::async_trait(?Send)]
 impl<B: Driver> MessageService for MaybeConnected<B> {
-    /// send Heartbeat message to keep underline connection/transport alive
-    #[inline]
-    async fn heartbeat(&mut self) -> Result<()> {
-        match self {
-            Self::Unconnected(c) => c.heartbeat().await,
-            Self::Connected(c) => c.heartbeat().await,
-        }
-    }
-
+    type Error = Error;
     /// send message request
     #[inline]
     async fn send<P, D>(&mut self, mr: MessageRequest<P, D>) -> Result<MessageReply<Bytes>>
@@ -339,27 +368,27 @@ impl<B: Driver> MessageService for MaybeConnected<B> {
         P: Encodable,
         D: Encodable,
     {
-        match self {
-            Self::Unconnected(c) => c.send(mr).await,
-            Self::Connected(c) => c.send(mr).await,
+        match self.0 {
+            Either::Left(ref mut c) => c.send(mr).await,
+            Either::Right(ref mut c) => c.send(mr).await,
         }
     }
 
     /// close underline connection/transport
     #[inline]
     async fn close(&mut self) -> Result<()> {
-        match self {
-            Self::Unconnected(c) => c.close().await,
-            Self::Connected(c) => c.close().await,
+        match self.0 {
+            Either::Left(ref mut c) => c.close().await,
+            Either::Right(ref mut c) => c.close().await,
         }
     }
 
     /// underline connection/transport closed?
     #[inline]
     fn closed(&self) -> bool {
-        match self {
-            Self::Unconnected(c) => c.closed(),
-            Self::Connected(c) => c.closed(),
+        match self.0 {
+            Either::Left(ref c) => c.closed(),
+            Either::Right(ref c) => c.closed(),
         }
     }
 }

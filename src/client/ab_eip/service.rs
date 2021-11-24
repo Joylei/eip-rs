@@ -1,5 +1,6 @@
 use super::*;
-use crate::codec::encode::LazyEncode;
+use crate::cip;
+use crate::cip::codec::LazyEncode;
 use byteorder::{ByteOrder, LittleEndian};
 use bytes::{BufMut, BytesMut};
 use std::{convert::TryFrom, io};
@@ -116,7 +117,7 @@ impl_service!(MaybeConnected<AbEipDriver>);
 
 /// Read Tag Service,
 /// CIP Data Table Read
-async fn ab_read_tag<C: MessageService, P, R>(client: &mut C, req: P) -> Result<R>
+async fn ab_read_tag<C: MessageService<Error = Error>, P, R>(client: &mut C, req: P) -> Result<R>
 where
     P: Into<TagRequest>,
     R: TryFrom<Bytes>,
@@ -137,7 +138,7 @@ where
 
 /// Write Tag Service,
 /// CIP Data Table Write
-async fn ab_write_tag<C: MessageService, P, D>(
+async fn ab_write_tag<C: MessageService<Error = Error>, P, D>(
     client: &mut C,
     req: P,
     value: TagValue<D>,
@@ -160,7 +161,7 @@ where
 }
 
 /// Read Tag Fragmented Service
-async fn ab_read_tag_fragmented<C: MessageService, F, R>(
+async fn ab_read_tag_fragmented<C: MessageService<Error = Error>, F, R>(
     client: &mut C,
     req: ReadFragmentedRequest<F, R>,
 ) -> Result<(bool, R)>
@@ -207,7 +208,7 @@ where
 
 /// Write Tag Fragmented Service, enables client applications to write to a tag
 /// in the controller whose data will not fit into a single packet (approximately 500 bytes)
-async fn ab_write_tag_fragmented<C: MessageService, D: Encodable>(
+async fn ab_write_tag_fragmented<C: MessageService<Error = Error>, D: Encodable>(
     client: &mut C,
     req: WriteFragmentedRequest<D>,
 ) -> Result<bool> {
@@ -250,7 +251,7 @@ async fn ab_write_tag_fragmented<C: MessageService, D: Encodable>(
 }
 
 /// Read Modify Write Tag Service, modifies Tag data with individual bit resolution
-async fn ab_read_modify_write<C: MessageService, const N: usize>(
+async fn ab_read_modify_write<C: MessageService<Error = Error>, const N: usize>(
     client: &mut C,
     req: ReadModifyWriteRequest<N>,
 ) -> Result<()> {
@@ -445,7 +446,7 @@ struct ElementCount(u16);
 
 impl Encodable for ElementCount {
     #[inline]
-    fn encode(self, dst: &mut BytesMut) -> Result<()> {
+    fn encode(self, dst: &mut BytesMut) -> cip::Result<()> {
         dst.put_u16_le(self.0);
         Ok(())
     }

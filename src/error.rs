@@ -4,107 +4,126 @@
 // Copyright: 2021, Joylei <leingliu@gmail.com>
 // License: MIT
 
-use bytes::Bytes;
-
-use crate::{
-    cip::{MessageReply, Status},
-    eip::EipError,
+use rseip_cip::CipError;
+use rseip_core::Error;
+use rseip_eip::ErrorStatus;
+use std::{
+    error, fmt, io,
+    net::AddrParseError,
+    ops::{Deref, DerefMut},
+    str::Utf8Error,
 };
-use std::{error, fmt, io, net::AddrParseError, str::Utf8Error};
 
 #[derive(Debug)]
-pub enum Error {
-    Io(io::Error),
-    Utf8(Utf8Error),
-    /// error with CIP status
-    Cip(Status),
-    /// error with EIP status
-    Eip(EipError),
-    /// Invalid Socket Address
-    InvalidAddr(AddrParseError),
-    InvalidCommandReply {
-        /// expected command code
-        expect: u16,
-        /// actual command code returned
-        actual: u16,
-    },
-    MessageRequestError(MessageReply<Bytes>),
-}
+pub struct ClientError(Error<InnerError>);
 
-impl error::Error for Error {
-    #[inline(always)]
-    fn source(&self) -> Option<&(dyn error::Error + 'static)> {
-        match self {
-            Self::Utf8(e) => e.source(),
-            Self::Io(e) => e.source(),
-            Self::InvalidAddr(e) => e.source(),
-            _ => None,
-        }
+impl Deref for ClientError {
+    type Target = Error<InnerError>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 
-impl fmt::Display for Error {
+impl DerefMut for ClientError {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+#[derive(Debug)]
+pub enum InnerError {
+    /// CIP error
+    Cip(CipError),
+    /// EIP error
+    Eip(ErrorStatus),
+    /// Invalid Socket Address
+    InvalidAddr(AddrParseError),
+}
+
+impl From<Error<CipError>> for ClientError {
+    fn from(e: Error<CipError>) -> Self {
+        let e = e.map_err(|e| InnerError::Cip(e));
+        Self(e)
+    }
+}
+
+impl From<CipError> for ClientError {
+    fn from(e: CipError) -> Self {
+        Self(Error::from_other(InnerError::Cip(e)))
+    }
+}
+
+impl From<Error<ErrorStatus>> for ClientError {
+    fn from(e: Error<ErrorStatus>) -> Self {
+        let e = e.map_err(|e| InnerError::Eip(e));
+        Self(e)
+    }
+}
+
+impl From<ErrorStatus> for ClientError {
+    fn from(e: ErrorStatus) -> Self {
+        Self(Error::from_other(InnerError::Eip(e)))
+    }
+}
+
+impl From<Utf8Error> for ClientError {
+    #[inline(always)]
+    fn from(e: Utf8Error) -> Self {
+        Self(e.into())
+    }
+}
+
+impl From<io::Error> for ClientError {
+    #[inline]
+    fn from(e: io::Error) -> Self {
+        Self(e.into())
+    }
+}
+
+impl From<AddrParseError> for ClientError {
+    #[inline]
+    fn from(e: AddrParseError) -> Self {
+        Self(Error::from_other(InnerError::InvalidAddr(e)))
+    }
+}
+
+impl error::Error for ClientError {
+    #[inline]
+    fn source(&self) -> Option<&(dyn error::Error + 'static)> {
+        self.0.source()
+    }
+}
+
+impl fmt::Display for ClientError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl fmt::Display for InnerError {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Utf8(e) => {
-                write!(f, "utf8 error: {}", e)?;
-            }
-            Self::Io(e) => {
-                write!(f, "IO error: {}", e)?;
-            }
             Self::Cip(e) => {
-                write!(f, "CIP error: {}", e)?;
+                write!(f, "{}", e)
             }
             Self::Eip(e) => {
-                write!(f, "EIP reply error: {}", e)?;
+                write!(f, "{}", e)
             }
             Self::InvalidAddr(e) => {
-                write!(f, "invalid IP address: {}", e)?;
-            }
-            Self::InvalidCommandReply { expect, actual } => {
-                write!(
-                    f,
-                    "invalid EIP command reply, expected command code: {}, actual command code: {}",
-                    expect, actual
-                )?;
-            }
-            Self::MessageRequestError(reply) => {
-                write!(
-                    f,
-                    "Message request error: service {}, status {}",
-                    reply.reply_service, reply.status
-                )?;
+                write!(f, "invalid IP address: {}", e)
             }
         }
-        Ok(())
     }
 }
 
-impl From<Utf8Error> for Error {
-    #[inline(always)]
-    fn from(e: Utf8Error) -> Self {
-        Self::Utf8(e)
-    }
-}
-
-impl From<io::Error> for Error {
-    #[inline(always)]
-    fn from(e: io::Error) -> Self {
-        Self::Io(e)
-    }
-}
-
-impl From<EipError> for Error {
-    #[inline(always)]
-    fn from(e: EipError) -> Self {
-        Self::Eip(e)
-    }
-}
-
-impl From<AddrParseError> for Error {
-    #[inline(always)]
-    fn from(e: AddrParseError) -> Self {
-        Self::InvalidAddr(e)
+impl error::Error for InnerError {
+    fn source(&self) -> Option<&(dyn error::Error + 'static)> {
+        match self {
+            Self::Cip(e) => Some(e),
+            Self::Eip(e) => Some(e),
+            Self::InvalidAddr(e) => Some(e),
+        }
     }
 }

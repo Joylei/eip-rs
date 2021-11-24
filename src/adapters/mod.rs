@@ -8,12 +8,11 @@ mod eip;
 
 use crate::{
     cip::{
+        codec::{Encodable, LazyEncode},
         connection::{ForwardCloseReply, ForwardCloseRequest, ForwardOpenReply, Options},
+        service::request::UnconnectedSend,
         MessageReply, MessageRequest,
     },
-    codec::{encode::LazyEncode, Encodable},
-    consts::*,
-    service::request::UnconnectedSend,
     Result,
 };
 use bytes::{BufMut, Bytes, BytesMut};

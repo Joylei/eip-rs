@@ -8,8 +8,9 @@ mod service;
 mod tag_value;
 
 use super::*;
-use crate::eip::context::EipContext;
 use futures_util::future::BoxFuture;
+pub use rseip_eip::EipContext;
+pub use rseip_eip::EipDiscovery;
 pub use service::*;
 use std::{io, net::SocketAddrV4};
 pub use tag_value::TagValue;

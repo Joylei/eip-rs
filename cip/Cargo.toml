@@ -1,0 +1,22 @@
+[package]
+name = "rseip-cip"
+version = "0.1.0"
+edition = "2018"
+description = "reseip - common industry protocol"
+
+[dependencies]
+rseip-core={path = "../core", default-features = false, features = ["cip"]}
+bytes = "1"
+byteorder="1"
+log="0.4"
+tokio = { version = "1", features = ["net", "macros", "io-util", "rt", "time"] }
+tokio-util = { version = "0.6", features = ["codec", "net"] }
+futures-util={version = "0.3", features = ["sink"]}
+async-trait="0.1"
+rand="0.8"
+smallvec="1"
+
+[features]
+default = ["inlinable-string", "error-explain"]
+inlinable-string = ["rseip-core/feat-inlinable-string"]
+error-explain = []

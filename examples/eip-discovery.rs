@@ -6,7 +6,7 @@
 
 use anyhow::Result;
 use futures_util::StreamExt;
-use rseip::{cip::identity::IdentityObject, client::EipDiscovery};
+use rseip::{cip::identity::IdentityObject, client::EipDiscovery, Error};
 use std::time::Duration;
 
 #[tokio::main]
@@ -14,7 +14,7 @@ pub async fn main() -> Result<()> {
     let stream = EipDiscovery::new("192.168.0.22".parse()?)
         .repeat(3)
         .interval(Duration::from_secs(3))
-        .run()
+        .run::<IdentityObject, Error>()
         .await?;
 
     stream

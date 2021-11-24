@@ -16,10 +16,12 @@ resolver = "2"
 all-features = true
 
 [workspace]
-members = ["./core", "."]
+members = ["./cip","./core", "./eip", "."]
 
 [dependencies]
-rseip-core={path = "./core", default-features = false}
+rseip-core={path = "./core", default-features = false, features = ["cip"]}
+rseip-eip={path = "./eip", default-features = false}
+rseip-cip={path = "./cip", default-features = false}
 bytes = "1"
 byteorder="1"
 log="0.4"
@@ -38,8 +40,8 @@ anyhow="1"
 
 [features]
 default=["inlinable-string", "error-explain"]
-inlinable-string=["rseip-core/feat-inlinable-string"]
-error-explain=[]
+inlinable-string=["rseip-cip/inlinable-string","rseip-eip/inlinable-string"]
+error-explain=["rseip-cip/error-explain","rseip-eip/error-explain"]
 
 [build]
 #rustc-wrapper = "sccache"

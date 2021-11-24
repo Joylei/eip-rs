@@ -1,6 +1,8 @@
-use crate::{codec::Encodable, Error, Result};
+use crate::cip;
+use crate::{Error, Result};
 use byteorder::{ByteOrder, LittleEndian};
 use bytes::{BufMut, Bytes, BytesMut};
+use rseip_cip::codec::Encodable;
 use std::{convert::TryFrom, mem};
 
 #[derive(Debug)]
@@ -57,7 +59,7 @@ impl TryFrom<Bytes> for TagValue<Bytes> {
 
 impl<D: Encodable> Encodable for TagValue<D> {
     #[inline]
-    fn encode(self, dst: &mut BytesMut) -> Result<()> {
+    fn encode(self, dst: &mut BytesMut) -> cip::Result<()> {
         match self {
             Self::BOOL(v) => {
                 dst.put_u16_le(0xC1);

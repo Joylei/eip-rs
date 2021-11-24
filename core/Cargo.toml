@@ -2,12 +2,15 @@
 name = "rseip-core"
 version = "0.1.0"
 edition = "2018"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+description = "reseip - core module"
 
 [dependencies]
 inlinable_string={version = "^0.1.14", optional = true}
+bytes={version = "1", optional = true}
+byteorder={version = "1", optional = true}
+smallvec="1"
 
 [features]
-default = ["feat-inlinable-string"]
+default = ["feat-inlinable-string", "cip"]
 feat-inlinable-string= ["inlinable_string"]
+cip = ["bytes", "byteorder"]

@@ -4,12 +4,10 @@
 // Copyright: 2021, Joylei <leingliu@gmail.com>
 // License: MIT
 
-mod discover;
-
 use super::*;
-use crate::{consts::EIP_DEFAULT_PORT, eip::context::EipContext};
-pub use discover::EipDiscovery;
 use futures_util::future::BoxFuture;
+pub use rseip_eip::EipDiscovery;
+pub use rseip_eip::{consts::*, EipContext};
 use std::{
     borrow::Cow,
     net::{SocketAddr, SocketAddrV4},
@@ -87,7 +85,7 @@ pub(crate) async fn resolve_host(host: impl AsRef<str>) -> io::Result<SocketAddr
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::{cip::epath::PortSegment, test::block_on};
+    use crate::{cip, cip::epath::PortSegment, test::block_on};
     use byteorder::{ByteOrder, LittleEndian};
     use bytes::{BufMut, BytesMut};
 
@@ -110,7 +108,7 @@ mod test {
     struct ElementCount(u16);
 
     impl Encodable for ElementCount {
-        fn encode(self, dst: &mut BytesMut) -> Result<()> {
+        fn encode(self, dst: &mut BytesMut) -> cip::Result<()> {
             dst.put_u16_le(self.0);
             Ok(())
         }
