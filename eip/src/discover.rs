@@ -101,16 +101,11 @@ impl EipDiscovery {
                         }
                         None => Some(()),
                     });
-                    let mut first = true;
                     for _ in rng {
-                        if first {
-                            first = false;
-                        } else {
-                            time::sleep(interval).await;
-                        }
                         if let Err(_) = tx.send((ListIdentity, broadcast_addr.into())).await {
                             break;
                         }
+                        time::sleep(interval).await;
                     }
                 };
                 tokio::select! {
