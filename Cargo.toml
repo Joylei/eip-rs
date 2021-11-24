@@ -3,12 +3,13 @@ name = "rseip"
 version = "0.1.0"
 edition = "2018"
 readme = "README.md"
+description = "rseip - EIP&CIP in pure Rust"
 license = "MIT"
 homepage = "https://github.com/Joylei/eip-rs"
 repository = "https://github.com/Joylei/eip-rs.git"
 #documentation = "https://docs.rs/crate/rseip/"
-keywords = ["ethernet","codec", "industry", "eip", "cip"]
-categories = ["asynchronous", "hardware-support"]
+keywords = ["ethernet", "codec", "industry", "eip", "cip"]
+categories = ["asynchronous"]
 authors = ["joylei <leingliu@gmail.com>"]
 resolver = "2"
 

@@ -3,6 +3,14 @@ name = "rseip-cip"
 version = "0.1.0"
 edition = "2018"
 description = "reseip - common industry protocol"
+license = "MIT"
+homepage = "https://github.com/Joylei/eip-rs"
+repository = "https://github.com/Joylei/eip-rs.git"
+#documentation = "https://docs.rs/crate/rseip/"
+keywords = ["ethernet", "codec", "industry", "eip", "cip"]
+categories = ["asynchronous"]
+authors = ["joylei <leingliu@gmail.com>"]
+resolver = "2"
 
 [dependencies]
 rseip-core={path = "../core", default-features = false, features = ["cip"]}
