@@ -168,7 +168,7 @@ impl From<PortSegment> for EPath {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::cip::epath::EPATH_CONNECTION_MANAGER;
+    use crate::epath::EPATH_CONNECTION_MANAGER;
 
     #[test]
     fn test_epath_symbol() {

@@ -35,7 +35,7 @@ where
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::cip::epath::EPath;
+    use crate::epath::EPath;
     use bytes::Bytes;
 
     #[test]
