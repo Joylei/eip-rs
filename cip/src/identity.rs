@@ -12,6 +12,7 @@ use rseip_core::String;
 pub struct IdentityObject {
     /// encapsulation protocol version supported
     pub protocol_version: u16,
+    /// socket addr
     pub socket_addr: SocketAddr,
     /// device manufacturers vendor id
     pub vendor_id: u16,

@@ -9,10 +9,9 @@ mod tag_value;
 
 use super::*;
 use futures_util::future::BoxFuture;
-pub use rseip_eip::EipContext;
-pub use rseip_eip::EipDiscovery;
+pub use rseip_eip::{EipContext, EipDiscovery};
 pub use service::*;
-use std::{io, net::SocketAddrV4};
+use std::net::SocketAddrV4;
 pub use tag_value::TagValue;
 use tokio::net::TcpStream;
 

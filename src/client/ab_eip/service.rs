@@ -5,6 +5,7 @@ use byteorder::{ByteOrder, LittleEndian};
 use bytes::{BufMut, BytesMut};
 use std::{convert::TryFrom, io};
 
+/// AB related operations
 #[async_trait::async_trait(?Send)]
 pub trait AbService {
     /// Read Tag Service,

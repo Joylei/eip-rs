@@ -60,12 +60,18 @@ MIT
 
 */
 
+//#![warn(missing_docs)]
+
+/// adapters
 pub mod adapters;
+/// client
 pub mod client;
 mod error;
 
+#[doc(inline)]
 pub use error::ClientError as Error;
 pub use rseip_cip as cip;
+/// library result
 pub type Result<T> = core::result::Result<T, Error>;
 
 #[cfg(test)]

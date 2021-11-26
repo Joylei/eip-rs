@@ -14,6 +14,7 @@ use std::{
     str::Utf8Error,
 };
 
+/// client error
 #[derive(Debug)]
 pub struct ClientError(Error<InnerError>);
 

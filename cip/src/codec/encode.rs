@@ -119,13 +119,16 @@ impl<T: Encodable + Sized> Encodable for Box<T> {
     }
 }
 
+/// sized encoding
 pub trait SizedEncodable: Encodable + Sized {}
 
 impl<T: Encodable + Sized> SizedEncodable for T {}
 
-//#[derive(Debug)]
+/// lazy encoding
 pub struct LazyEncode<F> {
+    /// encoding function
     pub f: F,
+    /// total bytes
     pub bytes_count: usize,
 }
 
@@ -148,6 +151,7 @@ impl<F> LazyEncode<F>
 where
     F: FnOnce(&mut BytesMut) -> Result<()> + 'static,
 {
+    /// box encoding function
     #[inline(always)]
     pub fn into_dynamic(self) -> DynamicEncode {
         DynamicEncode {
@@ -167,6 +171,7 @@ impl<F> fmt::Debug for LazyEncode<F> {
     }
 }
 
+/// lazy encoding with boxed function
 pub type DynamicEncode = LazyEncode<Box<dyn FnOnce(&mut BytesMut) -> Result<()>>>;
 
 impl Default for DynamicEncode {

@@ -8,6 +8,7 @@ use crate::epath::{EPath, PortSegment, Segment};
 use bytes::Bytes;
 use rand::Rng;
 
+/// connection type enumeration
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ConnectionType {
     /// may be used to reconfigure the connection
@@ -24,11 +25,16 @@ impl Default for ConnectionType {
     }
 }
 
+/// connection priority enumeration
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Priority {
+    /// low priority
     Low = 0,
+    /// high priority
     High = 1,
+    /// scheduled priority
     Scheduled = 2,
+    /// urgent priority
     Urgent = 3,
 }
 
@@ -53,6 +59,7 @@ impl Default for Direction {
     }
 }
 
+/// transport trigger type
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TriggerType {
     Cyclic = 0,
@@ -92,9 +99,12 @@ impl Default for TransportClass {
     }
 }
 
+/// fixed length or variable length
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum VariableLength {
+    /// fixed length
     Fixed = 0,
+    /// variable length
     Variable = 1,
 }
 
@@ -104,13 +114,16 @@ impl Default for VariableLength {
     }
 }
 
+/// realtime format
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ReadlTimeFormat {
     /// connection is pure data and is modeless
     Modeless = 0,
     /// use zero data length packet to indicate idle mode
     ZeroLength = 1,
+    /// heartbeat message frame
     Heartbeat = 3,
+    /// header 32-bit message frame
     Header32Bit = 4,
 }
 
@@ -125,8 +138,11 @@ impl Default for ReadlTimeFormat {
 pub struct ConnectionParameters {
     /// true (1) indicate more than one owner may be permitted to make a connection
     pub redundant_owner: bool,
+    /// connection type
     pub connection_type: ConnectionType,
+    /// fixed or variable length of message frame
     pub variable_length: VariableLength,
+    /// connection priority
     pub priority: Priority,
     /// The connection size includes the sequence count and the 32-bit real time header, if present
     /// u16 for large open forward;
@@ -149,13 +165,18 @@ impl Default for ConnectionParameters {
 ///  forward open reply connection parameters
 #[derive(Debug)]
 pub enum ForwardOpenReply {
+    /// success of forward open
     Success {
+        /// service code
         service_code: u8,
+        /// reply detail
         reply: ForwardOpenSuccess,
     },
+    /// failure of forward open
     Fail(ForwardRequestFail),
 }
 
+/// forward open success
 #[derive(Debug, Default)]
 pub struct ForwardOpenSuccess {
     /// chosen by target
@@ -175,6 +196,8 @@ pub struct ForwardOpenSuccess {
     /// application specific data
     pub app_data: Bytes, // app reply size: u8 | reserved: u8 | reply data
 }
+
+/// forward open failure
 #[derive(Debug, Default)]
 pub struct ForwardRequestFail {
     /// from request
@@ -187,23 +210,33 @@ pub struct ForwardRequestFail {
     pub remaining_path_size: Option<u8>,
 }
 
+/// forward close request
 #[derive(Debug, Default)]
 pub struct ForwardCloseRequest<P> {
+    /// priority & time tick
     pub priority_time_ticks: u8,
+    /// timeout ticks
     pub timeout_ticks: u8,
+    /// originator connection serial number
     pub connection_serial_number: u16,
+    /// originator vendor id
     pub originator_vendor_id: u16,
+    /// originator serial number
     pub originator_serial_number: u32,
-    // padded path
+    /// padded connection path
     pub connection_path: P,
 }
 
+/// forward close reply
 #[derive(Debug)]
 pub enum ForwardCloseReply {
+    /// success of forward close
     Success(ForwardCloseSuccess),
+    /// failure of forward close
     Fail(ForwardRequestFail),
 }
 
+/// success of forward close
 #[derive(Debug, Default)]
 pub struct ForwardCloseSuccess {
     /// from request
@@ -225,89 +258,114 @@ pub struct ForwardCloseSuccess {
 /// CIP connection options, for Forward_Open service request
 #[derive(Debug, Clone)]
 pub struct Options<P = EPath> {
+    /// originator to target connection id
     pub o_t_connection_id: u32,
+    /// target to originator connection id
     pub t_o_connection_id: u32,
     /// tick time in milliseconds
     pub priority_tick_time: u8,
     /// tick time in milliseconds
     pub timeout_ticks: u8,
+    /// originator connection serial number
     pub connection_serial_number: u16,
+    /// originator vendor id
     pub vendor_id: u16,
+    /// originator serial number
     pub originator_serial_number: u32,
+    /// originator to target RPI
     pub o_t_rpi: u32,
+    /// target to originator RPI
     pub t_o_rpi: u32,
     /// specifies the multiplier applied to the RPI to obtain the connection timeout value
     pub timeout_multiplier: u8,
+    /// connection path
     pub connection_path: P,
+    /// originator to target connection parameters
     pub o_t_params: ConnectionParameters,
+    /// target to originator connection parameters
     pub t_o_params: ConnectionParameters,
+    /// transport direction
     pub transport_direction: Direction,
+    /// transport class
     pub transport_class: TransportClass,
+    /// transport trigger
     pub transport_trigger: TriggerType,
+    /// is large forward open?
     pub large_open: bool,
 }
 
 impl<P> Options<P> {
+    /// originator to target connection id
     #[inline]
     pub fn o_t_connection_id(mut self, val: u32) -> Self {
         self.o_t_connection_id = val;
         self
     }
 
+    /// target to originator connection id
     #[inline]
     pub fn t_o_connection_id(mut self, val: u32) -> Self {
         self.t_o_connection_id = val;
         self
     }
 
+    /// priority & tick time
     #[inline]
     pub fn priority_tick_time(mut self, val: u8) -> Self {
         self.priority_tick_time = val & 0xF; // only tick time part, ignore high byte
         self
     }
 
+    /// timeout ticks
     #[inline]
     pub fn timeout_ticks(mut self, val: u8) -> Self {
         self.timeout_ticks = val;
         self
     }
 
+    /// originator connection serial number
     #[inline]
     pub fn connection_serial_number(mut self, val: u16) -> Self {
         self.connection_serial_number = val;
         self
     }
 
+    /// originator vendor id
     #[inline]
     pub fn originator_vendor_id(mut self, val: u16) -> Self {
         self.vendor_id = val;
         self
     }
 
+    /// originator serial number
     #[inline]
     pub fn originator_serial_number(mut self, val: u32) -> Self {
         self.originator_serial_number = val;
         self
     }
 
+    /// originator to target RPI
     #[inline]
     pub fn o_t_rpi(mut self, val: u32) -> Self {
         self.o_t_rpi = val;
         self
     }
 
+    /// target to originator RPI
     #[inline]
     pub fn t_o_rpi(mut self, val: u32) -> Self {
         self.t_o_rpi = val;
         self
     }
 
+    /// timeout multiplier
     #[inline]
     pub fn timeout_multiplier(mut self, val: u8) -> Self {
         self.timeout_multiplier = val;
         self
     }
 
+    /// connection size
     #[inline]
     pub fn connection_size(mut self, val: u16) -> Self {
         self.o_t_params.connection_size = val;
@@ -315,84 +373,98 @@ impl<P> Options<P> {
         self
     }
 
+    /// connection path
     #[inline]
     pub fn connection_path(mut self, path: P) -> Self {
         self.connection_path = path;
         self
     }
 
+    /// originator to target connection priority
     #[inline]
     pub fn o_t_priority(mut self, val: Priority) -> Self {
         self.o_t_params.priority = val;
         self
     }
 
+    /// target to originator priority
     #[inline]
     pub fn t_o_priority(mut self, val: Priority) -> Self {
         self.t_o_params.priority = val;
         self
     }
 
+    /// originator to target fixed or variable length for message frame
     #[inline]
     pub fn o_t_variable_length(mut self, val: VariableLength) -> Self {
         self.o_t_params.variable_length = val;
         self
     }
 
+    /// target to originator fixed or variable length for message frame
     #[inline]
     pub fn t_o_variable_length(mut self, val: VariableLength) -> Self {
         self.t_o_params.variable_length = val;
         self
     }
 
+    /// target to originator connection type
     #[inline]
     pub fn t_o_connection_type(mut self, val: ConnectionType) -> Self {
         self.t_o_params.connection_type = val;
         self
     }
 
+    /// originator to target connection type
     #[inline]
     pub fn o_t_connection_type(mut self, val: ConnectionType) -> Self {
         self.o_t_params.connection_type = val;
         self
     }
 
+    /// originator to target redundant owner
     #[inline]
     pub fn o_t_redundant_owner(mut self, val: bool) -> Self {
         self.o_t_params.redundant_owner = val;
         self
     }
 
+    /// target to originator redundant owner
     #[inline]
     pub fn t_o_redundant_owner(mut self, val: bool) -> Self {
         self.t_o_params.redundant_owner = val;
         self
     }
 
+    /// transport direction
     #[inline]
     pub fn transport_direction(mut self, val: Direction) -> Self {
         self.transport_direction = val;
         self
     }
 
+    /// transport class
     #[inline]
     pub fn transport_class(mut self, val: TransportClass) -> Self {
         self.transport_class = val;
         self
     }
 
+    /// transport trigger
     #[inline]
     pub fn transport_trigger(mut self, val: TriggerType) -> Self {
         self.transport_trigger = val;
         self
     }
 
+    /// is large forward open
     #[inline]
     pub fn large_open(mut self, val: bool) -> Self {
         self.large_open = val;
         self
     }
 
+    /// get transport class trigger
     #[inline]
     pub(crate) fn transport_class_trigger(&self) -> u8 {
         let dir = self.transport_direction as u8;

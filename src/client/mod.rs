@@ -4,7 +4,9 @@
 // Copyright: 2021, Joylei <leingliu@gmail.com>
 // License: MIT
 
+/// AB EIP
 pub mod ab_eip;
+/// generic EIP
 pub mod eip;
 
 use crate::{
@@ -329,6 +331,7 @@ impl<B: Driver> MessageService for Connection<B> {
     }
 }
 
+/// client with CIP connection or without CIP connection
 #[derive(Debug)]
 pub struct MaybeConnected<B: Driver>(Either<Client<B>, Connection<B>>);
 

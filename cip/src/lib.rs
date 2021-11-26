@@ -4,6 +4,8 @@
 // Copyright: 2021, Joylei <leingliu@gmail.com>
 // License: MIT
 
+//#![warn(missing_docs)]
+
 pub mod codec;
 pub mod connection;
 mod cpf;

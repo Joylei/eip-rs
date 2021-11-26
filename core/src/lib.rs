@@ -4,6 +4,9 @@
 // Copyright: 2021, Joylei <leingliu@gmail.com>
 // License: MIT
 
+//#![warn(missing_docs)]
+
+/// alloc crate
 #[allow(unused_imports)]
 #[cfg_attr(feature = "no_std", macro_use)]
 extern crate alloc;

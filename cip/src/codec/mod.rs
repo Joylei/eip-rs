@@ -11,13 +11,16 @@ use crate::Result;
 use bytes::{Bytes, BytesMut};
 pub use encode::*;
 
+/// encoding
 pub trait Encodable {
+    /// encode current object to [`BytesMut`]
     fn encode(self, dst: &mut BytesMut) -> Result<()>;
 
     /// encoded bytes count
     fn bytes_count(&self) -> usize;
 
-    #[inline(always)]
+    #[doc(hidden)]
+    #[inline]
     fn try_into_bytes(self) -> Result<Bytes>
     where
         Self: Sized,

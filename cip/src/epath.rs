@@ -12,13 +12,20 @@ use std::ops::{Deref, DerefMut};
 /// EPATH for unconnected send
 pub const EPATH_CONNECTION_MANAGER: &'static [u8] = &[0x20, 0x06, 0x24, 0x01];
 
+/// Segment of EPATH
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Segment {
+    /// symbolic
     Symbol(String),
+    /// class id
     Class(u16),
+    /// instance id
     Instance(u16),
+    /// attribute id
     Attribute(u16),
+    /// element id
     Element(u32),
+    /// port segment
     Port(PortSegment),
 }
 
@@ -33,50 +40,58 @@ impl Segment {
     }
 }
 
+/// EPATH
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct EPath(SmallVec<[Segment; 2]>);
 
 impl EPath {
+    /// new object
     #[inline]
     pub fn new() -> Self {
         Self::default()
     }
 
+    /// into inner
     #[inline]
     pub fn into_inner(self) -> SmallVec<[Segment; 2]> {
         self.0
     }
 
+    /// into iter
     #[inline]
     pub fn into_iter(self) -> impl IntoIterator<Item = Segment> {
         self.0.into_iter()
     }
 
+    /// append class id
     #[inline]
     pub fn with_class(mut self, class_id: u16) -> Self {
         self.0.push(Segment::Class(class_id));
         self
     }
 
+    /// append symbolic
     #[inline]
     pub fn with_symbol(mut self, symbol: impl Into<String>) -> Self {
         self.0.push(Segment::Symbol(symbol.into()));
         self
     }
 
+    /// append instance id
     #[inline]
     pub fn with_instance(mut self, instance_id: u16) -> Self {
         self.0.push(Segment::Instance(instance_id));
         self
     }
 
+    /// append element id
     #[inline]
     pub fn with_element(mut self, element_idx: u32) -> Self {
         self.0.push(Segment::Element(element_idx));
         self
     }
 
-    /// with port & default slot 0
+    /// append port & default slot 0
     #[inline]
     pub fn with_port(mut self, port: u16) -> Self {
         self.0.push(Segment::Port(PortSegment {
@@ -86,7 +101,7 @@ impl EPath {
         self
     }
 
-    /// with port & slot
+    /// append port & slot
     #[inline]
     pub fn with_port_slot(mut self, port: u16, slot: u8) -> Self {
         let mut buf = BytesMut::new();
@@ -98,6 +113,7 @@ impl EPath {
         self
     }
 
+    /// from symbolic segment
     #[inline]
     pub fn from_symbol(symbol: impl Into<String>) -> Self {
         EPath(smallvec![Segment::Symbol(symbol.into())])
