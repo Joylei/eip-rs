@@ -39,21 +39,23 @@ impl Driver for EipDriver {
     }
 }
 
-impl EipClient {
+impl<B: Driver<Endpoint = SocketAddrV4>> Client<B> {
+    /// create connection from specified host, with default port if port not specified
     pub async fn new_host_lookup(host: impl AsRef<str>) -> io::Result<Self> {
         let addr = resolve_host(host).await?;
         Ok(Self::new(addr))
     }
 }
 
-impl EipConnection {
+impl<B: Driver<Endpoint = SocketAddrV4>> Connection<B> {
+    /// create connection from specified host, with default port if port not specified
     pub async fn new_host_lookup(host: impl AsRef<str>, options: Options) -> io::Result<Self> {
         let addr = resolve_host(host).await?;
         Ok(Self::new(addr, options))
     }
 }
 
-pub(crate) async fn resolve_host(host: impl AsRef<str>) -> io::Result<SocketAddrV4> {
+async fn resolve_host(host: impl AsRef<str>) -> io::Result<SocketAddrV4> {
     let host: Cow<_> = {
         let host = host.as_ref();
         if host.is_empty() {

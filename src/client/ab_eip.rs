@@ -34,17 +34,3 @@ impl Driver for AbEipDriver {
         EipDriver::build_service(addr)
     }
 }
-
-impl AbEipClient {
-    pub async fn new_host_lookup(host: impl AsRef<str>) -> io::Result<Self> {
-        let addr = resolve_host(host).await?;
-        Ok(Self::new(addr))
-    }
-}
-
-impl AbEipConnection {
-    pub async fn new_host_lookup(host: impl AsRef<str>, options: Options) -> io::Result<Self> {
-        let addr = resolve_host(host).await?;
-        Ok(Self::new(addr, options))
-    }
-}
