@@ -16,8 +16,7 @@ pub struct ConnectedSendReply<D>(pub MessageReply<D>);
 impl TryFrom<CommonPacket> for ConnectedSendReply<Bytes> {
     type Error = Error;
     #[inline]
-    fn try_from(cpf: CommonPacket) -> Result<Self> {
-        let mut cpf = cpf.into_inner();
+    fn try_from(mut cpf: CommonPacket) -> Result<Self> {
         if cpf.len() != 2 {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidData,
@@ -53,8 +52,7 @@ pub struct UnconnectedSendReply<D>(pub MessageReply<D>);
 impl TryFrom<CommonPacket> for UnconnectedSendReply<Bytes> {
     type Error = Error;
     #[inline]
-    fn try_from(cpf: CommonPacket) -> Result<Self> {
-        let mut cpf = cpf.into_inner();
+    fn try_from(mut cpf: CommonPacket) -> Result<Self> {
         if cpf.len() != 2 {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidData,

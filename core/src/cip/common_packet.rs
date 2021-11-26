@@ -18,44 +18,48 @@ use std::io::{self, Error, ErrorKind};
 pub struct CommonPacket(SmallVec<[CommonPacketItem; 2]>);
 
 impl CommonPacket {
-    #[inline(always)]
+    /// new object
+    #[inline]
     pub fn new() -> Self {
         Self(Default::default())
     }
 
-    #[inline(always)]
-    pub fn into_inner(self) -> SmallVec<[CommonPacketItem; 2]> {
-        self.0
-    }
-
-    #[inline(always)]
+    /// into iter
+    #[inline]
     pub fn into_iter(self) -> impl IntoIterator<Item = CommonPacketItem> {
         self.0.into_iter()
     }
 
-    #[inline(always)]
+    /// append an item
+    #[inline]
     pub fn push(&mut self, item: CommonPacketItem) {
         self.0.push(item);
+    }
+
+    /// panic if idx is out of range
+    #[inline]
+    pub fn remove(&mut self, idx: usize) -> CommonPacketItem {
+        self.0.remove(idx)
     }
 }
 
 impl Deref for CommonPacket {
     type Target = [CommonPacketItem];
-    #[inline(always)]
+    #[inline]
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
 impl DerefMut for CommonPacket {
-    #[inline(always)]
+    #[inline]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
 }
 
 impl From<Vec<CommonPacketItem>> for CommonPacket {
-    #[inline(always)]
+    #[inline]
     fn from(src: Vec<CommonPacketItem>) -> Self {
         Self(SmallVec::from_vec(src))
     }
@@ -70,7 +74,7 @@ pub struct CommonPacketItem {
 
 impl CommonPacketItem {
     /// null address
-    #[inline(always)]
+    #[inline]
     pub fn with_null_addr() -> Self {
         Self {
             type_code: 0,
@@ -79,7 +83,7 @@ impl CommonPacketItem {
     }
 
     /// unconnected data item
-    #[inline(always)]
+    #[inline]
     pub fn with_unconnected_data(data: Bytes) -> Self {
         Self {
             type_code: 0xB2,
@@ -88,7 +92,7 @@ impl CommonPacketItem {
     }
 
     /// connected data item
-    #[inline(always)]
+    #[inline]
     pub fn with_connected_data(data: Bytes) -> Self {
         Self {
             type_code: 0xB1,
@@ -97,7 +101,7 @@ impl CommonPacketItem {
     }
 
     /// is null address
-    #[inline(always)]
+    #[inline]
     pub fn is_null_addr(&self) -> bool {
         if self.type_code != 0 {
             return false;
@@ -106,7 +110,7 @@ impl CommonPacketItem {
     }
 
     /// ensure current item matches the specified type code
-    #[inline(always)]
+    #[inline]
     pub fn ensure_type_code(&self, type_code: u16) -> io::Result<()> {
         if self.type_code != type_code {
             return Err(Error::new(

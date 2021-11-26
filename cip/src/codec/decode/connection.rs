@@ -19,8 +19,7 @@ use std::io;
 impl TryFrom<CommonPacket> for ForwardOpenReply {
     type Error = Error;
 
-    fn try_from(cpf: CommonPacket) -> Result<Self> {
-        let mut cpf = cpf.into_inner();
+    fn try_from(mut cpf: CommonPacket) -> Result<Self> {
         if cpf.len() != 2 {
             return Err(io::ErrorKind::InvalidData.into());
         }
@@ -70,8 +69,7 @@ impl TryFrom<CommonPacket> for ForwardOpenReply {
 
 impl TryFrom<CommonPacket> for ForwardCloseReply {
     type Error = Error;
-    fn try_from(cpf: CommonPacket) -> Result<Self> {
-        let mut cpf = cpf.into_inner();
+    fn try_from(mut cpf: CommonPacket) -> Result<Self> {
         if cpf.len() != 2 {
             return Err(io::ErrorKind::InvalidData.into());
         }
