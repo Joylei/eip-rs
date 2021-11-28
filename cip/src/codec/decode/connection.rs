@@ -14,20 +14,20 @@ use crate::{
 use byteorder::{ByteOrder, LittleEndian};
 use bytes::Bytes;
 use core::convert::TryFrom;
-use rseip_core::InnerError;
+use rseip_core::{cip::CommonPacketIterator, InnerError};
 use std::io;
 
-impl TryFrom<CommonPacket> for ForwardOpenReply {
+impl TryFrom<CommonPacketIterator> for ForwardOpenReply {
     type Error = Error;
 
-    fn try_from(mut cpf: CommonPacket) -> Result<Self> {
+    fn try_from(mut cpf: CommonPacketIterator) -> Result<Self> {
         if cpf.len() != 2 {
             return Err(Error::from(InnerError::InvalidData)
                 .with_context("CIP - failed to decode reply of forward open"));
         }
         // should be null address
-        cpf[0].ensure_type_code(0)?;
-        let data_item = cpf.remove(1);
+        cpf.next().unwrap()?.ensure_type_code(0)?;
+        let data_item = cpf.next().unwrap()?;
         // should be unconnected data item
         data_item.ensure_type_code(0xB2)?;
         let mr_reply = MessageReply::try_from(data_item.data)?;
@@ -72,16 +72,16 @@ impl TryFrom<CommonPacket> for ForwardOpenReply {
     }
 }
 
-impl TryFrom<CommonPacket> for ForwardCloseReply {
+impl TryFrom<CommonPacketIterator> for ForwardCloseReply {
     type Error = Error;
-    fn try_from(mut cpf: CommonPacket) -> Result<Self> {
+    fn try_from(mut cpf: CommonPacketIterator) -> Result<Self> {
         if cpf.len() != 2 {
             return Err(Error::from(InnerError::InvalidData)
                 .with_context("CIP - failed to decode reply of forward close"));
         }
         // should be null address
-        cpf[0].ensure_type_code(0)?;
-        let data_item = cpf.remove(1);
+        cpf.next().unwrap()?.ensure_type_code(0)?;
+        let data_item = cpf.next().unwrap()?;
         // should be unconnected data item
         data_item.ensure_type_code(0xB2)?;
         let mr_reply = MessageReply::try_from(data_item.data)?;

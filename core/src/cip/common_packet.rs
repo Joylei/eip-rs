@@ -125,6 +125,72 @@ impl CommonPacketItem {
     }
 }
 
+pub struct CommonPacketIterator {
+    buf: Bytes,
+    offset: u16,
+    total: u16,
+}
+
+impl CommonPacketIterator {
+    #[inline]
+    pub fn new(mut buf: Bytes) -> io::Result<Self> {
+        if buf.len() < 2 {
+            return Err(Error::new(
+                ErrorKind::InvalidData,
+                "common packet format: invalid data",
+            ));
+        }
+        let item_count = LittleEndian::read_u16(&buf[0..2]);
+        buf = buf.slice(2..);
+        Ok(Self {
+            buf,
+            offset: 0,
+            total: item_count,
+        })
+    }
+
+    #[inline]
+    pub fn len(&self) -> usize {
+        self.total as usize
+    }
+}
+
+impl Iterator for CommonPacketIterator {
+    type Item = io::Result<CommonPacketItem>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.total == 0 {
+            return None;
+        }
+        if self.offset >= self.total {
+            return None;
+        }
+
+        if self.buf.len() < 4 {
+            return Some(Err(Error::new(
+                ErrorKind::InvalidData,
+                "common packet format: invalid data",
+            )));
+        }
+        let type_code = LittleEndian::read_u16(&self.buf[0..2]);
+        let item_length = LittleEndian::read_u16(&self.buf[2..4]) as usize;
+        if self.buf.len() < 4 + item_length {
+            return Some(Err(Error::new(
+                ErrorKind::InvalidData,
+                "common packet format: invalid data",
+            )));
+        }
+        let _ = self.buf.split_to(4);
+        let item_data = self.buf.split_to(item_length as usize);
+        let item = CommonPacketItem {
+            type_code,
+            data: item_data,
+        };
+        self.offset += 1;
+        Some(Ok(item))
+    }
+}
+
 impl TryFrom<Bytes> for CommonPacket {
     type Error = Error;
     #[inline]

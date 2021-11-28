@@ -10,7 +10,10 @@ use crate::{
     cip::service::*, Result,
 };
 use rseip_eip::{EipContext, Frame};
-use std::{convert::Infallible, io};
+use std::{
+    convert::{Infallible, TryInto},
+    io,
+};
 use tokio::io::{AsyncRead, AsyncWrite};
 
 #[async_trait::async_trait(?Send)]
@@ -100,7 +103,8 @@ where
                 .map_err(|e| crate::Error::from(e))
         });
 
-        let res: UnconnectedSendReply<Bytes> = self.send_rrdata(frame).await?;
+        let cpf = self.send_rrdata(frame).await?;
+        let res: UnconnectedSendReply<Bytes> = cpf.try_into()?;
         if res.0.reply_service != (service_code + 0x80) {
             return Err(io::Error::new(
                 io::ErrorKind::Other,
@@ -127,9 +131,10 @@ where
         let frame = Frame::new(request.bytes_count(), |buf| {
             request.encode(buf).map_err(|e| crate::Error::from(e))
         });
-        let res: ConnectedSendReply<Bytes> = self
+        let cpf = self
             .send_unit_data(connection_id, sequence_number, frame)
             .await?;
+        let res: ConnectedSendReply<Bytes> = cpf.try_into()?;
         if res.0.reply_service != (service_code + 0x80) {
             return Err(io::Error::new(
                 io::ErrorKind::Other,
@@ -154,7 +159,8 @@ where
         let frame = Frame::new(mr.bytes_count(), |buf| {
             mr.encode(buf).map_err(|e| crate::Error::from(e))
         });
-        let res: ForwardOpenReply = self.send_rrdata(frame).await?;
+        let cpf = self.send_rrdata(frame).await?;
+        let res: ForwardOpenReply = cpf.try_into()?;
         Ok(res)
     }
 
@@ -175,7 +181,8 @@ where
         let frame = Frame::new(mr.bytes_count(), |buf| {
             mr.encode(buf).map_err(|e| crate::Error::from(e))
         });
-        let res: ForwardCloseReply = self.send_rrdata(frame).await?;
+        let cpf = self.send_rrdata(frame).await?;
+        let res: ForwardCloseReply = cpf.try_into()?;
         Ok(res)
     }
 }

@@ -4,26 +4,26 @@
 // Copyright: 2021, Joylei <leingliu@gmail.com>
 // License: MIT
 
-use crate::{CommonPacket, Error, MessageReply, Result};
+use crate::{Error, MessageReply, Result};
 use byteorder::{ByteOrder, LittleEndian};
 use bytes::Bytes;
-use rseip_core::InnerError;
+use rseip_core::{cip::CommonPacketIterator, InnerError};
 use std::convert::TryFrom;
 
 #[derive(Debug)]
 pub struct ConnectedSendReply<D>(pub MessageReply<D>);
 
-impl TryFrom<CommonPacket> for ConnectedSendReply<Bytes> {
+impl TryFrom<CommonPacketIterator> for ConnectedSendReply<Bytes> {
     type Error = Error;
     #[inline]
-    fn try_from(mut cpf: CommonPacket) -> Result<Self> {
+    fn try_from(mut cpf: CommonPacketIterator) -> Result<Self> {
         if cpf.len() != 2 {
             return Err(Error::from(InnerError::InvalidData)
                 .with_context("common packet -  expected 2 items"));
         }
         // should be connected address
-        cpf[0].ensure_type_code(0xA1)?;
-        let data_item = cpf.remove(1);
+        cpf.next().unwrap()?.ensure_type_code(0xA1)?;
+        let data_item = cpf.next().unwrap()?;
         // should be unconnected data item
         data_item.ensure_type_code(0xB1)?;
         if data_item.data.len() < 2 {
@@ -41,17 +41,17 @@ impl TryFrom<CommonPacket> for ConnectedSendReply<Bytes> {
 #[derive(Debug)]
 pub struct UnconnectedSendReply<D>(pub MessageReply<D>);
 
-impl TryFrom<CommonPacket> for UnconnectedSendReply<Bytes> {
+impl TryFrom<CommonPacketIterator> for UnconnectedSendReply<Bytes> {
     type Error = Error;
     #[inline]
-    fn try_from(mut cpf: CommonPacket) -> Result<Self> {
+    fn try_from(mut cpf: CommonPacketIterator) -> Result<Self> {
         if cpf.len() != 2 {
             return Err(Error::from(InnerError::InvalidData)
                 .with_context("common packet -  expected 2 items"));
         }
         // should be null address
-        cpf[0].ensure_type_code(0)?;
-        let data_item = cpf.remove(1);
+        cpf.next().unwrap()?.ensure_type_code(0)?;
+        let data_item = cpf.next().unwrap()?;
         // should be unconnected data item
         data_item.ensure_type_code(0xB2)?;
         let mr_reply = MessageReply::try_from(data_item.data)?;

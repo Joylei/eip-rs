@@ -8,10 +8,11 @@ use crate::{
     codec::ClientCodec,
     command::ListIdentity,
     consts::{EIP_COMMAND_LIST_IDENTITY, EIP_DEFAULT_PORT},
-    CommonPacket, StdResult,
+    StdResult,
 };
 use bytes::Bytes;
 use futures_util::{stream, SinkExt, Stream, StreamExt};
+use rseip_core::cip::CommonPacketIterator;
 use std::{
     convert::TryFrom,
     io,
@@ -143,8 +144,9 @@ where
     I::Error: Into<E>,
     E: From<io::Error>,
 {
-    let cpf = CommonPacket::try_from(data)?;
-    for item in cpf.into_iter() {
+    let cpf = CommonPacketIterator::new(data)?;
+    for item in cpf {
+        let item = item?;
         item.ensure_type_code(0x0C)?;
         let res = I::try_from(item.data).map_err(|e| e.into())?;
         return Ok(Some(res));

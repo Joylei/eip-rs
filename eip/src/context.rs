@@ -7,14 +7,14 @@
 use super::{
     command::{self, Command},
     framed::Framed,
-    CommonPacket, CommonPacketItem, EncapsulationPacket,
+    CommonPacketItem, EncapsulationPacket,
 };
 use crate::{codec::ClientCodec, *};
 use byteorder::{ByteOrder, LittleEndian};
 use bytes::{BufMut, Bytes, BytesMut};
 use core::fmt;
 use futures_util::{SinkExt, StreamExt};
-use rseip_core::InnerError;
+use rseip_core::{cip::CommonPacketIterator, InnerError};
 use std::{convert::TryFrom, io};
 use tokio::io::{AsyncRead, AsyncWrite};
 
@@ -116,20 +116,15 @@ where
     /// send command: ListIdentity
     #[allow(unused)]
     #[inline]
-    pub async fn list_identity<R>(&mut self) -> Result<Vec<R>>
+    pub async fn list_identity<R>(&mut self) -> Result<CommonPacketIterator>
     where
         R: TryFrom<CommonPacketItem>,
-        R::Error: Into<crate::Error>,
+        R::Error: From<io::Error>,
     {
         let res = self
-            .send_and_reply(command::ListIdentity, |pkt| {
-                let cpf = CommonPacket::try_from(pkt.data)?;
-                let res: Result<Vec<_>> = cpf
-                    .into_iter()
-                    .into_iter()
-                    .map(|item| R::try_from(item).map_err(|e| e.into()))
-                    .collect();
-                res
+            .send_and_reply::<_, _, _, Error>(command::ListIdentity, |pkt| {
+                let cpf = CommonPacketIterator::new(pkt.data)?;
+                Ok(cpf)
             })
             .await?;
         Ok(res)
@@ -138,20 +133,15 @@ where
     /// send command: ListServices
     #[allow(unused)]
     #[inline]
-    pub async fn list_service<R>(&mut self) -> Result<Vec<R>>
+    pub async fn list_service<R>(&mut self) -> Result<CommonPacketIterator>
     where
         R: TryFrom<CommonPacketItem>,
-        R::Error: Into<crate::Error>,
+        R::Error: From<io::Error>,
     {
         let res = self
-            .send_and_reply(command::ListServices, |pkt| {
-                let cpf = CommonPacket::try_from(pkt.data)?;
-                let res: Result<Vec<_>> = cpf
-                    .into_iter()
-                    .into_iter()
-                    .map(|item| R::try_from(item).map_err(|e| e.into()))
-                    .collect();
-                res
+            .send_and_reply::<_, _, _, Error>(command::ListServices, |pkt| {
+                let cpf = CommonPacketIterator::new(pkt.data)?;
+                Ok(cpf)
             })
             .await?;
         Ok(res)
@@ -160,20 +150,15 @@ where
     /// send command: ListInterface
     #[allow(unused)]
     #[inline]
-    pub async fn list_interface<R>(&mut self) -> Result<Vec<R>>
+    pub async fn list_interface<R>(&mut self) -> Result<CommonPacketIterator>
     where
         R: TryFrom<CommonPacketItem>,
-        R::Error: Into<crate::Error>,
+        R::Error: From<io::Error>,
     {
         let res = self
-            .send_and_reply(command::ListInterfaces, |pkt| {
-                let cpf = CommonPacket::try_from(pkt.data)?;
-                let res: Result<Vec<_>> = cpf
-                    .into_iter()
-                    .into_iter()
-                    .map(|item| R::try_from(item).map_err(|e| e.into()))
-                    .collect();
-                res
+            .send_and_reply::<_, _, _, Error>(command::ListInterfaces, |pkt| {
+                let cpf = CommonPacketIterator::new(pkt.data)?;
+                Ok(cpf)
             })
             .await?;
         Ok(res)
@@ -225,11 +210,13 @@ where
 
     ///  send command: SendRRData
     #[inline]
-    pub async fn send_rrdata<F, E, R>(&mut self, data: Frame<F, E>) -> StdResult<R, E>
+    pub async fn send_rrdata<F, E>(
+        &mut self,
+        data: Frame<F, E>,
+    ) -> StdResult<CommonPacketIterator, E>
     where
         F: FnOnce(&mut BytesMut) -> StdResult<(), E>,
-        R: TryFrom<CommonPacket>,
-        E: From<R::Error> + From<crate::Error>,
+        E: From<Error> + From<io::Error>,
     {
         let res = self
             .send_and_reply::<_, _, _, E>(
@@ -242,9 +229,7 @@ where
                     let interface_handle = LittleEndian::read_u32(&pkt.data[0..4]); // interface handle
                     debug_assert_eq!(interface_handle, 0);
                     // timeout = &pkt.data[4..6]
-                    let cpf =
-                        CommonPacket::try_from(pkt.data.slice(6..)).map_err(|e| Error::from(e))?;
-                    R::try_from(cpf).map_err(|e| e.into())
+                    CommonPacketIterator::new(pkt.data.slice(6..)).map_err(|e| e.into())
                 },
             )
             .await?;
@@ -253,16 +238,15 @@ where
 
     /// send command: SendUnitData
     #[inline]
-    pub async fn send_unit_data<F, E, R>(
+    pub async fn send_unit_data<F, E>(
         &mut self,
         connection_id: u32,
         sequence_number: u16,
         data: Frame<F, E>,
-    ) -> StdResult<R, E>
+    ) -> StdResult<CommonPacketIterator, E>
     where
         F: FnOnce(&mut BytesMut) -> StdResult<(), E>,
-        R: TryFrom<CommonPacket>,
-        E: From<R::Error> + From<crate::Error>,
+        E: From<Error> + From<io::Error>,
     {
         let res = self
             .send_and_reply::<_, _, _, E>(
@@ -276,9 +260,7 @@ where
                     let interface_handle = LittleEndian::read_u32(&pkt.data[0..4]); // interface handle
                     debug_assert_eq!(interface_handle, 0);
                     // timeout = &pkt.data[4..6]
-                    let cpf =
-                        CommonPacket::try_from(pkt.data.slice(6..)).map_err(|e| Error::from(e))?;
-                    R::try_from(cpf).map_err(|e| e.into())
+                    CommonPacketIterator::new(pkt.data.slice(6..)).map_err(|e| e.into())
                 },
             )
             .await?;
