@@ -7,8 +7,8 @@
 use crate::{CommonPacket, Error, MessageReply, Result};
 use byteorder::{ByteOrder, LittleEndian};
 use bytes::Bytes;
+use rseip_core::InnerError;
 use std::convert::TryFrom;
-use std::io;
 
 #[derive(Debug)]
 pub struct ConnectedSendReply<D>(pub MessageReply<D>);
@@ -18,11 +18,8 @@ impl TryFrom<CommonPacket> for ConnectedSendReply<Bytes> {
     #[inline]
     fn try_from(mut cpf: CommonPacket) -> Result<Self> {
         if cpf.len() != 2 {
-            return Err(io::Error::new(
-                io::ErrorKind::InvalidData,
-                "common packet -  expected 2 items",
-            )
-            .into());
+            return Err(Error::from(InnerError::InvalidData)
+                .with_context("common packet -  expected 2 items"));
         }
         // should be connected address
         cpf[0].ensure_type_code(0xA1)?;
@@ -30,13 +27,8 @@ impl TryFrom<CommonPacket> for ConnectedSendReply<Bytes> {
         // should be unconnected data item
         data_item.ensure_type_code(0xB1)?;
         if data_item.data.len() < 2 {
-            if cpf.len() != 2 {
-                return Err(io::Error::new(
-                    io::ErrorKind::InvalidData,
-                    "CIP - failed to decode message reply",
-                )
-                .into());
-            }
+            return Err(Error::from(InnerError::InvalidData)
+                .with_context("CIP - failed to decode message reply"));
         }
 
         //TODO: validate sequence count
@@ -54,11 +46,8 @@ impl TryFrom<CommonPacket> for UnconnectedSendReply<Bytes> {
     #[inline]
     fn try_from(mut cpf: CommonPacket) -> Result<Self> {
         if cpf.len() != 2 {
-            return Err(io::Error::new(
-                io::ErrorKind::InvalidData,
-                "common packet -  expected 2 items",
-            )
-            .into());
+            return Err(Error::from(InnerError::InvalidData)
+                .with_context("common packet -  expected 2 items"));
         }
         // should be null address
         cpf[0].ensure_type_code(0)?;

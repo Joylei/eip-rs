@@ -14,6 +14,7 @@ use byteorder::{ByteOrder, LittleEndian};
 use bytes::{BufMut, Bytes, BytesMut};
 use core::fmt;
 use futures_util::{SinkExt, StreamExt};
+use rseip_core::InnerError;
 use std::{convert::TryFrom, io};
 use tokio::io::{AsyncRead, AsyncWrite};
 
@@ -186,11 +187,8 @@ where
                 let session_handle = pkt.hdr.session_handle;
                 let reply_data = pkt.data;
                 if reply_data.len() != 4 {
-                    return Err(io::Error::new(
-                        io::ErrorKind::InvalidData,
-                        "ENIP command reply: invalid data",
-                    )
-                    .into());
+                    return Err(Error::from(InnerError::InvalidData)
+                        .with_context("ENIP command reply: invalid data"));
                 }
                 #[cfg(debug_assertions)]
                 {
@@ -200,11 +198,8 @@ where
                     debug_assert_eq!(session_options, 0);
                 }
                 if session_handle == 0 {
-                    return Err(io::Error::new(
-                        io::ErrorKind::InvalidData,
-                        "ENIP RegisterSession: invalid session handle",
-                    )
-                    .into());
+                    return Err(Error::from(InnerError::InvalidData)
+                        .with_context("ENIP command reply: invalid session handle"));
                 }
                 Ok(session_handle)
             })

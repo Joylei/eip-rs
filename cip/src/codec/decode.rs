@@ -11,7 +11,7 @@ use crate::{identity::IdentityObject, socket::SocketAddr, Error, ListServiceItem
 use byteorder::{BigEndian, ByteOrder, LittleEndian};
 use bytes::Bytes;
 use core::convert::TryFrom;
-use std::io;
+use rseip_core::InnerError;
 
 impl TryFrom<Bytes> for IdentityObject {
     type Error = Error;
@@ -19,21 +19,15 @@ impl TryFrom<Bytes> for IdentityObject {
     fn try_from(data: Bytes) -> Result<Self, Self::Error> {
         // dynamic size, so check size
         if data.len() < 33 {
-            return Err(io::Error::new(
-                io::ErrorKind::InvalidData,
-                "CIP - failed to decode identity object",
-            )
-            .into());
+            return Err(Error::from(InnerError::InvalidData)
+                .with_context("CIP - failed to decode identity object"));
         }
         let product_name_len = data[32];
         //eprintln!("product_name_len: {}", product_name_len);
 
         if data.len() != 33 + product_name_len as usize + 1 {
-            return Err(io::Error::new(
-                io::ErrorKind::InvalidData,
-                "CIP - failed to decode identity object",
-            )
-            .into());
+            return Err(Error::from(InnerError::InvalidData)
+                .with_context("CIP - failed to decode identity object"));
         }
         let identity = IdentityObject {
             protocol_version: LittleEndian::read_u16(&data[..2]),

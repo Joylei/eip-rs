@@ -14,6 +14,7 @@ use crate::{
 use byteorder::{ByteOrder, LittleEndian};
 use bytes::Bytes;
 use core::convert::TryFrom;
+use rseip_core::InnerError;
 use std::io;
 
 impl TryFrom<CommonPacket> for ForwardOpenReply {
@@ -21,7 +22,8 @@ impl TryFrom<CommonPacket> for ForwardOpenReply {
 
     fn try_from(mut cpf: CommonPacket) -> Result<Self> {
         if cpf.len() != 2 {
-            return Err(io::ErrorKind::InvalidData.into());
+            return Err(Error::from(InnerError::InvalidData)
+                .with_context("CIP - failed to decode reply of forward open"));
         }
         // should be null address
         cpf[0].ensure_type_code(0)?;
@@ -30,12 +32,14 @@ impl TryFrom<CommonPacket> for ForwardOpenReply {
         data_item.ensure_type_code(0xB2)?;
         let mr_reply = MessageReply::try_from(data_item.data)?;
         if mr_reply.reply_service != 0xD4 && mr_reply.reply_service != 0xDB {
-            return Err(io::ErrorKind::InvalidData.into());
+            return Err(Error::from(InnerError::InvalidData)
+                .with_context("CIP - failed to decode reply of forward open"));
         }
         if mr_reply.status.is_ok() {
             let buf: Bytes = mr_reply.data;
             if buf.len() < 26 {
-                return Err(io::ErrorKind::InvalidData.into());
+                return Err(Error::from(InnerError::InvalidData)
+                    .with_context("CIP - failed to decode reply of forward open"));
             }
             let mut reply = ForwardOpenSuccess::default();
             reply.o_t_connection_id = LittleEndian::read_u32(&buf[0..4]);
@@ -48,7 +52,8 @@ impl TryFrom<CommonPacket> for ForwardOpenReply {
             // buf[24], size in words
             let app_data_size = 2 * buf[24] as usize;
             if buf.len() != 26 + app_data_size {
-                return Err(io::ErrorKind::InvalidData.into());
+                return Err(Error::from(InnerError::InvalidData)
+                    .with_context("CIP - failed to decode reply of forward open"));
             }
             // reserved = buf[25]
             let app_data = buf.slice(26..);
@@ -71,7 +76,8 @@ impl TryFrom<CommonPacket> for ForwardCloseReply {
     type Error = Error;
     fn try_from(mut cpf: CommonPacket) -> Result<Self> {
         if cpf.len() != 2 {
-            return Err(io::ErrorKind::InvalidData.into());
+            return Err(Error::from(InnerError::InvalidData)
+                .with_context("CIP - failed to decode reply of forward close"));
         }
         // should be null address
         cpf[0].ensure_type_code(0)?;
@@ -80,12 +86,14 @@ impl TryFrom<CommonPacket> for ForwardCloseReply {
         data_item.ensure_type_code(0xB2)?;
         let mr_reply = MessageReply::try_from(data_item.data)?;
         if mr_reply.reply_service != 0xCE {
-            return Err(io::ErrorKind::InvalidData.into());
+            return Err(Error::from(InnerError::InvalidData)
+                .with_context("CIP - failed to decode reply of forward close"));
         }
         if mr_reply.status.is_ok() {
             let buf: Bytes = mr_reply.data;
             if buf.len() < 10 {
-                return Err(io::ErrorKind::InvalidData.into());
+                return Err(Error::from(InnerError::InvalidData)
+                    .with_context("CIP - failed to decode reply of forward close"));
             }
             let mut reply = ForwardCloseSuccess::default();
             reply.connection_serial_number = LittleEndian::read_u16(&buf[0..2]);
@@ -95,7 +103,8 @@ impl TryFrom<CommonPacket> for ForwardCloseReply {
             // buf[8], size in words
             let app_data_size = 2 * buf[8] as usize;
             if buf.len() != 10 + app_data_size {
-                return Err(io::ErrorKind::InvalidData.into());
+                return Err(Error::from(InnerError::InvalidData)
+                    .with_context("CIP - failed to decode reply of forward close"));
             }
             // reserved = buf[9]
             let app_data = buf.slice(10..);

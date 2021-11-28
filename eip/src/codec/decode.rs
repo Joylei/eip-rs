@@ -7,7 +7,7 @@
 use byteorder::{ByteOrder, LittleEndian};
 use bytes::{Bytes, BytesMut};
 use core::convert::TryFrom;
-use std::io;
+use rseip_core::InnerError;
 use tokio_util::codec::Decoder;
 
 use crate::{consts::*, EncapsulationHeader, EncapsulationPacket, Error, ErrorStatus};
@@ -26,22 +26,16 @@ impl Decoder for ClientCodec {
         let data_len = LittleEndian::read_u16(&src[2..4]) as usize;
         //verify data length
         if ENCAPSULATION_HEADER_LEN + data_len > u16::MAX as usize {
-            return Err(io::Error::new(
-                io::ErrorKind::InvalidData,
-                "ENIP command reply: invalid packet - data too large",
-            )
-            .into());
+            return Err(Error::from(InnerError::InvalidData)
+                .with_context("ENIP command reply: invalid packet - data too large"));
         }
         if src.len() < ENCAPSULATION_HEADER_LEN + data_len {
             return Ok(None);
         }
         if src.len() > ENCAPSULATION_HEADER_LEN + data_len {
             // should no remaining buffer
-            return Err(io::Error::new(
-                io::ErrorKind::InvalidData,
-                "ENIP command reply: invalid packet - exceed data length",
-            )
-            .into());
+            return Err(Error::from(InnerError::InvalidData)
+                .with_context("ENIP command reply: invalid packet"));
         }
         let header_data = src.split_to(ENCAPSULATION_HEADER_LEN).freeze();
         let reply_data = src.split_to(data_len).freeze();
@@ -49,11 +43,8 @@ impl Decoder for ClientCodec {
         match hdr.status {
             v if v > u16::MAX as u32 => {
                 log::trace!("ENIP error status: {:#0x}", v);
-                return Err(io::Error::new(
-                    io::ErrorKind::InvalidData,
-                    "ENIP command reply: invalid packet - unexpected status code",
-                )
-                .into());
+                return Err(Error::from(InnerError::InvalidData)
+                    .with_context("ENIP command reply: invalid packet"));
             }
             v => ErrorStatus::from_status(v as u16)?,
         }

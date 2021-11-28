@@ -47,6 +47,7 @@ impl<E> Error<E> {
         let e = match self.e {
             InnerError::Io(e) => InnerError::Io(e),
             InnerError::Utf8(e) => InnerError::Utf8(e),
+            InnerError::InvalidData => InnerError::InvalidData,
             InnerError::Other(e) => InnerError::Other(f(e)),
         };
         Error {
@@ -77,6 +78,7 @@ impl<E: std::error::Error + 'static> std::error::Error for Error<E> {
         match self.e {
             InnerError::Io(ref e) => Some(e),
             InnerError::Utf8(ref e) => Some(e),
+            InnerError::InvalidData => None,
             InnerError::Other(ref e) => Some(e),
         }
     }
@@ -123,6 +125,7 @@ impl<E: fmt::Display> fmt::Display for Error<E> {
 pub enum InnerError<E> {
     Io(io::Error),
     Utf8(Utf8Error),
+    InvalidData,
     Other(E),
 }
 
@@ -145,6 +148,7 @@ impl<E: fmt::Display> fmt::Display for InnerError<E> {
         match self {
             Self::Io(e) => write!(f, "{}", e),
             Self::Utf8(e) => write!(f, "{}", e),
+            Self::InvalidData => write!(f, "invalid data"),
             Self::Other(e) => write!(f, "{}", e),
         }
     }

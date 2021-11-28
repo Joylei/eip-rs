@@ -12,8 +12,8 @@ use crate::{
 };
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 use core::convert::TryInto;
+use rseip_core::InnerError;
 use smallvec::SmallVec;
-use std::io;
 
 /// build and send multiple service packet
 pub struct MultipleServicePacket<'a, T> {
@@ -98,7 +98,8 @@ impl<'a, T: MessageService> MultipleServicePacket<'a, T> {
 
 fn decode_replies(mut buf: Bytes) -> Result<SmallVec<[MessageReply<Bytes>; 8]>> {
     if buf.len() < 2 {
-        return Err(io::ErrorKind::InvalidData.into());
+        return Err(Error::from(InnerError::InvalidData)
+            .with_context("CIP - failed to decode message reply"));
     }
     let mut results = SmallVec::new();
     let count = buf.get_u16_le();
@@ -107,7 +108,8 @@ fn decode_replies(mut buf: Bytes) -> Result<SmallVec<[MessageReply<Bytes>; 8]>> 
     }
     let data_offsets = 2 * count as usize;
     if buf.len() < data_offsets {
-        return Err(io::ErrorKind::InvalidData.into());
+        return Err(Error::from(InnerError::InvalidData)
+            .with_context("CIP - failed to decode message reply"));
     }
     let mut data = buf.split_off(data_offsets);
     let mut last = None;
@@ -115,11 +117,13 @@ fn decode_replies(mut buf: Bytes) -> Result<SmallVec<[MessageReply<Bytes>; 8]>> 
         let offset = buf.get_u16_le();
         if let Some(last) = last.replace(offset) {
             if offset <= last {
-                return Err(io::ErrorKind::InvalidData.into());
+                return Err(Error::from(InnerError::InvalidData)
+                    .with_context("CIP - failed to decode message reply"));
             }
             let size = (offset - last) as usize;
             if data.len() < size {
-                return Err(io::ErrorKind::InvalidData.into());
+                return Err(Error::from(InnerError::InvalidData)
+                    .with_context("CIP - failed to decode message reply"));
             }
             let buf = data.split_to(size);
             let reply: MessageReply<Bytes> = buf.try_into()?;
