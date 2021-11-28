@@ -16,10 +16,9 @@ use std::{
     convert::TryFrom,
     io,
     net::{Ipv4Addr, SocketAddr, SocketAddrV4},
-    sync::Arc,
     time::Duration,
 };
-use tokio::{net::UdpSocket, sync::Notify, time};
+use tokio::{net::UdpSocket, time};
 use tokio_util::udp::UdpFramed;
 
 /// device discovery
@@ -84,65 +83,49 @@ impl EipDiscovery {
         socket.set_broadcast(true)?;
         let service = UdpFramed::new(socket, ClientCodec {});
         let (mut tx, rx) = service.split();
-        let notify = Arc::new(Notify::new());
-        {
+
+        let tx_fut = {
             let broadcast_addr = self.broadcast_addr;
             let interval = self.interval;
             let mut times = self.times;
-            let notify = notify.clone();
 
-            tokio::spawn(async move {
-                let fut = async {
-                    let rng = std::iter::from_fn(move || match times {
-                        Some(0) => None,
-                        Some(ref mut v) => {
-                            *v -= 1;
-                            Some(())
-                        }
-                        None => Some(()),
-                    });
-                    for _ in rng {
-                        if let Err(_) = tx.send((ListIdentity, broadcast_addr.into())).await {
-                            break;
-                        }
-                        time::sleep(interval).await;
+            async move {
+                let rng = std::iter::from_fn(move || match times {
+                    Some(0) => None,
+                    Some(ref mut v) => {
+                        *v -= 1;
+                        Some(())
                     }
-                };
-                tokio::select! {
-                    _ = fut => {
-                        notify.notify_waiters();
-                    },
-                    _ = notify.notified() => {
-                        dbg!("cancel tx");
+                    None => Some(()),
+                });
+                for _ in rng {
+                    if let Err(_) = tx.send((ListIdentity, broadcast_addr.into())).await {
+                        break;
                     }
+                    time::sleep(interval).await;
                 }
-            });
-        }
+            }
+        };
 
-        let rx = stream::unfold(State { inner: rx, notify }, |mut state| async move {
+        let rx = stream::unfold((rx, Box::pin(tx_fut)), |mut state| async move {
             loop {
                 tokio::select! {
-                    res = state.inner.next() => {
-                        let res = match res {
-                            Some(v) => v,
-                            None => {
-                                state.notify.notify_waiters();
-                                return None;
+                    res = state.0.next() => {
+                        if let Some(res) =res {
+                            if let Some(v) = res.ok().and_then(|(pkt,addr)| {
+                                if pkt.hdr.command != EIP_COMMAND_LIST_IDENTITY {
+                                    None
+                                } else {
+                                    decode_identity(pkt.data).ok().flatten().map(|v| (v, addr))
+                                }
+                            }) {
+                                return Some((v, state))
                             }
-                        };
-                        let res = res.ok().and_then(|(pkt,addr)| {
-                            if pkt.hdr.command != EIP_COMMAND_LIST_IDENTITY {
-                                None
-                            } else {
-                                decode_identity(pkt.data).ok().flatten().map(|v| (v, addr))
-                            }
-                        });
-                        match res {
-                            Some(v) => return Some((v, state)),
-                            None => continue,
+                        } else{
+                            return None;
                         }
                     },
-                    _ = state.notify.notified() => {
+                    _ = Pin::new(&mut state.1) => {
                         dbg!("cancel rx");
                         return None;
                     },
@@ -150,19 +133,6 @@ impl EipDiscovery {
             }
         });
         Ok(rx)
-    }
-}
-
-struct State<S> {
-    inner: S,
-    /// notify cancellation
-    notify: Arc<Notify>,
-}
-
-impl<S> Drop for State<S> {
-    #[inline]
-    fn drop(&mut self) {
-        self.notify.notify_waiters();
     }
 }
 
