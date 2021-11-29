@@ -1,9 +1,11 @@
 use super::*;
-use crate::cip;
 use crate::cip::codec::LazyEncode;
+use crate::Error;
+use crate::{cip, error::InnerError};
 use byteorder::{ByteOrder, LittleEndian};
 use bytes::{BufMut, BytesMut};
-use std::{convert::TryFrom, io};
+use cip::CipError;
+use std::convert::TryFrom;
 
 /// AB related operations
 #[async_trait::async_trait(?Send)]
@@ -128,11 +130,12 @@ where
     let mr_request = MessageRequest::new(0x4C, req.tag, ElementCount(req.count));
     let resp = client.send(mr_request).await?;
     if resp.reply_service != 0xCC {
-        return Err(io::Error::new(
-            io::ErrorKind::Other,
-            "unexpected reply for read tag service",
-        )
-        .into());
+        return Err(rseip_core::Error::<InnerError>::from_invalid_data()
+            .with_context("unexpected reply for read tag service")
+            .into());
+    }
+    if resp.status.general != 0 {
+        return Err(CipError::Cip(resp.status).into());
     }
     R::try_from(resp.data).map_err(|e| e.into())
 }
@@ -152,11 +155,15 @@ where
     let mr_request = MessageRequest::new(0x4D, req.tag, value);
     let resp = client.send(mr_request).await?;
     if resp.reply_service != 0xCD {
-        return Err(io::Error::new(
-            io::ErrorKind::Other,
-            "unexpected reply for write tag service",
-        )
-        .into());
+        return Err(rseip_core::Error::<InnerError>::from_invalid_data()
+            .with_context(format!(
+                "unexpected reply service for write tag service: {:#0x}",
+                resp.reply_service
+            ))
+            .into());
+    }
+    if resp.status.general != 0 {
+        return Err(CipError::Cip(resp.status).into());
     }
     Ok(())
 }
@@ -191,14 +198,15 @@ where
     );
     let resp = client.send(mr_request).await?;
     if resp.reply_service != 0xD2 {
-        return Err(io::Error::new(
-            io::ErrorKind::Other,
-            "unexpected reply for read tag service",
-        )
-        .into());
+        return Err(rseip_core::Error::<InnerError>::from_invalid_data()
+            .with_context(format!(
+                "unexpected reply service for read tag fragmented service: {:#0x}",
+                resp.reply_service
+            ))
+            .into());
     }
     if resp.status.general != 0 && resp.status.general != 0x06 {
-        return Err(io::Error::new(io::ErrorKind::Other, "bad status").into());
+        return Err(CipError::Cip(resp.status).into());
     }
     let data = resp.data;
     assert!(data.len() >= 4);
@@ -238,14 +246,15 @@ async fn ab_write_tag_fragmented<C: MessageService<Error = Error>, D: Encodable>
     );
     let resp = client.send(mr_request).await?;
     if resp.reply_service != 0xD3 {
-        return Err(io::Error::new(
-            io::ErrorKind::Other,
-            "unexpected reply for read tag service",
-        )
-        .into());
+        return Err(rseip_core::Error::<InnerError>::from_invalid_data()
+            .with_context(format!(
+                "unexpected reply for write tag fragmented service: {:#0x}",
+                resp.reply_service
+            ))
+            .into());
     }
     if resp.status.general != 0 && resp.status.general != 0x06 {
-        return Err(io::Error::new(io::ErrorKind::Other, "bad status").into());
+        return Err(CipError::Cip(resp.status).into());
     }
 
     Ok(resp.status.general == 0x06)
@@ -276,14 +285,15 @@ async fn ab_read_modify_write<C: MessageService<Error = Error>, const N: usize>(
     );
     let resp = client.send(mr_request).await?;
     if resp.reply_service != 0xCE {
-        return Err(io::Error::new(
-            io::ErrorKind::Other,
-            "unexpected reply for read tag service",
-        )
-        .into());
+        return Err(rseip_core::Error::<InnerError>::from_invalid_data()
+            .with_context(format!(
+                "unexpected reply service for read modify tag service: {:#0x}",
+                resp.reply_service
+            ))
+            .into());
     }
     if resp.status.general != 0 {
-        return Err(io::Error::new(io::ErrorKind::Other, "bad status").into());
+        return Err(CipError::Cip(resp.status).into());
     }
 
     Ok(())
@@ -443,7 +453,7 @@ impl From<(EPath, u16)> for TagRequest {
     }
 }
 
-struct ElementCount(u16);
+pub struct ElementCount(pub u16);
 
 impl Encodable for ElementCount {
     #[inline]

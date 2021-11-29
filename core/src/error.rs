@@ -65,6 +65,14 @@ impl<E> Error<E> {
     }
 
     #[inline]
+    pub fn from_invalid_data() -> Self {
+        Self {
+            e: InnerError::InvalidData,
+            context: None,
+        }
+    }
+
+    #[inline]
     pub fn from_other(e: E) -> Self {
         Self {
             e: InnerError::Other(e),

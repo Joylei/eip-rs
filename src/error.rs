@@ -42,6 +42,12 @@ pub enum InnerError {
     InvalidAddr(AddrParseError),
 }
 
+impl From<Error<InnerError>> for ClientError {
+    fn from(e: Error<InnerError>) -> Self {
+        Self(e)
+    }
+}
+
 impl From<Error<CipError>> for ClientError {
     fn from(e: Error<CipError>) -> Self {
         let e = e.map_err(|e| InnerError::Cip(e));
