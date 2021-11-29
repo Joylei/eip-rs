@@ -369,9 +369,11 @@ pub trait CommonServices: MessageService {
 
     /// multiple service packet
     #[inline]
-    fn multiple_service(&mut self) -> MultipleServicePacket<'_, Self>
+    fn multiple_service<P, D>(&mut self) -> MultipleServicePacket<'_, Self, P, D>
     where
         Self: Sized,
+        P: Encodable,
+        D: Encodable,
     {
         MultipleServicePacket::new(self)
     }

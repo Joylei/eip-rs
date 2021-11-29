@@ -5,7 +5,7 @@
 // License: MIT
 
 use crate::{
-    codec::{DynamicEncode, Encodable, LazyEncode},
+    codec::{Encodable, LazyEncode},
     epath::EPath,
     service::*,
     *,
@@ -16,58 +16,55 @@ use rseip_core::InnerError;
 use smallvec::SmallVec;
 
 /// build and send multiple service packet
-pub struct MultipleServicePacket<'a, T> {
+pub struct MultipleServicePacket<'a, T, P, D> {
     inner: &'a mut T,
-    items: SmallVec<[DynamicEncode; 8]>,
+    items: SmallVec<[MessageRequest<P, D>; 8]>,
 }
 
-impl<'a, T: MessageService> MultipleServicePacket<'a, T> {
+impl<'a, T, P, D> MultipleServicePacket<'a, T, P, D> {
     pub(crate) fn new(inner: &'a mut T) -> Self {
         Self {
             inner,
             items: Default::default(),
         }
     }
+}
 
+impl<'a, T, P, D> MultipleServicePacket<'a, T, P, D>
+where
+    T: MessageService,
+    P: Encodable,
+    D: Encodable,
+{
     /// append service request
-    pub fn push<P, D>(mut self, mr: MessageRequest<P, D>) -> Self
-    where
-        P: Encodable + 'static,
-        D: Encodable + 'static,
-    {
-        let bytes_count = mr.bytes_count();
-        self.items.push(DynamicEncode {
-            f: Box::new(|buf| mr.encode(buf)),
-            bytes_count,
-        });
+    pub fn push(mut self, mr: MessageRequest<P, D>) -> Self {
+        self.items.push(mr);
         self
     }
 
     /// append all service requests
-    pub fn push_all<P, D>(mut self, items: impl IntoIterator<Item = MessageRequest<P, D>>) -> Self
+    pub fn push_all(mut self, items: impl Iterator<Item = MessageRequest<P, D>>) -> Self
     where
         P: Encodable + 'static,
         D: Encodable + 'static,
     {
         for mr in items {
-            let bytes_count = mr.bytes_count();
-            self.items.push(DynamicEncode {
-                f: Box::new(|buf| mr.encode(buf)),
-                bytes_count,
-            });
+            self.items.push(mr);
         }
         self
     }
 
     /// build and send requests
-    pub async fn send(self) -> StdResult<SmallVec<[MessageReply<Bytes>; 8]>, T::Error> {
+    pub async fn send(
+        self,
+    ) -> StdResult<impl Iterator<Item = Result<MessageReply<Bytes>>>, T::Error> {
         let Self { inner, items } = self;
         if items.len() == 0 {
-            return Ok(Default::default());
+            return Ok(State::End);
         }
 
         let start_offset = 2 + 2 * items.len();
-        let bytes_count = items.iter().map(|v| v.bytes_count).sum::<usize>() + start_offset;
+        let bytes_count = items.iter().map(|v| v.bytes_count()).sum::<usize>() + start_offset;
         let mr = MessageRequest {
             service_code: 0x0A,
             path: EPath::default().with_class(2).with_instance(1),
@@ -77,7 +74,7 @@ impl<'a, T: MessageService> MultipleServicePacket<'a, T> {
                     let mut offset = start_offset;
                     for item in items.iter() {
                         buf.put_u16_le(offset as u16);
-                        offset += item.bytes_count;
+                        offset += item.bytes_count();
                     }
                     for item in items {
                         item.encode(buf)?;
@@ -91,51 +88,115 @@ impl<'a, T: MessageService> MultipleServicePacket<'a, T> {
         if !reply.status.is_ok() {
             return Err(reply_error(reply));
         }
-        let res = decode_replies(reply.data)?;
+
+        let res = State::Init(reply.data);
         Ok(res)
     }
 }
 
-fn decode_replies(mut buf: Bytes) -> Result<SmallVec<[MessageReply<Bytes>; 8]>> {
-    if buf.len() < 2 {
-        return Err(Error::from(InnerError::InvalidData)
-            .with_context("CIP - failed to decode message reply"));
-    }
-    let mut results = SmallVec::new();
-    let count = buf.get_u16_le();
-    if count == 0 {
-        return Ok(results);
-    }
-    let data_offsets = 2 * count as usize;
-    if buf.len() < data_offsets {
-        return Err(Error::from(InnerError::InvalidData)
-            .with_context("CIP - failed to decode message reply"));
-    }
-    let mut data = buf.split_off(data_offsets);
-    let mut last = None;
-    for _ in 0..count {
-        let offset = buf.get_u16_le();
-        if let Some(last) = last.replace(offset) {
-            if offset <= last {
-                return Err(Error::from(InnerError::InvalidData)
-                    .with_context("CIP - failed to decode message reply"));
+enum State {
+    Init(Bytes),
+    HasCount {
+        buf: Bytes,
+        count: u16,
+    },
+    HasOffset {
+        buf: Bytes,
+        data: Bytes,
+        count: u16,
+        last: Option<u16>,
+        i: u16,
+    },
+    End,
+}
+
+impl State {
+    fn raise_err<T>(&mut self) -> Option<Result<T>> {
+        match self {
+            State::End => {}
+            _ => {
+                *self = State::End;
             }
-            let size = (offset - last) as usize;
-            if data.len() < size {
-                return Err(Error::from(InnerError::InvalidData)
-                    .with_context("CIP - failed to decode message reply"));
+        }
+        Some(Err(Error::from(InnerError::InvalidData)
+            .with_context("CIP - failed to decode message reply")))
+    }
+}
+
+impl Iterator for State {
+    type Item = Result<MessageReply<Bytes>>;
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            match self {
+                State::Init(buf) => {
+                    if buf.len() < 2 {
+                        return self.raise_err();
+                    }
+                    let count = buf.get_u16_le();
+                    *self = if count == 0 {
+                        State::End
+                    } else {
+                        State::HasCount {
+                            buf: buf.clone(),
+                            count,
+                        }
+                    };
+                }
+                State::HasCount { buf, count } => {
+                    let data_offsets = 2 * (*count) as usize;
+                    if buf.len() < data_offsets {
+                        return self.raise_err();
+                    }
+                    *self = State::HasOffset {
+                        buf: buf.clone(),
+                        count: *count,
+                        data: buf.split_off(data_offsets),
+                        i: 0,
+                        last: None,
+                    };
+                }
+                State::HasOffset {
+                    buf,
+                    data,
+                    count,
+                    last,
+                    i,
+                } => {
+                    if i < count {
+                        *i += 1;
+                        let offset = buf.get_u16_le();
+                        if let Some(last) = last.replace(offset) {
+                            if offset <= last {
+                                return self.raise_err();
+                            }
+                            let size = (offset - last) as usize;
+                            if data.len() < size {
+                                return self.raise_err();
+                            }
+                            let buf = data.split_to(size);
+                            let res: Result<MessageReply<Bytes>> = buf.try_into();
+                            return Some(res);
+                        }
+                    }
+                    // process remaining
+                    if data.len() > 0 {
+                        let res: Result<MessageReply<Bytes>> = data.split_to(data.len()).try_into();
+                        *self = State::End;
+                        return Some(res);
+                    }
+                    *self = State::End;
+                }
+                State::End => return None,
             }
-            let buf = data.split_to(size);
-            let reply: MessageReply<Bytes> = buf.try_into()?;
-            results.push(reply);
         }
     }
 
-    // process remaining
-    if data.len() > 0 {
-        let reply: MessageReply<Bytes> = data.try_into()?;
-        results.push(reply);
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        match self {
+            Self::Init(_) => (0, None),
+            Self::HasCount { count, .. } => (0, Some(*count as usize)),
+            Self::HasOffset { count, i, .. } => (0, Some((*count - *i) as usize)),
+            Self::End => (0, Some(0)),
+        }
     }
-
-    Ok(results)
 }
