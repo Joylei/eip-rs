@@ -1,9 +1,55 @@
 use crate::cip;
 use crate::{Error, Result};
 use byteorder::{ByteOrder, LittleEndian};
-use bytes::{BufMut, Bytes, BytesMut};
+use bytes::{Buf, BufMut, Bytes, BytesMut};
 use rseip_cip::codec::Encodable;
 use std::{convert::TryFrom, mem};
+
+#[derive(Debug, Clone, Copy)]
+pub enum TagType {
+    BOOL,
+    DWORD,
+    SINT,
+    INT,
+    DINT,
+    LINT,
+    REAL,
+    /// structure with handle
+    Structure(u16),
+}
+
+impl TagType {
+    /// two bytes type code
+    #[inline]
+    pub fn type_code(&self) -> u16 {
+        match self {
+            Self::BOOL => 0xC1,
+            Self::DWORD => 0xD3,
+            Self::SINT => 0xC2,
+            Self::INT => 0xC3,
+            Self::DINT => 0xC4,
+            Self::LINT => 0xC5,
+            Self::REAL => 0xCA,
+            Self::Structure { .. } => 0x02A0,
+        }
+    }
+
+    /// is it a structure
+    pub fn is_structure(&self) -> bool {
+        match self {
+            Self::Structure(_) => true,
+            _ => false,
+        }
+    }
+
+    /// get structure handle if it's a structure
+    pub fn structure_handle(&self) -> Option<u16> {
+        match self {
+            Self::Structure(v) => Some(*v),
+            _ => None,
+        }
+    }
+}
 
 #[derive(Debug)]
 pub enum TagValue<D = Bytes> {
@@ -21,17 +67,37 @@ pub enum TagValue<D = Bytes> {
     LINT(i64),
     /// atomic data type: REAL, 32-bit float
     REAL(f32),
-    UDT(D),
+    Structure {
+        /// type handle
+        handle: u16,
+        data: D,
+    },
+}
+
+impl<D> TagValue<D> {
+    #[inline]
+    pub fn tag_type(&self) -> TagType {
+        match self {
+            Self::BOOL(_) => TagType::BOOL,
+            Self::DWORD(_) => TagType::DWORD,
+            Self::SINT(_) => TagType::SINT,
+            Self::INT(_) => TagType::INT,
+            Self::DINT(_) => TagType::DINT,
+            Self::LINT(_) => TagType::LINT,
+            Self::REAL(_) => TagType::REAL,
+            Self::Structure { handle, .. } => TagType::Structure(*handle),
+        }
+    }
 }
 
 impl TryFrom<Bytes> for TagValue<Bytes> {
     type Error = Error;
     #[inline]
-    fn try_from(src: Bytes) -> Result<Self> {
+    fn try_from(mut src: Bytes) -> Result<Self> {
         //TODO: verify len
         assert!(src.len() >= 4);
-        let tag_type = LittleEndian::read_u16(&src[0..2]);
-        let val = match tag_type {
+        let type_code = LittleEndian::read_u16(&src[0..2]);
+        let val = match type_code {
             0xC2 => TagValue::SINT(unsafe { mem::transmute(src[2]) }),
             0xC3 => TagValue::INT(LittleEndian::read_i16(&src[2..4])),
             0xC4 => {
@@ -51,7 +117,14 @@ impl TryFrom<Bytes> for TagValue<Bytes> {
                 TagValue::LINT(LittleEndian::read_i64(&src[2..10]))
             }
             0xC1 => TagValue::BOOL(src[4] == 255),
-            _ => TagValue::UDT(src),
+            0x02A0 => {
+                assert!(src.len() > 4);
+                TagValue::Structure {
+                    handle: src.get_u16_le(),
+                    data: src,
+                }
+            }
+            _ => unreachable!("unexpected type code: {}", type_code),
         };
         Ok(val)
     }
@@ -98,7 +171,9 @@ impl<D: Encodable> Encodable for TagValue<D> {
                 dst.put_slice(&[1, 0]);
                 dst.put_i64_le(v);
             }
-            Self::UDT(data) => {
+            Self::Structure { handle, data } => {
+                dst.put_slice(&[0xA0, 0x02]);
+                dst.put_u16_le(handle);
                 data.encode(dst)?;
             }
         };
@@ -115,7 +190,7 @@ impl<D: Encodable> Encodable for TagValue<D> {
             Self::REAL(_) => 8,
             Self::DWORD(_) => 8,
             Self::LINT(_) => 12,
-            Self::UDT(v) => v.bytes_count(),
+            Self::Structure { data, .. } => 4 + data.bytes_count(),
         }
     }
 }
