@@ -14,13 +14,13 @@ use crate::{
 use byteorder::{ByteOrder, LittleEndian};
 use bytes::Bytes;
 use core::convert::TryFrom;
-use rseip_core::{cip::CommonPacketIterator, InnerError};
+use rseip_core::{cip::CommonPacketIter, InnerError};
 use std::io;
 
-impl TryFrom<CommonPacketIterator> for ForwardOpenReply {
+impl TryFrom<CommonPacketIter> for ForwardOpenReply {
     type Error = Error;
 
-    fn try_from(mut cpf: CommonPacketIterator) -> Result<Self> {
+    fn try_from(mut cpf: CommonPacketIter) -> Result<Self> {
         if cpf.len() != 2 {
             return Err(Error::from(InnerError::InvalidData)
                 .with_context("CIP - failed to decode reply of forward open"));
@@ -72,9 +72,9 @@ impl TryFrom<CommonPacketIterator> for ForwardOpenReply {
     }
 }
 
-impl TryFrom<CommonPacketIterator> for ForwardCloseReply {
+impl TryFrom<CommonPacketIter> for ForwardCloseReply {
     type Error = Error;
-    fn try_from(mut cpf: CommonPacketIterator) -> Result<Self> {
+    fn try_from(mut cpf: CommonPacketIter) -> Result<Self> {
         if cpf.len() != 2 {
             return Err(Error::from(InnerError::InvalidData)
                 .with_context("CIP - failed to decode reply of forward close"));

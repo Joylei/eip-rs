@@ -125,13 +125,13 @@ impl CommonPacketItem {
     }
 }
 
-pub struct CommonPacketIterator {
+pub struct CommonPacketIter {
     buf: Bytes,
     offset: u16,
     total: u16,
 }
 
-impl CommonPacketIterator {
+impl CommonPacketIter {
     #[inline]
     pub fn new(mut buf: Bytes) -> io::Result<Self> {
         if buf.len() < 2 {
@@ -155,7 +155,7 @@ impl CommonPacketIterator {
     }
 }
 
-impl Iterator for CommonPacketIterator {
+impl Iterator for CommonPacketIter {
     type Item = io::Result<CommonPacketItem>;
 
     fn next(&mut self) -> Option<Self::Item> {

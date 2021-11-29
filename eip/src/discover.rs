@@ -12,7 +12,7 @@ use crate::{
 };
 use bytes::Bytes;
 use futures_util::{stream, SinkExt, Stream, StreamExt};
-use rseip_core::cip::CommonPacketIterator;
+use rseip_core::cip::CommonPacketIter;
 use std::{
     convert::TryFrom,
     io,
@@ -144,7 +144,7 @@ where
     I::Error: Into<E>,
     E: From<io::Error>,
 {
-    let cpf = CommonPacketIterator::new(data)?;
+    let cpf = CommonPacketIter::new(data)?;
     for item in cpf {
         let item = item?;
         item.ensure_type_code(0x0C)?;

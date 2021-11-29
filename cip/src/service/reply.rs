@@ -7,16 +7,16 @@
 use crate::{Error, MessageReply, Result};
 use byteorder::{ByteOrder, LittleEndian};
 use bytes::Bytes;
-use rseip_core::{cip::CommonPacketIterator, InnerError};
+use rseip_core::{cip::CommonPacketIter, InnerError};
 use std::convert::TryFrom;
 
 #[derive(Debug)]
 pub struct ConnectedSendReply<D>(pub MessageReply<D>);
 
-impl TryFrom<CommonPacketIterator> for ConnectedSendReply<Bytes> {
+impl TryFrom<CommonPacketIter> for ConnectedSendReply<Bytes> {
     type Error = Error;
     #[inline]
-    fn try_from(mut cpf: CommonPacketIterator) -> Result<Self> {
+    fn try_from(mut cpf: CommonPacketIter) -> Result<Self> {
         if cpf.len() != 2 {
             return Err(Error::from(InnerError::InvalidData)
                 .with_context("common packet -  expected 2 items"));
@@ -41,10 +41,10 @@ impl TryFrom<CommonPacketIterator> for ConnectedSendReply<Bytes> {
 #[derive(Debug)]
 pub struct UnconnectedSendReply<D>(pub MessageReply<D>);
 
-impl TryFrom<CommonPacketIterator> for UnconnectedSendReply<Bytes> {
+impl TryFrom<CommonPacketIter> for UnconnectedSendReply<Bytes> {
     type Error = Error;
     #[inline]
-    fn try_from(mut cpf: CommonPacketIterator) -> Result<Self> {
+    fn try_from(mut cpf: CommonPacketIter) -> Result<Self> {
         if cpf.len() != 2 {
             return Err(Error::from(InnerError::InvalidData)
                 .with_context("common packet -  expected 2 items"));

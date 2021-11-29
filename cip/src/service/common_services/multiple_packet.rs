@@ -60,7 +60,7 @@ where
     ) -> StdResult<impl Iterator<Item = Result<MessageReply<Bytes>>>, T::Error> {
         let Self { inner, items } = self;
         if items.len() == 0 {
-            return Ok(State::End);
+            return Ok(ReplyIter::End);
         }
 
         let start_offset = 2 + 2 * items.len();
@@ -89,12 +89,12 @@ where
             return Err(reply_error(reply));
         }
 
-        let res = State::Init(reply.data);
+        let res = ReplyIter::Init(reply.data);
         Ok(res)
     }
 }
 
-enum State {
+enum ReplyIter {
     Init(Bytes),
     HasCount {
         buf: Bytes,
@@ -110,44 +110,40 @@ enum State {
     End,
 }
 
-impl State {
+impl ReplyIter {
+    #[inline]
     fn raise_err<T>(&mut self) -> Option<Result<T>> {
-        match self {
-            State::End => {}
-            _ => {
-                *self = State::End;
-            }
-        }
+        *self = Self::End;
         Some(Err(Error::from(InnerError::InvalidData)
             .with_context("CIP - failed to decode message reply")))
     }
 }
 
-impl Iterator for State {
+impl Iterator for ReplyIter {
     type Item = Result<MessageReply<Bytes>>;
     fn next(&mut self) -> Option<Self::Item> {
         loop {
             match self {
-                State::Init(buf) => {
+                Self::Init(buf) => {
                     if buf.len() < 2 {
                         return self.raise_err();
                     }
                     let count = buf.get_u16_le();
                     *self = if count == 0 {
-                        State::End
+                        Self::End
                     } else {
-                        State::HasCount {
+                        Self::HasCount {
                             buf: buf.clone(),
                             count,
                         }
                     };
                 }
-                State::HasCount { buf, count } => {
+                Self::HasCount { buf, count } => {
                     let data_offsets = 2 * (*count) as usize;
                     if buf.len() < data_offsets {
                         return self.raise_err();
                     }
-                    *self = State::HasOffset {
+                    *self = Self::HasOffset {
                         buf: buf.clone(),
                         count: *count,
                         data: buf.split_off(data_offsets),
@@ -155,7 +151,7 @@ impl Iterator for State {
                         last: None,
                     };
                 }
-                State::HasOffset {
+                Self::HasOffset {
                     buf,
                     data,
                     count,
@@ -181,12 +177,12 @@ impl Iterator for State {
                     // process remaining
                     if data.len() > 0 {
                         let res: Result<MessageReply<Bytes>> = data.split_to(data.len()).try_into();
-                        *self = State::End;
+                        *self = Self::End;
                         return Some(res);
                     }
-                    *self = State::End;
+                    *self = Self::End;
                 }
-                State::End => return None,
+                Self::End => return None,
             }
         }
     }

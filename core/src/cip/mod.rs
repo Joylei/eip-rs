@@ -6,4 +6,4 @@
 
 mod common_packet;
 
-pub use common_packet::{CommonPacket, CommonPacketItem, CommonPacketIterator};
+pub use common_packet::{CommonPacket, CommonPacketItem, CommonPacketIter};
