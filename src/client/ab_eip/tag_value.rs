@@ -7,14 +7,21 @@ use std::{convert::TryFrom, mem};
 
 #[derive(Debug, Clone, Copy)]
 pub enum TagType {
+    /// atomic data type: BOOL
     BOOL,
+    /// atomic data type: DWORD, 32-bit boolean array
     DWORD,
+    /// atomic data type: SINT, 8-bit integer
     SINT,
+    /// atomic data type: INT, 16-bit integer
     INT,
+    /// atomic data type: DINT, 32-bit integer
     DINT,
+    /// atomic data type: LINT, 64-bit integer
     LINT,
+    /// atomic data type: REAL, 32-bit float
     REAL,
-    /// structure with handle
+    /// structured tag
     Structure(u16),
 }
 
@@ -67,14 +74,17 @@ pub enum TagValue<D = Bytes> {
     LINT(i64),
     /// atomic data type: REAL, 32-bit float
     REAL(f32),
+    /// structured tag
     Structure {
         /// type handle
         handle: u16,
+        /// tag data
         data: D,
     },
 }
 
 impl<D> TagValue<D> {
+    /// get tag type
     #[inline]
     pub fn tag_type(&self) -> TagType {
         match self {

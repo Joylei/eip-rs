@@ -1,4 +1,8 @@
-use std::convert::TryFrom;
+// rseip
+//
+// rseip - EIP&CIP in pure Rust.
+// Copyright: 2021, Joylei <leingliu@gmail.com>
+// License: MIT
 
 use anyhow::Result;
 use rseip::{
@@ -13,6 +17,7 @@ use rseip::{
         AbEipConnection,
     },
 };
+use std::convert::TryFrom;
 
 #[tokio::main]
 pub async fn main() -> Result<()> {
