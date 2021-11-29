@@ -218,14 +218,14 @@ where
             ))
             .into());
     }
-    if resp.status.general != 0 && resp.status.general != 0x06 {
+    if resp.status.general != 0 && !resp.status.has_more() {
         return Err(CipError::Cip(resp.status).into());
     }
     let data = resp.data;
     assert!(data.len() >= 4);
     let tag_type = LittleEndian::read_u16(&data[0..2]);
     let data = (decoder)(tag_type, data.slice(2..))?;
-    Ok((resp.status.general == 0x06, data))
+    Ok((resp.status.has_more(), data))
 }
 
 /// Write Tag Fragmented Service, enables client applications to write to a tag
@@ -266,11 +266,11 @@ async fn ab_write_tag_fragmented<C: MessageService<Error = Error>, D: Encodable>
             ))
             .into());
     }
-    if resp.status.general != 0 && resp.status.general != 0x06 {
+    if resp.status.general != 0 && !resp.status.has_more() {
         return Err(CipError::Cip(resp.status).into());
     }
 
-    Ok(resp.status.general == 0x06)
+    Ok(resp.status.has_more())
 }
 
 /// Read Modify Write Tag Service, modifies Tag data with individual bit resolution
