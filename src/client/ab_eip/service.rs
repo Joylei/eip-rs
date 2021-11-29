@@ -1,3 +1,4 @@
+use super::instance::GetInstanceAttributeList;
 use super::*;
 use crate::cip::codec::LazyEncode;
 use crate::Error;
@@ -46,6 +47,10 @@ pub trait AbService {
         &mut self,
         req: ReadModifyWriteRequest<N>,
     ) -> Result<()>;
+
+    fn get_instance_attribute_list(&mut self) -> GetInstanceAttributeList<Self>
+    where
+        Self: Sized;
 }
 
 macro_rules! impl_service {
@@ -109,6 +114,14 @@ macro_rules! impl_service {
             ) -> Result<()> {
                 ab_read_modify_write(self, req).await?;
                 Ok(())
+            }
+
+            #[inline]
+            fn get_instance_attribute_list(&mut self) -> GetInstanceAttributeList<Self>
+            where
+                Self: Sized,
+            {
+                GetInstanceAttributeList::new(self)
             }
         }
     };

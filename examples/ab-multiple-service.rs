@@ -34,10 +34,10 @@ pub async fn main() -> Result<()> {
             EPath::from_symbol("test_car2_x"),
             ElementCount(1),
         ));
-    let iter = mr.send().await?;
+    let iter = mr.call().await?;
     for item in iter {
         let item = item?;
-        assert_eq!(item.reply_service, 0xCC);
+        assert_eq!(item.reply_service, 0x4C + 0x80);
         if item.status.is_err() {
             println!("error read tag: {}", item.status);
         } else {

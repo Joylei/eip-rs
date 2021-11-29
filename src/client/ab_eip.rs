@@ -4,11 +4,14 @@
 // Copyright: 2021, Joylei <leingliu@gmail.com>
 // License: MIT
 
+mod instance;
 mod service;
 mod tag_value;
 
 use super::*;
 use futures_util::future::BoxFuture;
+pub use instance::{GetInstanceAttributeList, SymbolInstance};
+use rseip_cip::Status;
 pub use rseip_eip::{EipContext, EipDiscovery};
 pub use service::*;
 use std::net::SocketAddrV4;
@@ -31,5 +34,26 @@ impl Driver for AbEipDriver {
     #[inline]
     fn build_service(addr: &Self::Endpoint) -> BoxFuture<Result<Self::Service>> {
         EipDriver::build_service(addr)
+    }
+}
+
+/// has more data
+pub trait HasMore {
+    /// true: has more data to retrieve
+    fn has_more(&self) -> bool;
+}
+
+impl HasMore for Status {
+    /// true: has more data to retrieve
+    #[inline]
+    fn has_more(&self) -> bool {
+        self.general == 0x06
+    }
+}
+
+impl<D> HasMore for MessageReply<D> {
+    #[inline]
+    fn has_more(&self) -> bool {
+        self.status.has_more()
     }
 }

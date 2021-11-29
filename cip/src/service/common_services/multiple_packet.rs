@@ -55,7 +55,7 @@ where
     }
 
     /// build and send requests
-    pub async fn send(
+    pub async fn call(
         self,
     ) -> StdResult<impl Iterator<Item = Result<MessageReply<Bytes>>>, T::Error> {
         let Self { inner, items } = self;
