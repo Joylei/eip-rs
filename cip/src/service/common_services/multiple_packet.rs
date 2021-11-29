@@ -85,8 +85,14 @@ where
             },
         };
         let reply = inner.send(mr).await?;
-        if !reply.status.is_ok() {
-            return Err(reply_error(reply));
+
+        if reply.reply_service != 0x8A {
+            return Err(Error::from_invalid_data()
+                .with_context(format!(
+                    "unexpected reply service for multiple service packet: {:#0x}",
+                    reply.reply_service
+                ))
+                .into());
         }
 
         let res = ReplyIter::Init(reply.data);
@@ -173,6 +179,7 @@ impl Iterator for ReplyIter {
                             let res: Result<MessageReply<Bytes>> = buf.try_into();
                             return Some(res);
                         }
+                        continue;
                     }
                     // process remaining
                     if data.len() > 0 {

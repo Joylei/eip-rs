@@ -6,8 +6,7 @@
 
 use anyhow::Result;
 use rseip::{
-    cip::service::MessageService,
-    cip::{connection::Options, epath::EPath},
+    cip::{connection::Options, epath::EPath, service::MessageService},
     client::{ab_eip::TagValue, AbEipConnection, AbService},
 };
 
