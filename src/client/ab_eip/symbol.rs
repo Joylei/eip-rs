@@ -8,12 +8,11 @@ use futures_util::Stream;
 use rseip_cip::{epath::EPath, service::MessageService, CipError, MessageRequest};
 use rseip_core::hex::AsHex;
 use std::convert::TryFrom;
-use std::ops::Not;
 
 use super::HasMore;
 
 /// symbol instance
-#[derive(Debug, Clone, Hash, PartialEq, Eq)]
+#[derive(Clone, Hash, PartialEq, Eq)]
 pub struct SymbolInstance {
     /// instance id
     pub id: u16,
@@ -21,6 +20,16 @@ pub struct SymbolInstance {
     pub name: String,
     /// symbol data type
     pub symbol_type: SymbolType,
+}
+
+impl fmt::Debug for SymbolInstance {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("SymbolInstance")
+            .field("id", &self.id.as_hex())
+            .field("name", &self.name)
+            .field("symbol_type", &self.symbol_type)
+            .finish()
+    }
 }
 
 impl SymbolInstance {
