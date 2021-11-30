@@ -118,6 +118,11 @@ impl EPath {
     pub fn from_symbol(symbol: impl Into<String>) -> Self {
         EPath(smallvec![Segment::Symbol(symbol.into())])
     }
+
+    #[inline]
+    pub fn push(&mut self, item: Segment) {
+        self.0.push(item);
+    }
 }
 
 impl Deref for EPath {
