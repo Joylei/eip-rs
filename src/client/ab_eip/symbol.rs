@@ -5,14 +5,13 @@
 // License: MIT
 
 use crate::{
+    cip::{epath::EPath, service::MessageService, CipError, MessageRequest},
     error::{invalid_data, InnerError},
     Error, Result,
 };
-use bytes::Buf;
-use bytes::Bytes;
+use bytes::{Buf, Bytes};
 use core::fmt;
 use futures_util::{stream, Stream};
-use rseip_cip::{epath::EPath, service::MessageService, CipError, MessageRequest};
 use rseip_core::hex::AsHex;
 use std::convert::TryFrom;
 

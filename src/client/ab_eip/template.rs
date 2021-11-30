@@ -7,15 +7,18 @@
 mod decoder;
 
 use super::{symbol::SymbolType, HasMore};
-use crate::{error::invalid_data, Error, Result};
+use crate::{
+    cip::{
+        codec::LazyEncode,
+        epath::EPath,
+        service::{CommonServices, MessageService},
+        CipError, MessageRequest,
+    },
+    error::invalid_data,
+    Error, Result,
+};
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 use decoder::{DefaultDefinitionDecoder, DefinitionDecoder};
-use rseip_cip::{
-    codec::LazyEncode,
-    epath::EPath,
-    service::{CommonServices, MessageService},
-    CipError, MessageRequest,
-};
 use rseip_core::{String, StringExt};
 use smallvec::SmallVec;
 use std::{
