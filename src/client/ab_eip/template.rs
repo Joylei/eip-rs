@@ -1,6 +1,9 @@
+mod decoder;
+
 use super::{symbol::SymbolType, HasMore};
 use crate::{error::invalid_data, Error, Result};
 use bytes::{Buf, BufMut, Bytes, BytesMut};
+use decoder::{DefaultDefinitionDecoder, DefinitionDecoder};
 use rseip_cip::{
     codec::LazyEncode,
     epath::EPath,
@@ -9,27 +12,17 @@ use rseip_cip::{
 };
 use rseip_core::{String, StringExt};
 use smallvec::SmallVec;
-use std::{collections::HashMap, convert::TryFrom, mem, result::Result as StdResult};
+use std::{
+    collections::HashMap,
+    convert::TryFrom,
+    mem,
+    ops::{Deref, DerefMut},
+    result::Result as StdResult,
+};
 
 const SERVICE_TEMPLATE_READ: u8 = 0x4C;
 const REPLY_TEMPLATE_READ: u8 = 0x4C + 0x80;
 const CLASS_TEMPLATE: u16 = 0x6C;
-
-/// template definition decoder
-pub trait DefinitionDecoder {
-    type Item;
-    type Error;
-
-    /// set member count;
-    /// to decode the definition, it need to specify the number of members.
-    fn member_count(&mut self, member_count: u16);
-
-    /// partial decode
-    fn partial_decode(&mut self, buf: Bytes) -> StdResult<(), Self::Error>;
-
-    /// finally decode
-    fn decode(&mut self) -> StdResult<Self::Item, Self::Error>;
-}
 
 #[async_trait::async_trait(?Send)]
 pub trait TemplateService {
@@ -251,93 +244,27 @@ where
 #[derive(Debug, Default)]
 pub struct TemplateDefinition {
     /// template name
-    pub name: String,
+    pub(crate) name: String,
     /// template members
-    pub members: HashMap<String, MemberInfo>,
+    pub(crate) members: HashMap<String, MemberInfo>,
 }
 
-/// default template definition decoder
-#[derive(Debug, Default)]
-pub struct DefaultDefinitionDecoder {
-    /// template name
-    name: String,
-    /// members of template
-    members: SmallVec<[MemberInfo; 8]>,
-    /// the exact number of members
-    member_count: u16,
-    /// index to track when decode member names
-    index: u16,
+impl TemplateDefinition {
+    pub fn name(&self) -> &str {
+        &self.name
+    }
 }
 
-impl DefinitionDecoder for DefaultDefinitionDecoder {
-    type Error = Error;
-    type Item = TemplateDefinition;
-
-    fn member_count(&mut self, member_count: u16) {
-        self.member_count = member_count;
+impl Deref for TemplateDefinition {
+    type Target = HashMap<String, MemberInfo>;
+    fn deref(&self) -> &Self::Target {
+        &self.members
     }
+}
 
-    fn partial_decode(&mut self, mut buf: Bytes) -> StdResult<(), Self::Error> {
-        if self.member_count < 2 {
-            return Err(invalid_data(
-                "template definition - need to initialize `member_count`",
-            ));
-        }
-        while self.members.len() < self.member_count as usize {
-            //TODO: validate buf.len()
-            let item = MemberInfo {
-                name: Default::default(),
-                array_size: buf.get_u16_le(),
-                type_info: SymbolType(buf.get_u16_le()),
-                offset: buf.get_u32_le(),
-            };
-            self.members.push(item);
-        }
-        let mut strings = buf.split(|v| *v == 0);
-        if self.name.is_empty() {
-            if let Some(buf) = strings.next() {
-                //TODO: improve it
-                let mut parts = buf.split(|v| *v == 0x3B);
-                let buf = parts.next().unwrap();
-                self.name = String::from_utf8_lossy(buf).into_owned().into();
-            }
-        }
-        while let Some(buf) = strings.next() {
-            if self.index < self.member_count {
-                self.members[self.index as usize].name =
-                    String::from_utf8_lossy(buf).into_owned().into();
-                self.index += 1;
-            } else {
-                break;
-            }
-        }
-
-        Ok(())
-    }
-
-    /// finally decode, return the target object and reset inner state of the decoder
-    fn decode(&mut self) -> StdResult<Self::Item, Self::Error> {
-        if self.member_count < 2 {
-            return Err(invalid_data(
-                "template definition - need to initialize `member_count`",
-            ));
-        }
-        if self.index < self.member_count {
-            return Err(invalid_data(
-                "template definition - not enough data to decode",
-            ));
-        }
-        self.index = 0;
-        self.member_count = 0;
-        let map: HashMap<_, _> = self
-            .members
-            .drain(..)
-            .map(|item| (item.name.clone(), item))
-            .collect();
-        Ok(TemplateDefinition {
-            name: mem::take(&mut self.name),
-            members: map,
-        })
+impl DerefMut for TemplateDefinition {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.members
     }
 }
 
