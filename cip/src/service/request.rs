@@ -28,13 +28,6 @@ impl<P, D> UnconnectedSend<P, D> {
 }
 
 #[derive(Debug)]
-pub struct GetAttributeRequestItem {
-    pub id: u16,
-    /// data size in response
-    pub size: u16,
-}
-
-#[derive(Debug)]
 pub struct SetAttributeRequestItem<T> {
     pub id: u16,
     /// data size in response
