@@ -1,10 +1,17 @@
-use crate::error::{invalid_data, InnerError};
-use crate::{Error, Result};
+// rseip
+//
+// rseip - EIP&CIP in pure Rust.
+// Copyright: 2021, Joylei <leingliu@gmail.com>
+// License: MIT
+
+use crate::{
+    error::{invalid_data, InnerError},
+    Error, Result,
+};
 use bytes::Buf;
 use bytes::Bytes;
 use core::fmt;
-use futures_util::stream;
-use futures_util::Stream;
+use futures_util::{stream, Stream};
 use rseip_cip::{epath::EPath, service::MessageService, CipError, MessageRequest};
 use rseip_core::hex::AsHex;
 use std::convert::TryFrom;

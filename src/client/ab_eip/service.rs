@@ -1,8 +1,16 @@
+// rseip
+//
+// rseip - EIP&CIP in pure Rust.
+// Copyright: 2021, Joylei <leingliu@gmail.com>
+// License: MIT
+
 use super::symbol::GetInstanceAttributeList;
 use super::*;
-use crate::cip::codec::LazyEncode;
-use crate::Error;
-use crate::{cip, error::InnerError};
+use crate::{
+    cip::{self, codec::LazyEncode},
+    error::InnerError,
+    Error,
+};
 use byteorder::{ByteOrder, LittleEndian};
 use bytes::{BufMut, BytesMut};
 use cip::CipError;

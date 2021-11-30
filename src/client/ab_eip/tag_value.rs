@@ -1,8 +1,9 @@
-use crate::cip;
-use crate::{Error, Result};
+use crate::{
+    cip::{self, codec::Encodable},
+    Error, Result,
+};
 use byteorder::{ByteOrder, LittleEndian};
 use bytes::{Buf, BufMut, Bytes, BytesMut};
-use rseip_cip::codec::Encodable;
 use std::{convert::TryFrom, mem};
 
 #[derive(Debug, Clone, Copy)]
