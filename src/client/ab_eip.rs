@@ -20,6 +20,9 @@ pub use tag_value::TagValue;
 pub use template::TemplateService;
 use tokio::net::TcpStream;
 
+pub const CLASS_SYMBOL: u16 = 0x6B;
+pub const CLASS_TEMPLATE: u16 = 0x6C;
+
 /// AB EIP Client
 pub type AbEipClient = Client<AbEipDriver>;
 

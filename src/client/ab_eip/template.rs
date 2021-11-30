@@ -6,7 +6,7 @@
 
 mod decoder;
 
-use super::{symbol::SymbolType, HasMore};
+use super::{symbol::SymbolType, HasMore, CLASS_TEMPLATE};
 use crate::{
     cip::{
         codec::LazyEncode,
@@ -31,7 +31,6 @@ use std::{
 
 const SERVICE_TEMPLATE_READ: u8 = 0x4C;
 const REPLY_TEMPLATE_READ: u8 = 0x4C + 0x80;
-const CLASS_TEMPLATE: u16 = 0x6C;
 
 #[async_trait::async_trait(?Send)]
 pub trait TemplateService {

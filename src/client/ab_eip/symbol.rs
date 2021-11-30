@@ -4,6 +4,7 @@
 // Copyright: 2021, Joylei <leingliu@gmail.com>
 // License: MIT
 
+use super::{HasMore, CLASS_SYMBOL};
 use crate::{
     cip::{epath::EPath, service::MessageService, CipError, MessageRequest},
     error::{invalid_data, InnerError},
@@ -14,8 +15,6 @@ use core::fmt;
 use futures_util::{stream, Stream};
 use rseip_core::hex::AsHex;
 use std::convert::TryFrom;
-
-use super::HasMore;
 
 /// symbol instance
 #[derive(Clone, Hash, PartialEq, Eq)]
@@ -319,7 +318,7 @@ async fn get_attribute_list<'a, T: MessageService<Error = Error>>(
         .send(MessageRequest::new(
             0x55,
             EPath::default()
-                .with_class(0x6B)
+                .with_class(CLASS_SYMBOL)
                 .with_instance(start_instance),
             Bytes::from_static(&[
                 02, 00, // number of attributes
