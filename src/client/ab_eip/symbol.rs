@@ -8,6 +8,7 @@ use futures_util::Stream;
 use rseip_cip::{epath::EPath, service::MessageService, CipError, MessageRequest};
 use rseip_core::hex::AsHex;
 use std::convert::TryFrom;
+use std::ops::Not;
 
 use super::HasMore;
 
@@ -22,10 +23,74 @@ pub struct SymbolInstance {
     pub symbol_type: SymbolType,
 }
 
+impl SymbolInstance {
+    /// symbol name that contains `:`
+    #[inline]
+    pub fn is_module_defined(&self) -> bool {
+        self.name.contains(':')
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct SymbolTypeBuilder(u16);
+impl SymbolTypeBuilder {
+    /// panic if instance_id > 0xFFF
+    pub fn structure(mut self, instance_id: u16) -> Self {
+        if instance_id > 0xFFF {
+            panic!("instance id out of range");
+        }
+        // set bit 15 =1
+        const MASK: u16 = 0b0111 << 12;
+        self.0 = (self.0 & MASK) | (1 << 15);
+        // set instance id
+        self.0 = self.0 | instance_id;
+        self
+    }
+
+    pub fn atomic(mut self, type_code: u8) -> Self {
+        const MASK: u16 = 0b0111 << 12;
+        self.0 = (self.0 & MASK) | (type_code as u16);
+        self
+    }
+
+    /// panics if dims >= 4
+    pub fn dims(mut self, dims: u8) -> Self {
+        if dims >= 4 {
+            panic!("dims out of range");
+        }
+        const MASK: u16 = 0b11 << 13;
+        self.0 = (self.0 & (!MASK)) | ((dims as u16) << 13);
+        self
+    }
+
+    /// panics if:
+    ///
+    /// - pos > 7
+    /// - type is not bool
+    pub fn bit_pos(mut self, pos: u8) -> Self {
+        if pos > 7 {
+            panic!("pos out of range")
+        }
+        if !SymbolType(self.0).is_bool() {
+            panic!("type not bool")
+        }
+        self.0 = self.0 | ((pos as u16) << 8);
+        self
+    }
+
+    pub fn finish(self) -> SymbolType {
+        SymbolType(self.0)
+    }
+}
+
 #[derive(Clone, Copy, Hash, PartialEq, Eq)]
 pub struct SymbolType(pub(crate) u16);
 
 impl SymbolType {
+    pub fn builder() -> SymbolTypeBuilder {
+        Default::default()
+    }
+
     /// is struct
     #[inline]
     pub fn is_struct(&self) -> bool {
@@ -39,11 +104,17 @@ impl SymbolType {
         !self.is_struct()
     }
 
-    /// type code if atomic
+    /// system predefined struct
     #[inline]
-    pub fn type_code(&self) -> Option<u16> {
+    pub fn is_predefined(&self) -> bool {
+        self.instance_id().map(|v| v > 0xEFF).unwrap_or_default()
+    }
+
+    /// type code if atomic; range from 0x01-0xFF
+    #[inline]
+    pub fn type_code(&self) -> Option<u8> {
         if !self.is_struct() {
-            Some(self.0 & 0xFF)
+            Some((self.0 & 0xFF) as u8)
         } else {
             None
         }
@@ -77,7 +148,7 @@ impl SymbolType {
         }
     }
 
-    /// template instance id if struct
+    /// template instance id if struct; range from 0x100-0xFFF
     #[inline]
     pub fn instance_id(&self) -> Option<u16> {
         if self.is_struct() {

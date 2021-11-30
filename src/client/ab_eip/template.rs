@@ -346,7 +346,14 @@ impl DefinitionDecoder for DefaultDefinitionDecoder {
 pub struct MemberInfo {
     /// member name
     pub name: String,
-    /// array_size > 0 if array
+
+    /// array_size = 0 if atomic type;
+    ///
+    /// array_size > 0 if array type;
+    ///
+    /// array_size is bit location if boolean type
+    /// - range 0-31
+    /// - range 0-7 fi mapped to a SINT
     pub array_size: u16,
     /// member type info
     pub type_info: SymbolType,
