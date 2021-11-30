@@ -1,10 +1,12 @@
-use crate::error::InnerError;
+use crate::error::{invalid_data, InnerError};
 use crate::{Error, Result};
 use bytes::Buf;
 use bytes::Bytes;
+use core::fmt;
 use futures_util::stream;
 use futures_util::Stream;
 use rseip_cip::{epath::EPath, service::MessageService, CipError, MessageRequest};
+use rseip_core::hex::AsHex;
 use std::convert::TryFrom;
 
 use super::HasMore;
@@ -17,7 +19,96 @@ pub struct SymbolInstance {
     /// symbol name
     pub name: String,
     /// symbol data type
-    pub symbol_type: u16,
+    pub symbol_type: SymbolType,
+}
+
+#[derive(Clone, Copy, Hash, PartialEq, Eq)]
+pub struct SymbolType(pub(crate) u16);
+
+impl SymbolType {
+    /// is struct
+    #[inline]
+    pub fn is_struct(&self) -> bool {
+        const MASK: u16 = 1 << 15;
+        self.0 & MASK == MASK
+    }
+
+    /// is atomic
+    #[inline]
+    pub fn is_atomic(&self) -> bool {
+        !self.is_struct()
+    }
+
+    /// type code if atomic
+    #[inline]
+    pub fn type_code(&self) -> Option<u16> {
+        if !self.is_struct() {
+            Some(self.0 & 0xFF)
+        } else {
+            None
+        }
+    }
+
+    /// dims: 0, 1, 2, 3
+    #[inline]
+    pub fn dims(&self) -> u8 {
+        ((self.0 >> 13) as u8) & 0b11
+    }
+
+    /// bool type?
+    #[inline]
+    pub fn is_bool(&self) -> bool {
+        if !self.is_struct() {
+            let v = self.0 & 0xFF;
+            v == 0xC1
+        } else {
+            false
+        }
+    }
+
+    /// only if it's bool; bit position: 0-7
+    #[inline]
+    pub fn bit_pos(&self) -> Option<u8> {
+        if self.is_bool() {
+            let v = (self.0 >> 8) & 0b111;
+            Some(v as u8)
+        } else {
+            None
+        }
+    }
+
+    /// template instance id if struct
+    #[inline]
+    pub fn instance_id(&self) -> Option<u16> {
+        if self.is_struct() {
+            Some(self.0 & 0xFFF)
+        } else {
+            None
+        }
+    }
+}
+
+impl fmt::Debug for SymbolType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut d = f.debug_struct("SymbolType");
+        if self.is_struct() {
+            d.field("type", &"struct");
+        } else {
+            d.field("type", &"atomic");
+        }
+        d.field("dims", &self.dims());
+        self.instance_id()
+            .map(|v| d.field("instance_id", &v.as_hex()));
+        self.type_code().map(|v| d.field("type_code", &v.as_hex()));
+        self.bit_pos().map(|v| d.field("bit_pos", &v));
+        d.finish()
+    }
+}
+
+impl From<SymbolType> for u16 {
+    fn from(src: SymbolType) -> Self {
+        src.0
+    }
 }
 
 pub struct GetInstanceAttributeList<'a, T> {
@@ -152,12 +243,10 @@ async fn get_attribute_list<'a, T: MessageService<Error = Error>>(
         ))
         .await?;
     if resp.reply_service != 0x55 + 0x80 {
-        return Err(rseip_core::Error::<InnerError>::from_invalid_data()
-            .with_context(format!(
-                "unexpected reply service for write tag service: {:#0x}",
-                resp.reply_service
-            ))
-            .into());
+        return Err(invalid_data(format!(
+            "unexpected reply service for write tag service: {:#0x}",
+            resp.reply_service
+        )));
     }
     if !resp.status.is_ok() && !resp.status.has_more() {
         return Err(CipError::Cip(resp.status).into());
@@ -179,9 +268,7 @@ impl TryFrom<&mut Bytes> for SymbolInstance {
         let name_len = buf.get_u8() as usize;
         buf.advance(1);
         if buf.len() < name_len + 2 {
-            return Err(rseip_core::Error::<InnerError>::from_invalid_data()
-                .with_context("not enough data to decode")
-                .into());
+            return Err(invalid_data("not enough data to decode"));
         }
         let name =
             String::from_utf8(buf.split_to(name_len).to_vec()).map_err(|e| e.utf8_error())?;
@@ -189,7 +276,19 @@ impl TryFrom<&mut Bytes> for SymbolInstance {
         Ok(SymbolInstance {
             id,
             name,
-            symbol_type,
+            symbol_type: SymbolType(symbol_type),
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_symbol_type() {
+        let sym_type = SymbolType(0x82E9);
+        assert!(sym_type.is_struct());
+        assert!(!sym_type.is_atomic());
     }
 }

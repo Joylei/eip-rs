@@ -17,6 +17,7 @@ pub extern crate smallvec;
 pub mod cip;
 mod either;
 mod error;
+pub mod hex;
 mod string;
 
 pub use either::Either;

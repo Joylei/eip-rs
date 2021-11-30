@@ -5,7 +5,7 @@
 // License: MIT
 
 use rseip_cip::CipError;
-use rseip_core::Error;
+use rseip_core::{Error, String};
 use rseip_eip::ErrorStatus;
 use std::{
     error, fmt, io,
@@ -13,6 +13,13 @@ use std::{
     ops::{Deref, DerefMut},
     str::Utf8Error,
 };
+
+#[inline]
+pub(crate) fn invalid_data(context: impl Into<String>) -> ClientError {
+    Error::<InnerError>::from_invalid_data()
+        .with_context(context)
+        .into()
+}
 
 /// client error
 #[derive(Debug)]

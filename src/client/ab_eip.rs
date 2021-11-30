@@ -4,18 +4,20 @@
 // Copyright: 2021, Joylei <leingliu@gmail.com>
 // License: MIT
 
-mod instance;
 mod service;
+mod symbol;
 mod tag_value;
+pub mod template;
 
 use super::*;
 use futures_util::future::BoxFuture;
-pub use instance::{GetInstanceAttributeList, SymbolInstance};
 use rseip_cip::Status;
 pub use rseip_eip::{EipContext, EipDiscovery};
 pub use service::*;
 use std::net::SocketAddrV4;
+pub use symbol::{GetInstanceAttributeList, SymbolInstance};
 pub use tag_value::TagValue;
+pub use template::TemplateService;
 use tokio::net::TcpStream;
 
 /// AB EIP Client

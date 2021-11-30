@@ -1,4 +1,4 @@
-use super::instance::GetInstanceAttributeList;
+use super::symbol::GetInstanceAttributeList;
 use super::*;
 use crate::cip::codec::LazyEncode;
 use crate::Error;
