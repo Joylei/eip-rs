@@ -285,7 +285,7 @@ pub struct MemberInfo {
     ///
     /// array_size is bit location if boolean type
     /// - range 0-31
-    /// - range 0-7 fi mapped to a SINT
+    /// - range 0-7 if mapped to a SINT
     pub array_size: u16,
     /// member type info
     pub type_info: SymbolType,
