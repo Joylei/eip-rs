@@ -119,8 +119,18 @@ impl EPath {
     }
 
     #[inline]
+    pub fn insert(&mut self, index: usize, item: Segment) {
+        self.0.insert(index, item)
+    }
+
+    #[inline]
     pub fn push(&mut self, item: Segment) {
         self.0.push(item);
+    }
+
+    #[inline]
+    pub fn remove(&mut self, index: usize) {
+        self.0.remove(index);
     }
 }
 
