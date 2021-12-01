@@ -94,7 +94,7 @@ where
         match self.framed.next().await {
             Some(item) => {
                 let pkt = item?;
-                pkt.hdr.ensure_command(code).map_err(|e| Error::from(e))?;
+                pkt.hdr.ensure_command(code).map_err(Error::from)?;
                 let res = f(pkt)?;
                 Ok(res)
             }

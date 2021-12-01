@@ -35,8 +35,7 @@ impl EncapsulationHeader {
             return Err(io::Error::new(
                 io::ErrorKind::Other,
                 format!("unexpected command reply: {:#0x}", self.command),
-            )
-            .into());
+            ));
         }
         Ok(())
     }

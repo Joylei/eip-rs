@@ -186,11 +186,11 @@ where
 
             let (has_more, data) =
                 read_template(self.inner, self.instance_id, offset, bytes_read).await?;
-            debug_assert!(data.len() > 0 && data.len() == bytes_read as usize);
+            debug_assert!(!data.is_empty() && data.len() == bytes_read as usize);
             if offset == 0 {
                 offset = data.len() as u32 + 1;
             } else {
-                offset = offset + data.len() as u32;
+                offset += data.len() as u32;
             }
 
             // partially decode
@@ -205,8 +205,8 @@ where
     }
 }
 
-async fn read_template<'a, T>(
-    ctx: &'a mut T,
+async fn read_template<T>(
+    ctx: &mut T,
     instance_id: u16,
     offset: u32,
     bytes_read: u16,
@@ -322,7 +322,7 @@ impl TryFrom<Bytes> for Template {
         let object_size = decode_attr(&mut buf, 4, |buf| Ok(buf.get_u32_le()))?;
         let struct_size = decode_attr(&mut buf, 5, |buf| Ok(buf.get_u32_le()))?;
 
-        if buf.len() != 0 {
+        if !buf.is_empty() {
             return Err(invalid_data("template - too much data to decode"));
         }
         Ok(Self {

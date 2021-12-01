@@ -137,7 +137,7 @@ fn parse_number(buf: &mut &[u8]) -> Result<u32, PathError> {
     check_eof(buf)?;
     let digits_buf = take_one_plus(buf, is_digit)
         .and_then(|v| if v.len() > MAX_LEN { None } else { Some(v) })
-        .ok_or_else(|| PathError::NumberParseError)?;
+        .ok_or(PathError::NumberParseError)?;
 
     // safety: all digits
     let text = unsafe { String::from_utf8_unchecked(digits_buf.to_vec()) };
@@ -215,32 +215,20 @@ const fn check_eof(buf: &[u8]) -> Result<(), PathError> {
 
 #[inline]
 const fn is_valid_char(c: u8) -> bool {
-    if c == b'_' {
-        true
-    } else if is_digit(c) {
-        true
-    } else {
-        is_alphabet(c)
-    }
+    c == b'_' || is_digit(c) || is_alphabet(c)
 }
 
 #[inline]
 const fn is_digit(c: u8) -> bool {
-    if c >= b'0' && c <= b'9' {
-        true
-    } else {
-        false
-    }
+    c >= b'0' && c <= b'9'
 }
 
 #[inline]
 const fn is_alphabet(c: u8) -> bool {
     if c >= b'a' && c <= b'z' {
         true
-    } else if c >= b'A' && c <= b'Z' {
-        true
     } else {
-        false
+        c >= b'A' && c <= b'Z'
     }
 }
 

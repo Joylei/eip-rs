@@ -10,7 +10,7 @@ use smallvec::{smallvec, SmallVec};
 use std::ops::{Deref, DerefMut};
 
 /// EPATH for unconnected send
-pub const EPATH_CONNECTION_MANAGER: &'static [u8] = &[0x20, 0x06, 0x24, 0x01];
+pub const EPATH_CONNECTION_MANAGER: &[u8] = &[0x20, 0x06, 0x24, 0x01];
 
 /// Segment of EPATH
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -40,9 +40,11 @@ impl Segment {
     }
 }
 
+type Array = [Segment; 4];
+
 /// EPATH
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
-pub struct EPath(SmallVec<[Segment; 2]>);
+pub struct EPath(SmallVec<Array>);
 
 impl EPath {
     /// new object
@@ -52,16 +54,10 @@ impl EPath {
     }
 
     /// into inner
-    #[inline]
-    pub fn into_inner(self) -> SmallVec<[Segment; 2]> {
-        self.0
-    }
-
-    /// into iter
-    #[inline]
-    pub fn into_iter(self) -> impl IntoIterator<Item = Segment> {
-        self.0.into_iter()
-    }
+    // #[inline]
+    // pub fn into_inner(self) -> SmallVec<Array> {
+    //     self.0
+    // }
 
     /// append class id
     #[inline]
@@ -125,6 +121,14 @@ impl EPath {
     #[inline]
     pub fn push(&mut self, item: Segment) {
         self.0.push(item);
+    }
+}
+
+impl IntoIterator for EPath {
+    type Item = Segment;
+    type IntoIter = rseip_core::iter::IntoIter<Array>;
+    fn into_iter(self) -> Self::IntoIter {
+        rseip_core::iter::IntoIter::new(self.0)
     }
 }
 

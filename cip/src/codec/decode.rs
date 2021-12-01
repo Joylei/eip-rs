@@ -56,13 +56,15 @@ impl TryFrom<Bytes> for ListServiceItem {
     type Error = Error;
     #[inline(always)]
     fn try_from(buf: Bytes) -> Result<Self, Self::Error> {
-        let mut item = ListServiceItem::default();
-        item.protocol_version = LittleEndian::read_u16(&buf[0..2]);
-        item.capability = LittleEndian::read_u16(&buf[2..4]);
-        item.name = String::from_utf8(buf[4..20].to_vec())
-            .map_err(|e| e.utf8_error())?
-            .into();
-        return Ok(item);
+        let item = ListServiceItem {
+            protocol_version: LittleEndian::read_u16(&buf[0..2]),
+            capability: LittleEndian::read_u16(&buf[2..4]),
+            name: String::from_utf8(buf[4..20].to_vec())
+                .map_err(|e| e.utf8_error())?
+                .into(),
+        };
+
+        Ok(item)
     }
 }
 

@@ -35,20 +35,23 @@ impl TryFrom<CommonPacketIter> for ForwardOpenReply {
             return Err(Error::from(InnerError::InvalidData)
                 .with_context("CIP - failed to decode reply of forward open"));
         }
+        let buf: Bytes = mr_reply.data;
         if mr_reply.status.is_ok() {
-            let buf: Bytes = mr_reply.data;
             if buf.len() < 26 {
                 return Err(Error::from(InnerError::InvalidData)
                     .with_context("CIP - failed to decode reply of forward open"));
             }
-            let mut reply = ForwardOpenSuccess::default();
-            reply.o_t_connection_id = LittleEndian::read_u32(&buf[0..4]);
-            reply.t_o_connection_id = LittleEndian::read_u32(&buf[4..8]);
-            reply.connection_serial_number = LittleEndian::read_u16(&buf[8..10]);
-            reply.originator_vendor_id = LittleEndian::read_u16(&buf[10..12]);
-            reply.originator_serial_number = LittleEndian::read_u32(&buf[12..16]);
-            reply.o_t_api = LittleEndian::read_u32(&buf[16..20]);
-            reply.t_o_api = LittleEndian::read_u32(&buf[20..24]);
+            let mut reply = ForwardOpenSuccess {
+                o_t_connection_id: LittleEndian::read_u32(&buf[0..4]),
+                t_o_connection_id: LittleEndian::read_u32(&buf[4..8]),
+                connection_serial_number: LittleEndian::read_u16(&buf[8..10]),
+                originator_vendor_id: LittleEndian::read_u16(&buf[10..12]),
+                originator_serial_number: LittleEndian::read_u32(&buf[12..16]),
+                o_t_api: LittleEndian::read_u32(&buf[16..20]),
+                t_o_api: LittleEndian::read_u32(&buf[20..24]),
+                ..Default::default()
+            };
+
             // buf[24], size in words
             let app_data_size = 2 * buf[24] as usize;
             if buf.len() != 26 + app_data_size {
@@ -64,7 +67,6 @@ impl TryFrom<CommonPacketIter> for ForwardOpenReply {
                 reply,
             })
         } else {
-            let buf: Bytes = mr_reply.data;
             let is_routing_error = mr_reply.status.is_routing_error();
             let data = parse_forward_request_fail(buf, is_routing_error)?;
             Ok(ForwardOpenReply::Fail(data))
@@ -89,16 +91,18 @@ impl TryFrom<CommonPacketIter> for ForwardCloseReply {
             return Err(Error::from(InnerError::InvalidData)
                 .with_context("CIP - failed to decode reply of forward close"));
         }
+        let buf: Bytes = mr_reply.data;
         if mr_reply.status.is_ok() {
-            let buf: Bytes = mr_reply.data;
             if buf.len() < 10 {
                 return Err(Error::from(InnerError::InvalidData)
                     .with_context("CIP - failed to decode reply of forward close"));
             }
-            let mut reply = ForwardCloseSuccess::default();
-            reply.connection_serial_number = LittleEndian::read_u16(&buf[0..2]);
-            reply.originator_vendor_id = LittleEndian::read_u16(&buf[2..4]);
-            reply.originator_serial_number = LittleEndian::read_u32(&buf[4..8]);
+            let mut reply = ForwardCloseSuccess {
+                connection_serial_number: LittleEndian::read_u16(&buf[0..2]),
+                originator_vendor_id: LittleEndian::read_u16(&buf[2..4]),
+                originator_serial_number: LittleEndian::read_u32(&buf[4..8]),
+                ..Default::default()
+            };
 
             // buf[8], size in words
             let app_data_size = 2 * buf[8] as usize;
@@ -112,7 +116,6 @@ impl TryFrom<CommonPacketIter> for ForwardCloseReply {
             reply.app_data = app_data;
             Ok(ForwardCloseReply::Success(reply))
         } else {
-            let buf: Bytes = mr_reply.data;
             let is_routing_error = mr_reply.status.is_routing_error();
             let data = parse_forward_request_fail(buf, is_routing_error)?;
             Ok(ForwardCloseReply::Fail(data))

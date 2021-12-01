@@ -146,7 +146,7 @@ impl Encodable for Segment {
 impl Encodable for EPath {
     #[inline]
     fn encode(self: EPath, dst: &mut BytesMut) -> Result<()> {
-        for item in self.into_inner() {
+        for item in self {
             item.encode(dst)?;
         }
         Ok(())

@@ -363,6 +363,12 @@ impl<const N: usize> ReadModifyWriteRequest<N> {
     }
 }
 
+impl<const N: usize> Default for ReadModifyWriteRequest<N> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 pub struct WriteFragmentedRequest<D> {
     tag: EPath,
     tag_type: u16,

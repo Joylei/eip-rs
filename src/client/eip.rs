@@ -28,7 +28,7 @@ impl Driver for EipDriver {
     type Service = EipContext<TcpStream>;
 
     fn build_service(addr: &Self::Endpoint) -> BoxFuture<Result<Self::Service>> {
-        let addr = addr.clone();
+        let addr = *addr;
         let fut = async move {
             let socket = TcpSocket::new_v4()?;
             let stream = socket.connect(addr.into()).await?;
@@ -61,7 +61,7 @@ async fn resolve_host(host: impl AsRef<str>) -> io::Result<SocketAddrV4> {
         if host.is_empty() {
             return Err(io::Error::new(io::ErrorKind::InvalidInput, "invalid host"));
         }
-        if !host.contains(":") {
+        if !host.contains(':') {
             Cow::Owned(format!("{}:{}", host, EIP_DEFAULT_PORT))
         } else {
             host.into()

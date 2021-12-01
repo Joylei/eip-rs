@@ -100,7 +100,7 @@ where
         let frame = Frame::new(unconnected_send.bytes_count(), |buf| {
             unconnected_send
                 .encode(buf)
-                .map_err(|e| crate::Error::from(e))
+                .map_err(crate::Error::from)
         });
 
         let cpf = self.send_rrdata(frame).await?;
@@ -129,7 +129,7 @@ where
     {
         let service_code = request.service_code;
         let frame = Frame::new(request.bytes_count(), |buf| {
-            request.encode(buf).map_err(|e| crate::Error::from(e))
+            request.encode(buf).map_err(crate::Error::from)
         });
         let cpf = self
             .send_unit_data(connection_id, sequence_number, frame)
@@ -157,7 +157,7 @@ where
             data: request,
         };
         let frame = Frame::new(mr.bytes_count(), |buf| {
-            mr.encode(buf).map_err(|e| crate::Error::from(e))
+            mr.encode(buf).map_err(crate::Error::from)
         });
         let cpf = self.send_rrdata(frame).await?;
         let res: ForwardOpenReply = cpf.try_into()?;
@@ -179,7 +179,7 @@ where
             data: request,
         };
         let frame = Frame::new(mr.bytes_count(), |buf| {
-            mr.encode(buf).map_err(|e| crate::Error::from(e))
+            mr.encode(buf).map_err(crate::Error::from)
         });
         let cpf = self.send_rrdata(frame).await?;
         let res: ForwardCloseReply = cpf.try_into()?;

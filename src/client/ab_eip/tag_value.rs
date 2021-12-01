@@ -9,19 +9,19 @@ use std::{convert::TryFrom, mem};
 #[derive(Debug, Clone, Copy)]
 pub enum TagType {
     /// atomic data type: BOOL
-    BOOL,
+    Bool,
     /// atomic data type: DWORD, 32-bit boolean array
-    DWORD,
+    Dword,
     /// atomic data type: SINT, 8-bit integer
-    SINT,
+    Sint,
     /// atomic data type: INT, 16-bit integer
-    INT,
+    Int,
     /// atomic data type: DINT, 32-bit integer
-    DINT,
+    Dint,
     /// atomic data type: LINT, 64-bit integer
-    LINT,
+    Lint,
     /// atomic data type: REAL, 32-bit float
-    REAL,
+    Real,
     /// structured tag
     Structure(u16),
 }
@@ -31,13 +31,13 @@ impl TagType {
     #[inline]
     pub fn type_code(&self) -> u16 {
         match self {
-            Self::BOOL => 0xC1,
-            Self::DWORD => 0xD3,
-            Self::SINT => 0xC2,
-            Self::INT => 0xC3,
-            Self::DINT => 0xC4,
-            Self::LINT => 0xC5,
-            Self::REAL => 0xCA,
+            Self::Bool => 0xC1,
+            Self::Dword => 0xD3,
+            Self::Sint => 0xC2,
+            Self::Int => 0xC3,
+            Self::Dint => 0xC4,
+            Self::Lint => 0xC5,
+            Self::Real => 0xCA,
             Self::Structure { .. } => 0x02A0,
         }
     }
@@ -67,19 +67,19 @@ impl TagType {
 #[derive(Debug)]
 pub enum TagValue<D = Bytes> {
     /// atomic data type: BOOL
-    BOOL(bool),
+    Bool(bool),
     /// atomic data type: DWORD, 32-bit boolean array
-    DWORD(u32),
+    Dword(u32),
     /// atomic data type: SINT, 8-bit integer
-    SINT(i8),
+    Sint(i8),
     /// atomic data type: INT, 16-bit integer
-    INT(i16),
+    Int(i16),
     /// atomic data type: DINT, 32-bit integer
-    DINT(i32),
+    Dint(i32),
     /// atomic data type: LINT, 64-bit integer
-    LINT(i64),
+    Lint(i64),
     /// atomic data type: REAL, 32-bit float
-    REAL(f32),
+    Real(f32),
     /// structured tag
     Structure {
         /// type handle
@@ -94,13 +94,13 @@ impl<D> TagValue<D> {
     #[inline]
     pub fn tag_type(&self) -> TagType {
         match self {
-            Self::BOOL(_) => TagType::BOOL,
-            Self::DWORD(_) => TagType::DWORD,
-            Self::SINT(_) => TagType::SINT,
-            Self::INT(_) => TagType::INT,
-            Self::DINT(_) => TagType::DINT,
-            Self::LINT(_) => TagType::LINT,
-            Self::REAL(_) => TagType::REAL,
+            Self::Bool(_) => TagType::Bool,
+            Self::Dword(_) => TagType::Dword,
+            Self::Sint(_) => TagType::Sint,
+            Self::Int(_) => TagType::Int,
+            Self::Dint(_) => TagType::Dint,
+            Self::Lint(_) => TagType::Lint,
+            Self::Real(_) => TagType::Real,
             Self::Structure { handle, .. } => TagType::Structure(*handle),
         }
     }
@@ -114,25 +114,25 @@ impl TryFrom<Bytes> for TagValue<Bytes> {
         assert!(src.len() >= 4);
         let type_code = LittleEndian::read_u16(&src[0..2]);
         let val = match type_code {
-            0xC2 => TagValue::SINT(unsafe { mem::transmute(src[2]) }),
-            0xC3 => TagValue::INT(LittleEndian::read_i16(&src[2..4])),
+            0xC2 => TagValue::Sint(unsafe { mem::transmute(src[2]) }),
+            0xC3 => TagValue::Int(LittleEndian::read_i16(&src[2..4])),
             0xC4 => {
                 assert!(src.len() >= 6);
-                TagValue::DINT(LittleEndian::read_i32(&src[2..6]))
+                TagValue::Dint(LittleEndian::read_i32(&src[2..6]))
             }
             0xCA => {
                 assert!(src.len() >= 6);
-                TagValue::REAL(LittleEndian::read_f32(&src[2..6]))
+                TagValue::Real(LittleEndian::read_f32(&src[2..6]))
             }
             0xD3 => {
                 assert!(src.len() >= 6);
-                TagValue::DWORD(LittleEndian::read_u32(&src[2..6]))
+                TagValue::Dword(LittleEndian::read_u32(&src[2..6]))
             }
             0xC5 => {
                 assert!(src.len() >= 10);
-                TagValue::LINT(LittleEndian::read_i64(&src[2..10]))
+                TagValue::Lint(LittleEndian::read_i64(&src[2..10]))
             }
-            0xC1 => TagValue::BOOL(src[4] == 255),
+            0xC1 => TagValue::Bool(src[4] == 255),
             0x02A0 => {
                 assert!(src.len() > 4);
                 TagValue::Structure {
@@ -150,39 +150,39 @@ impl<D: Encodable> Encodable for TagValue<D> {
     #[inline]
     fn encode(self, dst: &mut BytesMut) -> cip::Result<()> {
         match self {
-            Self::BOOL(v) => {
+            Self::Bool(v) => {
                 dst.put_u16_le(0xC1);
                 dst.put_slice(&[1, 0]);
                 dst.put_u8(if v { 255 } else { 0 });
                 dst.put_u8(0);
             }
-            Self::SINT(v) => {
+            Self::Sint(v) => {
                 dst.put_u16_le(0xC2);
                 dst.put_slice(&[1, 0]);
                 dst.put_i8(v);
                 dst.put_u8(0);
             }
-            Self::INT(v) => {
+            Self::Int(v) => {
                 dst.put_u16_le(0xC3);
                 dst.put_slice(&[1, 0]);
                 dst.put_i16_le(v);
             }
-            Self::DINT(v) => {
+            Self::Dint(v) => {
                 dst.put_u16_le(0xC4);
                 dst.put_slice(&[1, 0]);
                 dst.put_i32_le(v);
             }
-            Self::REAL(v) => {
+            Self::Real(v) => {
                 dst.put_u16_le(0xCA);
                 dst.put_slice(&[1, 0]);
                 dst.put_f32_le(v);
             }
-            Self::DWORD(v) => {
+            Self::Dword(v) => {
                 dst.put_u16_le(0xD3);
                 dst.put_slice(&[1, 0]);
                 dst.put_u32_le(v);
             }
-            Self::LINT(v) => {
+            Self::Lint(v) => {
                 dst.put_u16_le(0xC5);
                 dst.put_slice(&[1, 0]);
                 dst.put_i64_le(v);
@@ -199,13 +199,13 @@ impl<D: Encodable> Encodable for TagValue<D> {
     #[inline]
     fn bytes_count(&self) -> usize {
         match self {
-            Self::BOOL(_) => 6,
-            Self::SINT(_) => 6,
-            Self::INT(_) => 6,
-            Self::DINT(_) => 8,
-            Self::REAL(_) => 8,
-            Self::DWORD(_) => 8,
-            Self::LINT(_) => 12,
+            Self::Bool(_) => 6,
+            Self::Sint(_) => 6,
+            Self::Int(_) => 6,
+            Self::Dint(_) => 8,
+            Self::Real(_) => 8,
+            Self::Dword(_) => 8,
+            Self::Lint(_) => 12,
             Self::Structure { data, .. } => 4 + data.bytes_count(),
         }
     }

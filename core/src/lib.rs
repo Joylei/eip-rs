@@ -6,8 +6,8 @@
 
 //#![warn(missing_docs)]
 
-/// alloc crate
-#[allow(unused_imports)]
+#![allow(clippy::match_like_matches_macro)]
+
 #[cfg_attr(feature = "no_std", macro_use)]
 extern crate alloc;
 
@@ -18,6 +18,7 @@ pub mod cip;
 mod either;
 mod error;
 pub mod hex;
+pub mod iter;
 mod string;
 
 pub use either::Either;

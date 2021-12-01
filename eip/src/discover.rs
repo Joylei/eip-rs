@@ -100,7 +100,11 @@ impl EipDiscovery {
                     None => Some(()),
                 });
                 for _ in rng {
-                    if let Err(_) = tx.send((ListIdentity, broadcast_addr.into())).await {
+                    if tx
+                        .send((ListIdentity, broadcast_addr.into()))
+                        .await
+                        .is_err()
+                    {
                         break;
                     }
                     time::sleep(interval).await;
@@ -144,8 +148,8 @@ where
     I::Error: Into<E>,
     E: From<io::Error>,
 {
-    let cpf = CommonPacketIter::new(data)?;
-    for item in cpf {
+    let mut cpf = CommonPacketIter::new(data)?;
+    if let Some(item) = cpf.next() {
         let item = item?;
         item.ensure_type_code(0x0C)?;
         let res = I::try_from(item.data).map_err(|e| e.into())?;

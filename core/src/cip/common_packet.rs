@@ -13,21 +13,17 @@ use core::{
 use smallvec::SmallVec;
 use std::io::{self, Error, ErrorKind};
 
+type Array = [CommonPacketItem; 4];
+
 /// common packet format
 #[derive(Default, Debug)]
-pub struct CommonPacket(SmallVec<[CommonPacketItem; 2]>);
+pub struct CommonPacket(SmallVec<Array>);
 
 impl CommonPacket {
     /// new object
     #[inline]
     pub fn new() -> Self {
         Self(Default::default())
-    }
-
-    /// into iter
-    #[inline]
-    pub fn into_iter(self) -> impl IntoIterator<Item = CommonPacketItem> {
-        self.0.into_iter()
     }
 
     /// append an item
@@ -65,6 +61,14 @@ impl From<Vec<CommonPacketItem>> for CommonPacket {
     }
 }
 
+impl IntoIterator for CommonPacket {
+    type Item = CommonPacketItem;
+    type IntoIter = crate::iter::IntoIter<Array>;
+    fn into_iter(self) -> Self::IntoIter {
+        crate::iter::IntoIter::new(self.0)
+    }
+}
+
 /// common packet format item
 #[derive(Debug)]
 pub struct CommonPacketItem {
@@ -87,7 +91,7 @@ impl CommonPacketItem {
     pub fn with_unconnected_data(data: Bytes) -> Self {
         Self {
             type_code: 0xB2,
-            data: data,
+            data,
         }
     }
 
@@ -96,7 +100,7 @@ impl CommonPacketItem {
     pub fn with_connected_data(data: Bytes) -> Self {
         Self {
             type_code: 0xB1,
-            data: data,
+            data,
         }
     }
 
@@ -106,7 +110,7 @@ impl CommonPacketItem {
         if self.type_code != 0 {
             return false;
         }
-        self.data.len() == 0
+        self.data.is_empty()
     }
 
     /// ensure current item matches the specified type code
@@ -152,6 +156,11 @@ impl CommonPacketIter {
     #[inline]
     pub fn len(&self) -> usize {
         self.total as usize
+    }
+
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.total == 0
     }
 }
 
@@ -228,7 +237,7 @@ impl TryFrom<Bytes> for CommonPacket {
         }
 
         // should no remaining left
-        if buf.len() != 0 {
+        if !buf.is_empty() {
             return Err(Error::new(
                 ErrorKind::InvalidData,
                 "common packet format: invalid data",

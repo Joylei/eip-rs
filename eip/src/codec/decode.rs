@@ -48,10 +48,10 @@ impl Decoder for ClientCodec {
             }
             v => ErrorStatus::from_status(v as u16)?,
         }
-        return Ok(Some(EncapsulationPacket {
+        Ok(Some(EncapsulationPacket {
             hdr,
             data: reply_data,
-        }));
+        }))
     }
 }
 
@@ -59,13 +59,16 @@ impl TryFrom<Bytes> for EncapsulationHeader {
     type Error = Error;
     #[inline(always)]
     fn try_from(buf: Bytes) -> Result<Self, Self::Error> {
-        let mut hdr = EncapsulationHeader::default();
-        hdr.command = LittleEndian::read_u16(&buf[0..2]);
-        hdr.length = LittleEndian::read_u16(&buf[2..4]);
-        hdr.session_handle = LittleEndian::read_u32(&buf[4..8]);
-        hdr.status = LittleEndian::read_u32(&buf[8..12]);
+        let mut hdr = EncapsulationHeader {
+            command: LittleEndian::read_u16(&buf[0..2]),
+            length: LittleEndian::read_u16(&buf[2..4]),
+            session_handle: LittleEndian::read_u32(&buf[4..8]),
+            status: LittleEndian::read_u32(&buf[8..12]),
+            options: LittleEndian::read_u32(&buf[20..24]),
+            ..Default::default()
+        };
         hdr.sender_context.copy_from_slice(&buf[12..20]);
-        hdr.options = LittleEndian::read_u32(&buf[20..24]);
+
         Ok(hdr)
     }
 }

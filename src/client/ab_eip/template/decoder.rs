@@ -65,7 +65,7 @@ impl DefinitionDecoder for DefaultDefinitionDecoder {
                 self.name = get_name(buf);
             }
         }
-        while let Some(buf) = strings.next() {
+        for buf in strings {
             if self.index < self.member_count {
                 self.members[self.index as usize].name = get_name(buf);
                 self.index += 1;

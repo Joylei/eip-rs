@@ -57,7 +57,7 @@ impl SymbolTypeBuilder {
         const MASK: u16 = 0b0111 << 12;
         self.0 = (self.0 & MASK) | (1 << 15);
         // set instance id
-        self.0 = self.0 | instance_id;
+        self.0 |= instance_id;
         self
     }
 
@@ -88,7 +88,7 @@ impl SymbolTypeBuilder {
         if !SymbolType(self.0).is_bool() {
             panic!("type not bool")
         }
-        self.0 = self.0 | ((pos as u16) << 8);
+        self.0 |= (pos as u16) << 8;
         self
     }
 
@@ -241,7 +241,7 @@ impl<'a, T: MessageService<Error = Error>> GetInstanceAttributeList<'a, T> {
                             ctx,
                             start_instance,
                         } => {
-                            match get_attribute_list(ctx, start_instance.clone()).await {
+                            match get_attribute_list(ctx, start_instance).await {
                                 Ok((has_more, data)) => {
                                     state = State::HasData {
                                         ctx,
@@ -262,7 +262,7 @@ impl<'a, T: MessageService<Error = Error>> GetInstanceAttributeList<'a, T> {
                             has_more,
                             mut data,
                         } => {
-                            if data.len() > 0 {
+                            if !data.is_empty() {
                                 match SymbolInstance::try_from(&mut data) {
                                     Ok(item) => {
                                         let start_instance = item.id; // update start instance
@@ -312,8 +312,8 @@ enum State<'a, T> {
     End,
 }
 
-async fn get_attribute_list<'a, T: MessageService<Error = Error>>(
-    ctx: &'a mut T,
+async fn get_attribute_list<T: MessageService<Error = Error>>(
+    ctx: &mut T,
     start_instance: u16,
 ) -> Result<(bool, Bytes)> {
     let resp = ctx
@@ -323,9 +323,9 @@ async fn get_attribute_list<'a, T: MessageService<Error = Error>>(
                 .with_class(CLASS_SYMBOL)
                 .with_instance(start_instance),
             Bytes::from_static(&[
-                02, 00, // number of attributes
-                01, 00, // attribute 1 - symbol name
-                02, 00, // attribute 2 - symbol type
+                0x02, 0x00, // number of attributes
+                0x01, 0x00, // attribute 1 - symbol name
+                0x02, 0x00, // attribute 2 - symbol type
             ]),
         ))
         .await?;

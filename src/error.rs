@@ -60,7 +60,7 @@ impl From<Error<InnerError>> for ClientError {
 
 impl From<Error<CipError>> for ClientError {
     fn from(e: Error<CipError>) -> Self {
-        let e = e.map_err(|e| InnerError::Cip(e));
+        let e = e.map_err(InnerError::Cip);
         Self(e)
     }
 }
@@ -73,7 +73,7 @@ impl From<CipError> for ClientError {
 
 impl From<Error<ErrorStatus>> for ClientError {
     fn from(e: Error<ErrorStatus>) -> Self {
-        let e = e.map_err(|e| InnerError::Eip(e));
+        let e = e.map_err(InnerError::Eip);
         Self(e)
     }
 }

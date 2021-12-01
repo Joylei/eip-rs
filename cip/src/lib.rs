@@ -5,6 +5,7 @@
 // License: MIT
 
 //#![warn(missing_docs)]
+#![allow(clippy::match_like_matches_macro)]
 
 pub mod codec;
 pub mod connection;

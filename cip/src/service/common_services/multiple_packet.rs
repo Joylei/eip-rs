@@ -59,7 +59,7 @@ where
         self,
     ) -> StdResult<impl Iterator<Item = Result<MessageReply<Bytes>>>, T::Error> {
         let Self { inner, items } = self;
-        if items.len() == 0 {
+        if items.is_empty() {
             return Ok(ReplyIter::End);
         }
 
@@ -182,7 +182,7 @@ impl Iterator for ReplyIter {
                         continue;
                     }
                     // process remaining
-                    if data.len() > 0 {
+                    if !data.is_empty() {
                         let res: Result<MessageReply<Bytes>> = data.split_to(data.len()).try_into();
                         *self = Self::End;
                         return Some(res);

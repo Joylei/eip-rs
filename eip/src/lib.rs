@@ -5,6 +5,7 @@
 // License: MIT
 
 //#![warn(missing_docs)]
+#![allow(clippy::match_like_matches_macro)]
 
 mod codec;
 mod command;
