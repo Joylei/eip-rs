@@ -4,6 +4,7 @@
 // Copyright: 2021, Joylei <leingliu@gmail.com>
 // License: MIT
 
+mod path;
 mod service;
 mod symbol;
 mod tag_value;
@@ -11,6 +12,7 @@ pub mod template;
 
 use super::*;
 use futures_util::future::BoxFuture;
+pub use path::{PathError, PathParser};
 use rseip_cip::Status;
 pub use rseip_eip::{EipContext, EipDiscovery};
 pub use service::*;
