@@ -34,11 +34,7 @@ pub trait TemplateService {
     /// fetch template instance for specified instance id
     async fn template_instance(&mut self, instance_id: u16) -> Result<Template>;
     /// read template definition
-    fn read_template<'a>(
-        &'a mut self,
-        instance_id: u16,
-        template: &Template,
-    ) -> TemplateRead<'a, Self>
+    fn read_template<'a>(&'a mut self, template: &Template) -> TemplateRead<'a, Self>
     where
         Self: Sized;
 }
@@ -50,16 +46,13 @@ impl<T: MessageService<Error = Error>> TemplateService for T {
         let path = EPath::default()
             .with_class(CLASS_TEMPLATE)
             .with_instance(instance_id);
-        let res = self.get_attribute_list(path, &[1, 2, 4, 5]).await?;
+        let mut res: Template = self.get_attribute_list(path, &[1, 2, 4, 5]).await?;
+        res.instance_id = instance_id;
         Ok(res)
     }
 
     /// read template definition
-    fn read_template<'a>(
-        &'a mut self,
-        instance_id: u16,
-        template: &Template,
-    ) -> TemplateRead<'a, Self>
+    fn read_template<'a>(&'a mut self, template: &Template) -> TemplateRead<'a, Self>
     where
         Self: Sized,
     {
@@ -67,7 +60,7 @@ impl<T: MessageService<Error = Error>> TemplateService for T {
         decoder.member_count(template.member_count);
         TemplateRead {
             inner: self,
-            instance_id,
+            instance_id: template.instance_id,
             object_size: template.object_size * 4,
             member_count: template.member_count,
             offset: 0,
@@ -296,6 +289,7 @@ pub struct MemberInfo {
 /// template object
 #[derive(Debug, Clone)]
 pub struct Template {
+    pub instance_id: u16,
     /// structure handle, Tag Type Parameter used in Read/Write Tag service
     pub handle: u16,
     /// template member count
@@ -331,6 +325,7 @@ impl TryFrom<Bytes> for Template {
             return Err(invalid_data("template - too much data to decode"));
         }
         Ok(Self {
+            instance_id: 0,
             handle,
             member_count,
             object_size,

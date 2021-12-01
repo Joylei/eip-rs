@@ -50,6 +50,11 @@ impl TagType {
         }
     }
 
+    /// is it a atomic type
+    pub fn is_atomic(&self) -> bool {
+        !self.is_structure()
+    }
+
     /// get structure handle if it's a structure
     pub fn structure_handle(&self) -> Option<u16> {
         match self {

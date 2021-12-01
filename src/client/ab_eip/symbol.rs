@@ -196,6 +196,8 @@ impl From<SymbolType> for u16 {
     }
 }
 
+/// only instances created are returned.
+/// Any symbol instances that represents tags whose External Access is set to None are not included in the reply data.
 pub struct GetInstanceAttributeList<'a, T> {
     inner: &'a mut T,
     start_instance: u16,

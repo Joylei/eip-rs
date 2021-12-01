@@ -22,7 +22,7 @@ pub async fn main() -> Result<()> {
     //let instance_id = first_struct_instance(&mut client).await?.unwrap();
     let template = client.template_instance(instance_id).await?;
     println!("template instance:\n{:?}", template);
-    let info = client.read_template(instance_id, &template).call().await?;
+    let info = client.read_template(&template).call().await?;
     println!("template definition:\n{:?}", info);
     client.close().await?;
     Ok(())
