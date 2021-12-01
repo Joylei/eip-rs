@@ -49,6 +49,7 @@ impl PathParser for EPath {
     /// - `profile[0,1,257]`
     /// - `a.b.c`
     /// - `struct_a[1].a.b[1]`
+    ///  - `Program:MainProgram.test`
     ///
     #[inline]
     fn parse_tag(path: impl AsRef<[u8]>) -> Result<Self, PathError> {
@@ -57,7 +58,7 @@ impl PathParser for EPath {
             return Err(PathError::Empty);
         }
         let mut res = EPath::default();
-        parse_symbol_and_optional_numbers(&mut buf, &mut res)?;
+        parse_symbol_and_optional_numbers(&mut buf, &mut res, true)?;
         while let Some(c) = buf.first() {
             match c {
                 &b'.' => {
@@ -79,7 +80,7 @@ impl PathParser for EPath {
                         }
                         Some(_) => {
                             // case 2
-                            parse_symbol_and_optional_numbers(&mut buf, &mut res)?;
+                            parse_symbol_and_optional_numbers(&mut buf, &mut res, false)?;
                         }
                         None => return Err(PathError::Eof),
                     }
@@ -92,8 +93,12 @@ impl PathParser for EPath {
 }
 
 #[inline]
-fn parse_symbol_and_optional_numbers(buf: &mut &[u8], res: &mut EPath) -> Result<(), PathError> {
-    let sym = parse_symbol(buf)?;
+fn parse_symbol_and_optional_numbers(
+    buf: &mut &[u8],
+    res: &mut EPath,
+    allow_colon: bool,
+) -> Result<(), PathError> {
+    let sym = parse_symbol(buf, allow_colon)?;
     res.push(Segment::Symbol(sym));
     if let Some(&b'[') = buf.first() {
         *buf = &buf[1..];
@@ -146,7 +151,7 @@ fn parse_number(buf: &mut &[u8]) -> Result<u32, PathError> {
 }
 
 #[inline]
-fn parse_symbol(buf: &mut &[u8]) -> Result<String, PathError> {
+fn parse_symbol(buf: &mut &[u8], allow_colon: bool) -> Result<String, PathError> {
     const MAX_LEN: usize = 40; // see 1756-pm020_-en-p.pdf  page 12
 
     //check first byte
@@ -160,7 +165,15 @@ fn parse_symbol(buf: &mut &[u8]) -> Result<String, PathError> {
             }
         },
     )?;
-    let name_buf = take_one_plus(buf, is_valid_char).map_or_else(
+
+    let name_buf = if allow_colon && has_program(buf) {
+        let temp = buf.clone();
+        *buf = &buf[8..];
+        take_one_plus(buf, is_valid_char).map(|v| &temp[..8 + v.len()])
+    } else {
+        take_one_plus(buf, is_valid_char)
+    };
+    let name_buf = name_buf.map_or_else(
         || Err(PathError::NameParseError),
         |v| {
             if v.len() > MAX_LEN {
@@ -170,12 +183,27 @@ fn parse_symbol(buf: &mut &[u8]) -> Result<String, PathError> {
             }
         },
     )?;
+
     // safety: all ASCII
     let name = unsafe { String::from_utf8_unchecked(name_buf.to_vec()) };
     Ok(name)
 }
 
 // === chars ====
+
+/// check program prefix ignore case
+fn has_program(buf: &[u8]) -> bool {
+    const GAP: u8 = b'a' - b'A';
+    const PROGRAM: &[u8] = &[b'p', b'r', b'o', b'g', b'r', b'a', b'm', b':'];
+    if buf.len() >= 8 {
+        (&buf[0..8])
+            .iter()
+            .zip(PROGRAM.iter())
+            .all(|(a, b)| a == b || *a == (*b - GAP))
+    } else {
+        false
+    }
+}
 
 #[inline]
 fn take_one_plus<'a>(buf: &mut &'a [u8], f: impl FnMut(u8) -> bool) -> Option<&'a [u8]> {
@@ -262,6 +290,12 @@ mod tests {
             EPath::from_symbol("a").with_symbol("b").with_symbol("c")
         );
 
+        let path = EPath::parse_tag("ProGram:MainProgram.test").unwrap();
+        assert_eq!(
+            path,
+            EPath::from_symbol("ProGram:MainProgram").with_symbol("test")
+        );
+
         let path = EPath::parse_tag("struct_a[1]._abc.efg[2,3]").unwrap();
         assert_eq!(
             path,
@@ -289,6 +323,7 @@ mod tests {
             "abc[1,3,]",
             "abc[1,3",
             "abc[1,3,",
+            "my.heart:on",
         ];
 
         for item in paths {
