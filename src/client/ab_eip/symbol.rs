@@ -4,7 +4,7 @@
 // Copyright: 2021, Joylei <leingliu@gmail.com>
 // License: MIT
 
-use super::{HasMore, CLASS_SYMBOL};
+use super::{HasMore, CLASS_SYMBOL, REPLY_MASK};
 use crate::{
     cip::{epath::EPath, service::MessageService, CipError, MessageRequest},
     error::{invalid_data, InnerError},
@@ -327,7 +327,7 @@ async fn get_attribute_list<'a, T: MessageService<Error = Error>>(
             ]),
         ))
         .await?;
-    if resp.reply_service != 0x55 + 0x80 {
+    if resp.reply_service != 0x55 + REPLY_MASK {
         return Err(invalid_data(format!(
             "unexpected reply service for write tag service: {:#0x}",
             resp.reply_service

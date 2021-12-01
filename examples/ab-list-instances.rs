@@ -4,6 +4,8 @@
 // Copyright: 2021, Joylei <leingliu@gmail.com>
 // License: MIT
 
+//! list symbol instances
+
 use anyhow::Result;
 use futures::StreamExt;
 use rseip::{

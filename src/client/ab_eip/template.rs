@@ -6,7 +6,7 @@
 
 mod decoder;
 
-use super::{symbol::SymbolType, HasMore, CLASS_TEMPLATE};
+use super::{symbol::SymbolType, HasMore, CLASS_TEMPLATE, REPLY_MASK, SERVICE_TEMPLATE_READ};
 use crate::{
     cip::{
         codec::LazyEncode,
@@ -28,9 +28,6 @@ use std::{
     ops::{Deref, DerefMut},
     result::Result as StdResult,
 };
-
-const SERVICE_TEMPLATE_READ: u8 = 0x4C;
-const REPLY_TEMPLATE_READ: u8 = 0x4C + 0x80;
 
 #[async_trait::async_trait(?Send)]
 pub trait TemplateService {
@@ -236,7 +233,7 @@ where
     };
     let req = MessageRequest::new(SERVICE_TEMPLATE_READ, path, data);
     let resp = ctx.send(req).await?;
-    if resp.reply_service != REPLY_TEMPLATE_READ {
+    if resp.reply_service != SERVICE_TEMPLATE_READ + REPLY_MASK {
         return Err(invalid_data(format!(
             "read template - unexpected reply service: {:#0x}",
             resp.reply_service

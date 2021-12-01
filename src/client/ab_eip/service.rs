@@ -148,9 +148,9 @@ where
     R::Error: Into<crate::Error>,
 {
     let req: TagRequest = req.into();
-    let mr_request = MessageRequest::new(0x4C, req.tag, ElementCount(req.count));
+    let mr_request = MessageRequest::new(SERVICE_READ_TAG, req.tag, ElementCount(req.count));
     let resp = client.send(mr_request).await?;
-    if resp.reply_service != 0xCC {
+    if resp.reply_service != SERVICE_READ_TAG + REPLY_MASK {
         return Err(rseip_core::Error::<InnerError>::from_invalid_data()
             .with_context("unexpected reply for read tag service")
             .into());
@@ -173,9 +173,9 @@ where
     D: Encodable,
 {
     let req: TagRequest = req.into();
-    let mr_request = MessageRequest::new(0x4D, req.tag, value);
+    let mr_request = MessageRequest::new(SERVICE_WRITE_TAG, req.tag, value);
     let resp = client.send(mr_request).await?;
-    if resp.reply_service != 0xCD {
+    if resp.reply_service != SERVICE_WRITE_TAG + REPLY_MASK {
         return Err(rseip_core::Error::<InnerError>::from_invalid_data()
             .with_context(format!(
                 "unexpected reply service for write tag service: {:#0x}",
@@ -205,7 +205,7 @@ where
         decoder,
     } = req;
     let mr_request = MessageRequest::new(
-        0x52,
+        SERVICE_READ_TAG_FRAGMENTED,
         tag,
         LazyEncode {
             f: |buf: &mut BytesMut| {
@@ -218,7 +218,7 @@ where
         },
     );
     let resp = client.send(mr_request).await?;
-    if resp.reply_service != 0xD2 {
+    if resp.reply_service != SERVICE_READ_TAG_FRAGMENTED + REPLY_MASK {
         return Err(rseip_core::Error::<InnerError>::from_invalid_data()
             .with_context(format!(
                 "unexpected reply service for read tag fragmented service: {:#0x}",
@@ -251,7 +251,7 @@ async fn ab_write_tag_fragmented<C: MessageService<Error = Error>, D: Encodable>
         data,
     } = req;
     let mr_request = MessageRequest::new(
-        0x53,
+        SERVICE_WRITE_TAG_FRAGMENTED,
         tag,
         LazyEncode {
             f: |buf: &mut BytesMut| {
@@ -266,7 +266,7 @@ async fn ab_write_tag_fragmented<C: MessageService<Error = Error>, D: Encodable>
         },
     );
     let resp = client.send(mr_request).await?;
-    if resp.reply_service != 0xD3 {
+    if resp.reply_service != SERVICE_WRITE_TAG_FRAGMENTED + REPLY_MASK {
         return Err(rseip_core::Error::<InnerError>::from_invalid_data()
             .with_context(format!(
                 "unexpected reply for write tag fragmented service: {:#0x}",
@@ -292,7 +292,7 @@ async fn ab_read_modify_write<C: MessageService<Error = Error>, const N: usize>(
         and_mask,
     } = req;
     let mr_request = MessageRequest::new(
-        0x4E,
+        SERVICE_READ_MODIFY_WRITE_TAG,
         tag,
         LazyEncode {
             f: |buf: &mut BytesMut| {
@@ -305,7 +305,7 @@ async fn ab_read_modify_write<C: MessageService<Error = Error>, const N: usize>(
         },
     );
     let resp = client.send(mr_request).await?;
-    if resp.reply_service != 0xCE {
+    if resp.reply_service != SERVICE_READ_MODIFY_WRITE_TAG + REPLY_MASK {
         return Err(rseip_core::Error::<InnerError>::from_invalid_data()
             .with_context(format!(
                 "unexpected reply service for read modify tag service: {:#0x}",

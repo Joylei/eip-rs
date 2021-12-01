@@ -13,7 +13,7 @@ use rseip::{
         MessageRequest,
     },
     client::{
-        ab_eip::{ElementCount, TagValue},
+        ab_eip::{ElementCount, TagValue, REPLY_MASK, SERVICE_READ_TAG},
         AbEipConnection,
     },
 };
@@ -25,19 +25,19 @@ pub async fn main() -> Result<()> {
     let mr = client
         .multiple_service()
         .push(MessageRequest::new(
-            0x4C,
+            SERVICE_READ_TAG,
             EPath::from_symbol("test_car1_x"),
             ElementCount(1),
         ))
         .push(MessageRequest::new(
-            0x4C,
+            SERVICE_READ_TAG,
             EPath::from_symbol("test_car2_x"),
             ElementCount(1),
         ));
     let iter = mr.call().await?;
     for item in iter {
         let item = item?;
-        assert_eq!(item.reply_service, 0x4C + 0x80);
+        assert_eq!(item.reply_service, SERVICE_READ_TAG + REPLY_MASK);
         if item.status.is_err() {
             println!("error read tag: {}", item.status);
         } else {
