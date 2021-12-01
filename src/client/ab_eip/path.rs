@@ -26,10 +26,18 @@ impl fmt::Debug for PathError {
     }
 }
 
+impl fmt::Display for PathError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Debug::fmt(&self, f)
+    }
+}
+
+impl std::error::Error for PathError {}
+
 /// AB tag path parser
 pub trait PathParser: Sized {
     /// parse tag path
-    fn from_path(path: impl AsRef<[u8]>) -> Result<Self, PathError>;
+    fn parse_tag(path: impl AsRef<[u8]>) -> Result<Self, PathError>;
 }
 
 impl PathParser for EPath {
@@ -43,7 +51,7 @@ impl PathParser for EPath {
     /// - `struct_a[1].a.b[1]`
     ///
     #[inline]
-    fn from_path(path: impl AsRef<[u8]>) -> Result<Self, PathError> {
+    fn parse_tag(path: impl AsRef<[u8]>) -> Result<Self, PathError> {
         let mut buf = path.as_ref();
         if buf.is_empty() {
             return Err(PathError::Empty);
@@ -242,16 +250,16 @@ mod tests {
 
     #[test]
     fn test_valid_tag_paths() {
-        let path = EPath::from_path("struct_a").unwrap();
+        let path = EPath::parse_tag("struct_a").unwrap();
         assert_eq!(path, EPath::from_symbol("struct_a"));
 
-        let path = EPath::from_path("_under").unwrap();
+        let path = EPath::parse_tag("_under").unwrap();
         assert_eq!(path, EPath::from_symbol("_under"));
 
-        let path = EPath::from_path("struct_a.1").unwrap();
+        let path = EPath::parse_tag("struct_a.1").unwrap();
         assert_eq!(path, EPath::from_symbol("struct_a").with_element(1));
 
-        let path = EPath::from_path("profile[0,1,257]").unwrap();
+        let path = EPath::parse_tag("profile[0,1,257]").unwrap();
         assert_eq!(
             path,
             EPath::from_symbol("profile")
@@ -260,13 +268,13 @@ mod tests {
                 .with_element(257)
         );
 
-        let path = EPath::from_path("a.b.c").unwrap();
+        let path = EPath::parse_tag("a.b.c").unwrap();
         assert_eq!(
             path,
             EPath::from_symbol("a").with_symbol("b").with_symbol("c")
         );
 
-        let path = EPath::from_path("struct_a[1]._abc.efg[2,3]").unwrap();
+        let path = EPath::parse_tag("struct_a[1]._abc.efg[2,3]").unwrap();
         assert_eq!(
             path,
             EPath::from_symbol("struct_a")
@@ -296,7 +304,7 @@ mod tests {
         ];
 
         for item in paths {
-            let res = EPath::from_path(item);
+            let res = EPath::parse_tag(item);
             assert!(res.is_err());
         }
     }

@@ -14,6 +14,8 @@ use std::{
     str::Utf8Error,
 };
 
+use crate::client::ab_eip::PathError;
+
 #[inline]
 pub(crate) fn invalid_data(context: impl Into<String>) -> ClientError {
     Error::<InnerError>::from_invalid_data()
@@ -47,6 +49,7 @@ pub enum InnerError {
     Eip(ErrorStatus),
     /// Invalid Socket Address
     InvalidAddr(AddrParseError),
+    PathError(PathError),
 }
 
 impl From<Error<InnerError>> for ClientError {
@@ -102,6 +105,13 @@ impl From<AddrParseError> for ClientError {
     }
 }
 
+impl From<PathError> for ClientError {
+    #[inline]
+    fn from(e: PathError) -> Self {
+        Self(Error::from_other(InnerError::PathError(e)))
+    }
+}
+
 impl error::Error for ClientError {
     #[inline]
     fn source(&self) -> Option<&(dyn error::Error + 'static)> {
@@ -128,6 +138,9 @@ impl fmt::Display for InnerError {
             Self::InvalidAddr(e) => {
                 write!(f, "invalid IP address: {}", e)
             }
+            Self::PathError(e) => {
+                write!(f, "{}", e)
+            }
         }
     }
 }
@@ -135,9 +148,10 @@ impl fmt::Display for InnerError {
 impl error::Error for InnerError {
     fn source(&self) -> Option<&(dyn error::Error + 'static)> {
         match self {
-            Self::Cip(e) => Some(e),
-            Self::Eip(e) => Some(e),
+            Self::Cip(e) => e.source(),
+            Self::Eip(e) => e.source(),
             Self::InvalidAddr(e) => Some(e),
+            _ => None,
         }
     }
 }

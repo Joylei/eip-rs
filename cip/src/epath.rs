@@ -114,6 +114,9 @@ impl EPath {
     }
 
     /// from symbolic segment
+    ///
+    /// ## Note
+    /// No validation applied
     #[inline]
     pub fn from_symbol(symbol: impl Into<String>) -> Self {
         EPath(smallvec![Segment::Symbol(symbol.into())])

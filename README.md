@@ -11,6 +11,16 @@ rseip - EIP&CIP in pure Rust
 - Explicit Messaging (Connected / Unconnected)
 - Open Source
 
+### Services Supported for AB PLC
+
+- Read Tag
+- Write Tag
+- Read Tag Fragmented
+- Write Tag Fragmented
+- Read Modify Write Tag
+- Get Instance Attribute List
+- Read Template
+
 ## How to use
 
 Add `rseip` to your cargo project's dependencies
@@ -28,13 +38,13 @@ use anyhow::Result;
 use rseip::{
     cip::service::MessageService,
     cip::{connection::Options, epath::EPath},
-    client::{ab_eip::TagValue, AbEipConnection, AbService},
+    client::{ab_eip::{PathParser, TagValue}, AbEipConnection, AbService},
 };
 
 #[tokio::main]
 pub async fn main() -> Result<()> {
     let mut client = AbEipConnection::new_host_lookup("192.168.0.83", Options::default()).await?;
-    let tag = EPath::from_symbol("test_car1_x");
+    let tag = EPath::parse_tag("test_car1_x")?;
     println!("read tag...");
     let value: TagValue = client.read_tag(tag.clone()).await?;
     println!("tag value: {:?}", value);
