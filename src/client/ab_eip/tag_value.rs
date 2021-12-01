@@ -111,28 +111,37 @@ impl TryFrom<Bytes> for TagValue<Bytes> {
     #[inline]
     fn try_from(mut src: Bytes) -> Result<Self> {
         //TODO: verify len
-        assert!(src.len() >= 4);
+        debug_assert!(src.len() > 2);
         let type_code = LittleEndian::read_u16(&src[0..2]);
         let val = match type_code {
-            0xC2 => TagValue::Sint(unsafe { mem::transmute(src[2]) }),
-            0xC3 => TagValue::Int(LittleEndian::read_i16(&src[2..4])),
+            0xC2 => {
+                debug_assert!(src.len() == 3);
+                TagValue::Sint(unsafe { mem::transmute(src[2]) })
+            }
+            0xC3 => {
+                debug_assert!(src.len() == 4);
+                TagValue::Int(LittleEndian::read_i16(&src[2..4]))
+            }
             0xC4 => {
-                assert!(src.len() >= 6);
+                debug_assert!(src.len() == 6);
                 TagValue::Dint(LittleEndian::read_i32(&src[2..6]))
             }
             0xCA => {
-                assert!(src.len() >= 6);
+                debug_assert!(src.len() == 6);
                 TagValue::Real(LittleEndian::read_f32(&src[2..6]))
             }
             0xD3 => {
-                assert!(src.len() >= 6);
+                debug_assert!(src.len() == 6);
                 TagValue::Dword(LittleEndian::read_u32(&src[2..6]))
             }
             0xC5 => {
-                assert!(src.len() >= 10);
+                debug_assert!(src.len() == 10);
                 TagValue::Lint(LittleEndian::read_i64(&src[2..10]))
             }
-            0xC1 => TagValue::Bool(src[4] == 255),
+            0xC1 => {
+                debug_assert!(src.len() == 3);
+                TagValue::Bool(src[2] == 255)
+            }
             0x02A0 => {
                 assert!(src.len() > 4);
                 TagValue::Structure {
@@ -154,13 +163,11 @@ impl<D: Encodable> Encodable for TagValue<D> {
                 dst.put_u16_le(0xC1);
                 dst.put_slice(&[1, 0]);
                 dst.put_u8(if v { 255 } else { 0 });
-                dst.put_u8(0);
             }
             Self::Sint(v) => {
                 dst.put_u16_le(0xC2);
                 dst.put_slice(&[1, 0]);
                 dst.put_i8(v);
-                dst.put_u8(0);
             }
             Self::Int(v) => {
                 dst.put_u16_le(0xC3);
@@ -199,8 +206,8 @@ impl<D: Encodable> Encodable for TagValue<D> {
     #[inline]
     fn bytes_count(&self) -> usize {
         match self {
-            Self::Bool(_) => 6,
-            Self::Sint(_) => 6,
+            Self::Bool(_) => 5,
+            Self::Sint(_) => 5,
             Self::Int(_) => 6,
             Self::Dint(_) => 8,
             Self::Real(_) => 8,
