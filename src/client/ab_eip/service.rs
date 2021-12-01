@@ -56,7 +56,7 @@ pub trait AbService {
         req: ReadModifyWriteRequest<N>,
     ) -> Result<()>;
 
-    fn get_instance_attribute_list(&mut self) -> GetInstanceAttributeList<Self>
+    fn list_tag(&mut self) -> GetInstanceAttributeList<Self>
     where
         Self: Sized;
 }
@@ -125,7 +125,7 @@ macro_rules! impl_service {
             }
 
             #[inline]
-            fn get_instance_attribute_list(&mut self) -> GetInstanceAttributeList<Self>
+            fn list_tag(&mut self) -> GetInstanceAttributeList<Self>
             where
                 Self: Sized,
             {

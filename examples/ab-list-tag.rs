@@ -19,7 +19,7 @@ pub async fn main() -> Result<()> {
         .await?
         .with_connection_path(PortSegment::default());
     {
-        let stream = client.get_instance_attribute_list().call();
+        let stream = client.list_tag().call();
         stream
             .for_each(|item| async move {
                 println!("{:?}", item);

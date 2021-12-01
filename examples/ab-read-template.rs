@@ -20,7 +20,7 @@ pub async fn main() -> Result<()> {
     let instance_id = 2336;
     // here use a known instance_id, please uncomment below line to fetch one from PLC controller.
     //let instance_id = first_struct_instance(&mut client).await?.unwrap();
-    let template = client.template_instance(instance_id).await?;
+    let template = client.find_template(instance_id).await?;
     println!("template instance:\n{:?}", template);
     let info = client.read_template(&template).call().await?;
     println!("template definition:\n{:?}", info);
@@ -30,7 +30,7 @@ pub async fn main() -> Result<()> {
 
 #[allow(unused)]
 async fn first_struct_instance(client: &mut AbEipClient) -> Result<Option<u16>> {
-    let stream = client.get_instance_attribute_list().call();
+    let stream = client.list_tag().call();
     tokio::pin!(stream);
     let res = stream
         .try_filter_map(|item| future::ready(Ok(item.symbol_type.instance_id())))

@@ -32,7 +32,8 @@ use std::{
 #[async_trait::async_trait(?Send)]
 pub trait TemplateService {
     /// fetch template instance for specified instance id
-    async fn template_instance(&mut self, instance_id: u16) -> Result<Template>;
+    async fn find_template(&mut self, instance_id: u16) -> Result<Template>;
+
     /// read template definition
     fn read_template<'a>(&'a mut self, template: &Template) -> TemplateRead<'a, Self>
     where
@@ -42,7 +43,7 @@ pub trait TemplateService {
 #[async_trait::async_trait(?Send)]
 impl<T: MessageService<Error = Error>> TemplateService for T {
     /// fetch template instance for specified instance id
-    async fn template_instance(&mut self, instance_id: u16) -> Result<Template> {
+    async fn find_template(&mut self, instance_id: u16) -> Result<Template> {
         let path = EPath::default()
             .with_class(CLASS_TEMPLATE)
             .with_instance(instance_id);
