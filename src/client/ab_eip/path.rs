@@ -167,7 +167,7 @@ fn parse_symbol(buf: &mut &[u8], allow_colon: bool) -> Result<String, PathError>
     )?;
 
     let name_buf = if allow_colon && has_program(buf) {
-        let temp = buf.clone();
+        let temp = &buf[..];
         *buf = &buf[8..];
         take_one_plus(buf, is_valid_char).map(|v| &temp[..8 + v.len()])
     } else {
