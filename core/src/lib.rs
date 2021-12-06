@@ -15,12 +15,14 @@ pub extern crate smallvec;
 
 #[cfg(feature = "cip")]
 pub mod cip;
+pub mod codec;
 mod either;
 mod error;
 pub mod hex;
 pub mod iter;
 mod string;
 
+pub use core::result::Result as StdResult;
 pub use either::Either;
-pub use error::{Error, InnerError};
+pub use error::{Error, StdError};
 pub use string::*;

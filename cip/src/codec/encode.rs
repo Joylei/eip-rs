@@ -4,196 +4,202 @@
 // Copyright: 2021, Joylei <leingliu@gmail.com>
 // License: MIT
 
-mod cip;
-mod connection;
 mod epath;
-mod message_request;
+mod message;
 
-use super::Encodable;
-use crate::Result;
-use bytes::{BufMut, Bytes, BytesMut};
-use smallvec::{Array, SmallVec};
-use std::fmt;
+use crate::{
+    connection::{ConnectionParameters, ForwardCloseRequest, Options},
+    service::request::UnconnectedSend,
+    MessageRequest,
+};
+use bytes::{BufMut, BytesMut};
+use rseip_core::codec::{Encode, Encoder};
 
-impl Encodable for () {
-    #[inline(always)]
-    fn encode(self, _: &mut BytesMut) -> Result<()> {
-        Ok(())
-    }
-    #[inline(always)]
-    fn bytes_count(&self) -> usize {
-        0
-    }
-}
+impl<P: Encode> Options<P> {
+    #[inline]
+    fn encode_common<A: Encoder>(
+        &self,
+        dst: &mut BytesMut,
+        encoder: &mut A,
+    ) -> Result<(), A::Error> {
+        let transport_class_trigger = self.transport_class_trigger();
 
-impl Encodable for &[u8] {
-    #[inline(always)]
-    fn encode(self, dst: &mut BytesMut) -> Result<()> {
-        dst.put_slice(self);
-        Ok(())
-    }
-    #[inline(always)]
-    fn bytes_count(&self) -> usize {
-        self.len()
-    }
-}
+        dst.put_u8(self.priority_tick_time);
+        dst.put_u8(self.timeout_ticks);
+        dst.put_u32_le(self.o_t_connection_id);
+        dst.put_u32_le(self.t_o_connection_id);
+        dst.put_u16_le(self.connection_serial_number);
+        dst.put_u16_le(self.vendor_id);
+        dst.put_u32_le(self.originator_serial_number);
+        dst.put_u8(self.timeout_multiplier);
+        dst.put_slice(&[0, 0, 0]); //  reserved
+        dst.put_u32_le(self.o_t_rpi);
+        Self::encode_parameters(self.large_open, &self.o_t_params, dst, encoder)?;
+        dst.put_u32_le(self.t_o_rpi);
+        Self::encode_parameters(self.large_open, &self.t_o_params, dst, encoder)?;
 
-impl<T: Encodable> Encodable for Vec<T> {
-    #[inline(always)]
-    fn encode(self, dst: &mut BytesMut) -> Result<()> {
-        for item in self {
-            item.encode(dst)?;
-        }
-        Ok(())
-    }
-    #[inline(always)]
-    fn bytes_count(&self) -> usize {
-        self.iter().map(|v| v.bytes_count()).sum()
-    }
-}
+        dst.put_u8(transport_class_trigger);
 
-impl<A> Encodable for SmallVec<A>
-where
-    A: Array,
-    A::Item: Encodable,
-{
-    #[inline(always)]
-    fn encode(self, dst: &mut BytesMut) -> Result<()> {
-        for item in self {
-            item.encode(dst)?;
-        }
-        Ok(())
-    }
-    #[inline(always)]
-    fn bytes_count(&self) -> usize {
-        self.iter().map(|v| v.bytes_count()).sum()
-    }
-}
+        let path_len = self.connection_path.bytes_count();
+        assert!(path_len % 2 == 0 && path_len <= u8::MAX as usize);
+        dst.put_u8((path_len / 2) as u8);
 
-impl Encodable for Bytes {
-    #[inline(always)]
-    fn encode(self, dst: &mut BytesMut) -> Result<()> {
-        dst.put_slice(&self);
         Ok(())
     }
 
-    #[inline(always)]
-    fn bytes_count(&self) -> usize {
-        self.len()
-    }
-}
-
-impl<D: Encodable> Encodable for Option<D> {
-    #[inline(always)]
-    fn encode(self, dst: &mut BytesMut) -> Result<()> {
-        if let Some(item) = self {
-            item.encode(dst)
+    #[inline]
+    fn encode_parameters<A: Encoder>(
+        large: bool,
+        parameters: &ConnectionParameters,
+        dst: &mut BytesMut,
+        _encoder: &mut A,
+    ) -> Result<(), A::Error> {
+        if large {
+            let mut v = parameters.connection_size as u32;
+            v |= (parameters.variable_length as u32) << 25;
+            v |= (parameters.priority as u32) << 26;
+            v |= (parameters.connection_type as u32) << 29;
+            v |= (parameters.redundant_owner as u32) << 31;
+            dst.put_u32_le(v);
         } else {
-            Ok(())
+            let mut v = parameters.connection_size & 0x01FF;
+            v |= (parameters.variable_length as u16) << 9;
+            v |= (parameters.priority as u16) << 10;
+            v |= (parameters.connection_type as u16) << 13;
+            v |= (parameters.redundant_owner as u16) << 15;
+            dst.put_u16_le(v);
         }
+        Ok(())
+    }
+}
+
+impl<P: Encode> Encode for Options<P> {
+    #[inline]
+    fn encode<A: Encoder>(self, dst: &mut BytesMut, encoder: &mut A) -> Result<(), A::Error> {
+        self.encode_common(dst, encoder)?;
+        self.connection_path.encode(dst, encoder)?;
+        Ok(())
+    }
+
+    #[inline]
+    fn encode_by_ref<A: Encoder>(
+        &self,
+        dst: &mut BytesMut,
+        encoder: &mut A,
+    ) -> Result<(), A::Error> {
+        self.encode_common(dst, encoder)?;
+        self.connection_path.encode_by_ref(dst, encoder)?;
+        Ok(())
+    }
+
+    #[inline(always)]
+    fn bytes_count(&self) -> usize {
+        let base_size = if self.large_open { 40 } else { 36 };
+        base_size + self.connection_path.bytes_count()
+    }
+}
+
+impl<P: Encode> ForwardCloseRequest<P> {
+    #[inline]
+    fn encode_common<A: Encoder>(
+        &self,
+        dst: &mut BytesMut,
+        _encoder: &mut A,
+    ) -> Result<(), A::Error> {
+        dst.put_u8(self.priority_time_ticks);
+        dst.put_u8(self.timeout_ticks);
+        dst.put_u16_le(self.connection_serial_number);
+        dst.put_u16_le(self.originator_vendor_id);
+        dst.put_u32_le(self.originator_serial_number);
+
+        let path_len = self.connection_path.bytes_count();
+        assert!(path_len % 2 == 0 && path_len <= u8::MAX as usize);
+        dst.put_u8(path_len as u8 / 2); //path size
+        dst.put_u8(0); // reserved
+
+        Ok(())
+    }
+}
+
+impl<P: Encode> Encode for ForwardCloseRequest<P> {
+    #[inline]
+    fn encode<A: Encoder>(self, buf: &mut BytesMut, encoder: &mut A) -> Result<(), A::Error> {
+        self.encode_common(buf, encoder)?;
+        self.connection_path.encode(buf, encoder)?;
+        Ok(())
+    }
+    #[inline]
+    fn encode_by_ref<A: Encoder>(
+        &self,
+        buf: &mut BytesMut,
+        encoder: &mut A,
+    ) -> Result<(), A::Error> {
+        self.encode_common(buf, encoder)?;
+        self.connection_path.encode_by_ref(buf, encoder)?;
+        Ok(())
     }
     #[inline(always)]
     fn bytes_count(&self) -> usize {
-        self.as_ref().map(|v| v.bytes_count()).unwrap_or_default()
+        12 + self.connection_path.bytes_count()
     }
 }
 
-// conflict with TryFrom<Bytes> for Bytes
-// impl<T: Encodable> TryFrom<T> for Bytes {
-//     type Error = Error;
-//     fn try_from(src: T) -> Result<Self> {
-//         let mut buf = BytesMut::new();
-//         src.encode(&mut buf)?;
-//         Ok(buf.freeze())
-//     }
-// }
-
-impl<T: Encodable + Sized> Encodable for Box<T> {
-    #[inline(always)]
-    fn encode(self, dst: &mut BytesMut) -> Result<()> {
-        (*self).encode(dst)
-    }
-    #[inline(always)]
-    fn bytes_count(&self) -> usize {
-        (&**self).bytes_count()
-    }
-}
-
-/// sized encoding
-pub trait SizedEncodable: Encodable + Sized {}
-
-impl<T: Encodable + Sized> SizedEncodable for T {}
-
-/// lazy encoding
-pub struct LazyEncode<F> {
-    /// encoding function
-    pub f: F,
-    /// total bytes
-    pub bytes_count: usize,
-}
-
-impl<F> Encodable for LazyEncode<F>
+impl<CP, P, D> Encode for UnconnectedSend<CP, MessageRequest<P, D>>
 where
-    F: FnOnce(&mut BytesMut) -> Result<()>,
+    CP: Encode,
+    P: Encode,
+    D: Encode,
 {
-    #[inline(always)]
-    fn encode(self, dst: &mut BytesMut) -> Result<()> {
-        (self.f)(dst)
+    #[inline]
+    fn encode<A: Encoder>(self, buf: &mut BytesMut, encoder: &mut A) -> Result<(), A::Error>
+    where
+        Self: Sized,
+    {
+        let data_len = self.data.bytes_count();
+
+        buf.put_u8(self.priority_ticks);
+        buf.put_u8(self.timeout_ticks);
+
+        buf.put_u16_le(data_len as u16); // size of MR
+        self.data.encode(buf, encoder)?;
+        if data_len % 2 == 1 {
+            buf.put_u8(0); // padded 0
+        }
+
+        let path_len = self.path.bytes_count();
+        buf.put_u8(path_len as u8 / 2); // path size in words
+        buf.put_u8(0); // reserved
+        self.path.encode(buf, encoder)?; // padded epath
+        Ok(())
     }
 
-    #[inline(always)]
+    #[inline]
+    fn encode_by_ref<A: Encoder>(
+        &self,
+        buf: &mut BytesMut,
+        encoder: &mut A,
+    ) -> Result<(), A::Error> {
+        let data_len = self.data.bytes_count();
+
+        buf.put_u8(self.priority_ticks);
+        buf.put_u8(self.timeout_ticks);
+
+        buf.put_u16_le(data_len as u16); // size of MR
+        self.data.encode_by_ref(buf, encoder)?;
+        if data_len % 2 == 1 {
+            buf.put_u8(0); // padded 0
+        }
+
+        let path_len = self.path.bytes_count();
+        buf.put_u8(path_len as u8 / 2); // path size in words
+        buf.put_u8(0); // reserved
+        self.path.encode_by_ref(buf, encoder)?; // padded epath
+        Ok(())
+    }
+
+    #[inline]
     fn bytes_count(&self) -> usize {
-        self.bytes_count
-    }
-}
-
-impl<F> LazyEncode<F>
-where
-    F: FnOnce(&mut BytesMut) -> Result<()> + 'static,
-{
-    /// box encoding function
-    #[inline(always)]
-    pub fn into_dynamic(self) -> DynamicEncode {
-        DynamicEncode {
-            f: Box::new(self.f),
-            bytes_count: self.bytes_count,
-        }
-    }
-}
-
-impl<F> fmt::Debug for LazyEncode<F> {
-    #[inline]
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("LazyEncode")
-            .field("f", &"closure..")
-            .field("bytes_count", &self.bytes_count)
-            .finish()
-    }
-}
-
-/// lazy encoding with boxed function
-pub type DynamicEncode = LazyEncode<Box<dyn FnOnce(&mut BytesMut) -> Result<()>>>;
-
-impl Default for DynamicEncode {
-    #[inline]
-    fn default() -> Self {
-        Self {
-            f: Box::new(|_| Ok(())),
-            bytes_count: 0,
-        }
-    }
-}
-
-impl<T: AsRef<[u8]> + 'static> From<T> for DynamicEncode {
-    #[inline]
-    fn from(src: T) -> Self {
-        let bytes_count = src.as_ref().len();
-        Self {
-            f: Box::new(move |buf| {
-                buf.put_slice(src.as_ref());
-                Ok(())
-            }),
-            bytes_count,
-        }
+        let data_len = self.data.bytes_count();
+        4 + data_len + data_len % 2 + 2 + self.path.bytes_count()
     }
 }

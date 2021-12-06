@@ -4,10 +4,11 @@
 // Copyright: 2021, Joylei <leingliu@gmail.com>
 // License: MIT
 
-use crate::{codec::Encoding, consts::*};
+use crate::consts::*;
+use rseip_core::codec::Encode;
 
 /// encapsulation command
-pub trait Command: Encoding {
+pub trait Command: Encode {
     fn command_code() -> u16;
 }
 
@@ -17,7 +18,7 @@ pub struct Nop<D> {
     pub data: D,
 }
 
-impl<D: Encoding> Command for Nop<D> {
+impl<D: Encode> Command for Nop<D> {
     #[inline(always)]
     fn command_code() -> u16 {
         EIP_COMMAND_NOP
@@ -93,7 +94,7 @@ pub struct SendRRData<D> {
     pub data: D,
 }
 
-impl<D: Encoding> Command for SendRRData<D> {
+impl<D: Encode> Command for SendRRData<D> {
     #[inline(always)]
     fn command_code() -> u16 {
         EIP_COMMAND_SEND_RRDATA
@@ -110,7 +111,7 @@ pub struct SendUnitData<D> {
     pub data: D,
 }
 
-impl<D: Encoding> Command for SendUnitData<D> {
+impl<D: Encode> Command for SendUnitData<D> {
     #[inline(always)]
     fn command_code() -> u16 {
         EIP_COMMAND_SEND_UNIT_DATA

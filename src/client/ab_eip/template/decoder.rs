@@ -36,7 +36,7 @@ pub struct DefaultDefinitionDecoder {
 }
 
 impl DefinitionDecoder for DefaultDefinitionDecoder {
-    type Error = Error;
+    type Error = ClientError;
     type Item = TemplateDefinition;
 
     fn member_count(&mut self, member_count: u16) {
@@ -45,7 +45,7 @@ impl DefinitionDecoder for DefaultDefinitionDecoder {
 
     fn partial_decode(&mut self, mut buf: Bytes) -> StdResult<(), Self::Error> {
         if self.member_count < 2 {
-            return Err(invalid_data(
+            return Err(Error::custom(
                 "template definition - need to initialize `member_count`",
             ));
         }
@@ -80,12 +80,12 @@ impl DefinitionDecoder for DefaultDefinitionDecoder {
     /// finally decode, return the target object and reset inner state of the decoder
     fn decode(&mut self) -> StdResult<Self::Item, Self::Error> {
         if self.member_count < 2 {
-            return Err(invalid_data(
+            return Err(Error::custom(
                 "template definition - need to initialize `member_count`",
             ));
         }
         if self.index < self.member_count {
-            return Err(invalid_data(
+            return Err(Error::custom(
                 "template definition - not enough data to decode",
             ));
         }

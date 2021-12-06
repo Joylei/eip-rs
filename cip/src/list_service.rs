@@ -4,11 +4,10 @@
 // Copyright: 2021, Joylei <leingliu@gmail.com>
 // License: MIT
 
-use rseip_core::String;
+// type code = 0x100
+// encoded bytes count: 24
 
 /// only one service for ListServices
-/// type code = 0x100
-/// encoded bytes count: 24
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct ListServiceItem {
     /// version shall be 1

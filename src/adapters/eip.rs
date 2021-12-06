@@ -5,19 +5,13 @@
 // License: MIT
 
 use super::*;
-use crate::{
-    cip::codec::Encodable, cip::epath::EPATH_CONNECTION_MANAGER, cip::service::reply::*,
-    cip::service::*, Result,
-};
-use rseip_eip::{EipContext, Frame};
-use std::{
-    convert::{Infallible, TryInto},
-    io,
-};
+use crate::{cip::epath::EPATH_CONNECTION_MANAGER, cip::service::*, ClientError, Result};
+use rseip_core::codec::{Decode, Encode};
+use rseip_eip::EipContext;
 use tokio::io::{AsyncRead, AsyncWrite};
 
 #[async_trait::async_trait(?Send)]
-impl<T> Service for EipContext<T>
+impl<T> Service for EipContext<T, ClientError>
 where
     T: AsyncRead + AsyncWrite + Unpin,
 {
@@ -45,123 +39,75 @@ where
     /// send Heartbeat message to keep underline transport alive
     #[inline]
     async fn heartbeat(&mut self) -> Result<()> {
-        self.nop(Frame::<_, Infallible>::new(0, |_| Ok(()))).await?;
+        self.nop(()).await?;
         Ok(())
     }
 
     /// send message router request without CIP connection
     #[inline]
-    async fn unconnected_send<CP, P, D>(
+    async fn unconnected_send<'de, CP, P, D, R>(
         &mut self,
         request: UnconnectedSend<CP, MessageRequest<P, D>>,
-    ) -> Result<MessageReply<Bytes>>
+    ) -> Result<MessageReply<R>>
     where
-        CP: Encodable,
-        P: Encodable,
-        D: Encodable,
+        CP: Encode,
+        P: Encode,
+        D: Encode,
+        R: Decode<'de> + 'static,
     {
-        let UnconnectedSend {
-            priority_ticks,
-            timeout_ticks,
-            path: route_path,
-            data: mr_data,
-        } = request;
-        let service_code = mr_data.service_code;
-        let mr_data_len = mr_data.bytes_count();
-        let path_len = route_path.bytes_count();
-
-        assert!(mr_data_len <= u16::MAX as usize);
-        debug_assert!(path_len % 2 == 0);
-        assert!(path_len <= u8::MAX as usize);
+        let service_code = request.data.service_code;
 
         let unconnected_send: MessageRequest<&[u8], _> = MessageRequest {
             service_code: SERVICE_UNCONNECTED_SEND,
             path: EPATH_CONNECTION_MANAGER,
-            data: LazyEncode {
-                f: move |buf: &mut BytesMut| {
-                    buf.put_u8(priority_ticks);
-                    buf.put_u8(timeout_ticks);
-
-                    buf.put_u16_le(mr_data_len as u16); // size of MR
-                    mr_data.encode(buf)?;
-                    if mr_data_len % 2 == 1 {
-                        buf.put_u8(0); // padded 0
-                    }
-
-                    buf.put_u8(path_len as u8 / 2); // path size in words
-                    buf.put_u8(0); // reserved
-                    route_path.encode(buf)?; // padded epath
-                    Ok(())
-                },
-                bytes_count: 4 + mr_data_len + mr_data_len % 2 + 2 + path_len,
-            },
+            data: request,
         };
 
-        let frame = Frame::new(unconnected_send.bytes_count(), |buf| {
-            unconnected_send
-                .encode(buf)
-                .map_err(crate::Error::from)
-        });
-
-        let cpf = self.send_rrdata(frame).await?;
-        let res: UnconnectedSendReply<Bytes> = cpf.try_into()?;
-        if res.0.reply_service != (service_code + 0x80) {
-            return Err(io::Error::new(
-                io::ErrorKind::Other,
-                format!("unexpected reply service: {}", res.0.reply_service),
-            )
-            .into());
-        }
-        Ok(res.0)
+        let cpf = self.send_rrdata(unconnected_send).await?;
+        let reply = MessageReply::decode_unconnected_send(cpf)?;
+        reply.expect_service::<ClientError>(service_code + 0x80)?;
+        Ok(reply)
     }
 
     /// send message router request with CIP explicit messaging connection
     #[inline]
-    async fn connected_send<P, D>(
+    async fn connected_send<'de, P, D, R>(
         &mut self,
         connection_id: u32,
         sequence_number: u16,
         request: MessageRequest<P, D>,
-    ) -> Result<MessageReply<Bytes>>
+    ) -> Result<MessageReply<R>>
     where
-        P: Encodable,
-        D: Encodable,
+        P: Encode,
+        D: Encode,
+        R: Decode<'de> + 'static,
     {
         let service_code = request.service_code;
-        let frame = Frame::new(request.bytes_count(), |buf| {
-            request.encode(buf).map_err(crate::Error::from)
-        });
         let cpf = self
-            .send_unit_data(connection_id, sequence_number, frame)
+            .send_unit_data(connection_id, sequence_number, request)
             .await?;
-        let res: ConnectedSendReply<Bytes> = cpf.try_into()?;
-        if res.0.reply_service != (service_code + 0x80) {
-            return Err(io::Error::new(
-                io::ErrorKind::Other,
-                format!("unexpected reply service: {}", res.0.reply_service),
-            )
-            .into());
-        }
-        Ok(res.0)
+
+        let (seq_reply, reply) = MessageReply::decode_connected_send(cpf)?;
+        debug_assert_eq!(sequence_number, seq_reply);
+        reply.expect_service::<ClientError>(service_code + 0x80)?;
+        Ok(reply)
     }
 
     /// open CIP connection
     #[inline]
     async fn forward_open<P>(&mut self, request: Options<P>) -> Result<ForwardOpenReply>
     where
-        P: Encodable,
+        P: Encode,
     {
-        let mr: MessageRequest<&[u8], _> = MessageRequest {
+        let req: MessageRequest<&[u8], _> = MessageRequest {
             service_code: SERVICE_FORWARD_OPEN,
             path: EPATH_CONNECTION_MANAGER,
             data: request,
         };
-        let frame = Frame::new(mr.bytes_count(), |buf| {
-            mr.encode(buf).map_err(crate::Error::from)
-        });
-        let cpf = self.send_rrdata(frame).await?;
-        let res: ForwardOpenReply = cpf.try_into()?;
-        Ok(res)
+
+        let cpf = self.send_rrdata(req).await?;
+        let reply = MessageReply::decode_forward_open(cpf)?;
+        Ok(reply.data)
     }
 
     /// close CIP connection
@@ -171,18 +117,16 @@ where
         request: ForwardCloseRequest<P>,
     ) -> Result<ForwardCloseReply>
     where
-        P: Encodable,
+        P: Encode,
     {
-        let mr: MessageRequest<&[u8], _> = MessageRequest {
+        let req: MessageRequest<&[u8], _> = MessageRequest {
             service_code: SERVICE_FORWARD_CLOSE,
             path: EPATH_CONNECTION_MANAGER,
             data: request,
         };
-        let frame = Frame::new(mr.bytes_count(), |buf| {
-            mr.encode(buf).map_err(crate::Error::from)
-        });
-        let cpf = self.send_rrdata(frame).await?;
-        let res: ForwardCloseReply = cpf.try_into()?;
-        Ok(res)
+
+        let cpf = self.send_rrdata(req).await?;
+        let reply = MessageReply::decode_forward_close(cpf)?;
+        Ok(reply.data)
     }
 }

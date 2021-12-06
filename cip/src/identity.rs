@@ -26,7 +26,7 @@ pub struct IdentityObject {
     pub status: u16,
     /// serial number of device
     pub serial_number: u32,
-    pub product_name_len: u8,
+    //pub product_name_len: u8,
     /// short string
     pub product_name: String,
     /// current state of device

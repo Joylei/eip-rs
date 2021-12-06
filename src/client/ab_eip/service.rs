@@ -6,33 +6,29 @@
 
 use super::symbol::GetInstanceAttributeList;
 use super::*;
-use crate::{
-    cip::{self, codec::LazyEncode},
-    error::InnerError,
-    Error,
-};
+use crate::cip;
+use crate::StdResult;
 use byteorder::{ByteOrder, LittleEndian};
 use bytes::{BufMut, BytesMut};
-use cip::CipError;
-use std::convert::TryFrom;
+use cip::error::cip_error_status;
+use rseip_core::codec::BytesHolder;
+use rseip_core::codec::{Encode, Encoder};
 
 /// AB related operations
 #[async_trait::async_trait(?Send)]
 pub trait AbService {
     /// Read Tag Service,
     /// CIP Data Table Read
-    async fn read_tag<P, R>(&mut self, req: P) -> Result<R>
+    async fn read_tag<'de, P, R>(&mut self, req: P) -> Result<R>
     where
         P: Into<TagRequest>,
-        R: TryFrom<Bytes>,
-        R::Error: Into<crate::Error>;
+        R: Decode<'de> + 'static;
 
     /// Write Tag Service,
     /// CIP Data Table Write
-    async fn write_tag<P, D>(&mut self, req: P, value: TagValue<D>) -> Result<()>
+    async fn write_tag<D>(&mut self, tag: EPath, value: D) -> Result<()>
     where
-        P: Into<TagRequest>,
-        D: Encodable;
+        D: Encode;
 
     /// Read Tag Fragmented Service, enables client applications to read a tag
     /// with data that does not fit into a single packet (approximately 500 bytes)
@@ -45,7 +41,7 @@ pub trait AbService {
 
     /// Write Tag Fragmented Service, enables client applications to write to a tag
     /// in the controller whose data will not fit into a single packet (approximately 500 bytes)
-    async fn write_tag_fragmented<D: Encodable>(
+    async fn write_tag_fragmented<D: Encode>(
         &mut self,
         req: WriteFragmentedRequest<D>,
     ) -> Result<bool>;
@@ -68,11 +64,10 @@ macro_rules! impl_service {
             /// Read Tag Service,
             /// CIP Data Table Read
             #[inline]
-            async fn read_tag<P, R>(&mut self, req: P) -> Result<R>
+            async fn read_tag<'de, P, R>(&mut self, req: P) -> Result<R>
             where
                 P: Into<TagRequest>,
-                R: TryFrom<Bytes>,
-                R::Error: Into<crate::Error>,
+                R: Decode<'de> + 'static,
             {
                 let res = ab_read_tag(self, req).await?;
                 Ok(res)
@@ -81,12 +76,11 @@ macro_rules! impl_service {
             /// Write Tag Service,
             /// CIP Data Table Write
             #[inline]
-            async fn write_tag<P, D>(&mut self, req: P, value: TagValue<D>) -> Result<()>
+            async fn write_tag<D>(&mut self, tag: EPath, value: D) -> Result<()>
             where
-                P: Into<TagRequest>,
-                D: Encodable,
+                D: Encode,
             {
-                ab_write_tag(self, req, value).await?;
+                ab_write_tag(self, tag, value).await?;
                 Ok(())
             }
 
@@ -106,7 +100,7 @@ macro_rules! impl_service {
             /// Write Tag Fragmented Service, enables client applications to write to a tag
             /// in the controller whose data will not fit into a single packet (approximately 500 bytes)
             #[inline]
-            async fn write_tag_fragmented<D: Encodable>(
+            async fn write_tag_fragmented<D: Encode>(
                 &mut self,
                 req: WriteFragmentedRequest<D>,
             ) -> Result<bool> {
@@ -141,95 +135,62 @@ impl_service!(MaybeConnected<AbEipDriver>);
 
 /// Read Tag Service,
 /// CIP Data Table Read
-async fn ab_read_tag<C: MessageService<Error = Error>, P, R>(client: &mut C, req: P) -> Result<R>
+async fn ab_read_tag<'de, C, P, R>(client: &mut C, req: P) -> Result<R>
 where
+    C: MessageService<Error = ClientError>,
     P: Into<TagRequest>,
-    R: TryFrom<Bytes>,
-    R::Error: Into<crate::Error>,
+    R: Decode<'de> + 'static,
 {
     let req: TagRequest = req.into();
-    let mr_request = MessageRequest::new(SERVICE_READ_TAG, req.tag, ElementCount(req.count));
-    let resp = client.send(mr_request).await?;
-    if resp.reply_service != SERVICE_READ_TAG + REPLY_MASK {
-        return Err(rseip_core::Error::<InnerError>::from_invalid_data()
-            .with_context("unexpected reply for read tag service")
-            .into());
+    let mr = MessageRequest::new(SERVICE_READ_TAG, req.tag, req.count);
+    let resp = client.send(mr).await?;
+    resp.expect_service::<ClientError>(SERVICE_READ_TAG + REPLY_MASK)?;
+    if resp.status.is_err() {
+        return Err(cip_error_status(resp.status));
     }
-    if resp.status.general != 0 {
-        return Err(CipError::Cip(resp.status).into());
-    }
-    R::try_from(resp.data).map_err(|e| e.into())
+    Ok(resp.data)
 }
 
 /// Write Tag Service,
 /// CIP Data Table Write
-async fn ab_write_tag<C: MessageService<Error = Error>, P, D>(
-    client: &mut C,
-    req: P,
-    value: TagValue<D>,
-) -> Result<()>
+async fn ab_write_tag<C, D>(client: &mut C, tag: EPath, value: D) -> Result<()>
 where
-    P: Into<TagRequest>,
-    D: Encodable,
+    C: MessageService<Error = ClientError>,
+    D: Encode,
 {
-    let req: TagRequest = req.into();
-    let mr_request = MessageRequest::new(SERVICE_WRITE_TAG, req.tag, value);
-    let resp = client.send(mr_request).await?;
-    if resp.reply_service != SERVICE_WRITE_TAG + REPLY_MASK {
-        return Err(rseip_core::Error::<InnerError>::from_invalid_data()
-            .with_context(format!(
-                "unexpected reply service for write tag service: {:#0x}",
-                resp.reply_service
-            ))
-            .into());
-    }
-    if resp.status.general != 0 {
-        return Err(CipError::Cip(resp.status).into());
+    let mr = MessageRequest::new(SERVICE_WRITE_TAG, tag, value);
+    let resp: MessageReply<()> = client.send(mr).await?;
+    resp.expect_service::<ClientError>(SERVICE_WRITE_TAG + REPLY_MASK)?;
+    if resp.status.is_err() {
+        return Err(cip_error_status(resp.status));
     }
     Ok(())
 }
 
 /// Read Tag Fragmented Service
-async fn ab_read_tag_fragmented<C: MessageService<Error = Error>, F, R>(
+async fn ab_read_tag_fragmented<C, F, R>(
     client: &mut C,
     req: ReadFragmentedRequest<F, R>,
 ) -> Result<(bool, R)>
 where
+    C: MessageService<Error = ClientError>,
     F: Fn(u16, Bytes) -> Result<R>,
 {
-    assert!(req.total > req.offset);
+    debug_assert!(req.total > req.offset);
     let ReadFragmentedRequest {
         tag,
         total,
         offset,
         decoder,
     } = req;
-    let mr_request = MessageRequest::new(
-        SERVICE_READ_TAG_FRAGMENTED,
-        tag,
-        LazyEncode {
-            f: |buf: &mut BytesMut| {
-                buf.put_u16_le(total);
-                buf.put_u16_le(offset);
-                buf.put_u16_le(0);
-                Ok(())
-            },
-            bytes_count: 6,
-        },
-    );
-    let resp = client.send(mr_request).await?;
-    if resp.reply_service != SERVICE_READ_TAG_FRAGMENTED + REPLY_MASK {
-        return Err(rseip_core::Error::<InnerError>::from_invalid_data()
-            .with_context(format!(
-                "unexpected reply service for read tag fragmented service: {:#0x}",
-                resp.reply_service
-            ))
-            .into());
+
+    let mr = MessageRequest::new(SERVICE_READ_TAG_FRAGMENTED, tag, [total, offset, 0]);
+    let resp: MessageReply<BytesHolder> = client.send(mr).await?;
+    resp.expect_service::<ClientError>(SERVICE_READ_TAG_FRAGMENTED + REPLY_MASK)?;
+    if resp.status.is_err() && !resp.status.has_more() {
+        return Err(cip_error_status(resp.status));
     }
-    if resp.status.general != 0 && !resp.status.has_more() {
-        return Err(CipError::Cip(resp.status).into());
-    }
-    let data = resp.data;
+    let data: Bytes = resp.data.into();
     assert!(data.len() >= 4);
     let tag_type = LittleEndian::read_u16(&data[0..2]);
     let data = (decoder)(tag_type, data.slice(2..))?;
@@ -238,11 +199,55 @@ where
 
 /// Write Tag Fragmented Service, enables client applications to write to a tag
 /// in the controller whose data will not fit into a single packet (approximately 500 bytes)
-async fn ab_write_tag_fragmented<C: MessageService<Error = Error>, D: Encodable>(
+async fn ab_write_tag_fragmented<C, D>(
     client: &mut C,
     req: WriteFragmentedRequest<D>,
-) -> Result<bool> {
-    assert!(req.total > req.offset);
+) -> Result<bool>
+where
+    C: MessageService<Error = ClientError>,
+    D: Encode,
+{
+    debug_assert!(req.total > req.offset);
+
+    struct DataHolder<D> {
+        tag_type: u16,
+        total: u16,
+        offset: u16,
+        data: D,
+    }
+
+    impl<D: Encode> Encode for DataHolder<D> {
+        #[inline]
+        fn encode<A: Encoder>(self, buf: &mut BytesMut, encoder: &mut A) -> StdResult<(), A::Error>
+        where
+            Self: Sized,
+        {
+            buf.put_u16_le(self.tag_type);
+            buf.put_u16_le(self.total);
+            buf.put_u16_le(self.offset);
+            buf.put_u16_le(0);
+            self.data.encode(buf, encoder)?;
+            Ok(())
+        }
+        #[inline]
+        fn encode_by_ref<A: Encoder>(
+            &self,
+            buf: &mut BytesMut,
+            encoder: &mut A,
+        ) -> StdResult<(), A::Error> {
+            buf.put_u16_le(self.tag_type);
+            buf.put_u16_le(self.total);
+            buf.put_u16_le(self.offset);
+            buf.put_u16_le(0);
+            self.data.encode_by_ref(buf, encoder)?;
+            Ok(())
+        }
+        #[inline]
+        fn bytes_count(&self) -> usize {
+            8 + self.data.bytes_count()
+        }
+    }
+
     let WriteFragmentedRequest {
         tag,
         tag_type,
@@ -250,71 +255,71 @@ async fn ab_write_tag_fragmented<C: MessageService<Error = Error>, D: Encodable>
         offset,
         data,
     } = req;
-    let mr_request = MessageRequest::new(
+    let mr = MessageRequest::new(
         SERVICE_WRITE_TAG_FRAGMENTED,
         tag,
-        LazyEncode {
-            f: |buf: &mut BytesMut| {
-                buf.put_u16_le(tag_type);
-                buf.put_u16_le(total);
-                buf.put_u16_le(offset);
-                buf.put_u16_le(0);
-                data.encode(buf)?;
-                Ok(())
-            },
-            bytes_count: 6,
+        DataHolder {
+            tag_type,
+            total,
+            offset,
+            data,
         },
     );
-    let resp = client.send(mr_request).await?;
-    if resp.reply_service != SERVICE_WRITE_TAG_FRAGMENTED + REPLY_MASK {
-        return Err(rseip_core::Error::<InnerError>::from_invalid_data()
-            .with_context(format!(
-                "unexpected reply for write tag fragmented service: {:#0x}",
-                resp.reply_service
-            ))
-            .into());
-    }
+    let resp: MessageReply<()> = client.send(mr).await?;
+    resp.expect_service::<ClientError>(SERVICE_WRITE_TAG_FRAGMENTED + REPLY_MASK)?;
     if resp.status.general != 0 && !resp.status.has_more() {
-        return Err(CipError::Cip(resp.status).into());
+        return Err(cip_error_status(resp.status));
     }
 
     Ok(resp.status.has_more())
 }
 
 /// Read Modify Write Tag Service, modifies Tag data with individual bit resolution
-async fn ab_read_modify_write<C: MessageService<Error = Error>, const N: usize>(
+async fn ab_read_modify_write<C, const N: usize>(
     client: &mut C,
     req: ReadModifyWriteRequest<N>,
-) -> Result<()> {
+) -> Result<()>
+where
+    C: MessageService<Error = ClientError>,
+{
+    struct DataHolder<const N: usize> {
+        or_mask: [u8; N],
+        and_mask: [u8; N],
+    }
+    impl<const N: usize> Encode for DataHolder<N> {
+        #[inline]
+        fn encode_by_ref<A: Encoder>(
+            &self,
+            buf: &mut BytesMut,
+            _encoder: &mut A,
+        ) -> StdResult<(), A::Error> {
+            buf.put_u16_le(N as u16);
+            buf.put_slice(&self.or_mask);
+            buf.put_slice(&self.and_mask);
+            Ok(())
+        }
+
+        #[inline]
+        fn bytes_count(&self) -> usize {
+            2 + N
+        }
+    }
+
     let ReadModifyWriteRequest {
         tag,
         or_mask,
         and_mask,
     } = req;
+
     let mr_request = MessageRequest::new(
         SERVICE_READ_MODIFY_WRITE_TAG,
         tag,
-        LazyEncode {
-            f: |buf: &mut BytesMut| {
-                buf.put_u16_le(N as u16);
-                buf.put_slice(&or_mask);
-                buf.put_slice(&and_mask);
-                Ok(())
-            },
-            bytes_count: 6,
-        },
+        DataHolder { and_mask, or_mask },
     );
-    let resp = client.send(mr_request).await?;
-    if resp.reply_service != SERVICE_READ_MODIFY_WRITE_TAG + REPLY_MASK {
-        return Err(rseip_core::Error::<InnerError>::from_invalid_data()
-            .with_context(format!(
-                "unexpected reply service for read modify tag service: {:#0x}",
-                resp.reply_service
-            ))
-            .into());
-    }
-    if resp.status.general != 0 {
-        return Err(CipError::Cip(resp.status).into());
+    let resp: MessageReply<()> = client.send(mr_request).await?;
+    resp.expect_service::<ClientError>(SERVICE_READ_MODIFY_WRITE_TAG + REPLY_MASK)?;
+    if resp.status.is_err() {
+        return Err(cip_error_status(resp.status));
     }
 
     Ok(())
@@ -477,20 +482,5 @@ impl From<(EPath, u16)> for TagRequest {
             tag: src.0,
             count: src.1,
         }
-    }
-}
-
-pub struct ElementCount(pub u16);
-
-impl Encodable for ElementCount {
-    #[inline]
-    fn encode(self, dst: &mut BytesMut) -> cip::Result<()> {
-        dst.put_u16_le(self.0);
-        Ok(())
-    }
-
-    #[inline]
-    fn bytes_count(&self) -> usize {
-        2
     }
 }

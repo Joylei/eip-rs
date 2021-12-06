@@ -6,14 +6,14 @@
 
 use super::{HasMore, CLASS_SYMBOL, REPLY_MASK};
 use crate::{
-    cip::{epath::EPath, service::MessageService, CipError, MessageRequest},
-    error::{invalid_data, InnerError},
-    Error, Result,
+    cip::{epath::EPath, service::MessageService, MessageRequest},
+    ClientError, Result,
 };
 use bytes::{Buf, Bytes};
 use core::fmt;
 use futures_util::{stream, Stream};
-use rseip_core::hex::AsHex;
+use rseip_cip::{error::cip_error_status, MessageReply};
+use rseip_core::{codec::BytesHolder, hex::AsHex, Error};
 use std::convert::TryFrom;
 
 /// symbol instance
@@ -226,7 +226,7 @@ impl<'a, T> GetInstanceAttributeList<'a, T> {
     }
 }
 
-impl<'a, T: MessageService<Error = Error>> GetInstanceAttributeList<'a, T> {
+impl<'a, T: MessageService<Error = ClientError>> GetInstanceAttributeList<'a, T> {
     pub fn call(self) -> impl Stream<Item = Result<SymbolInstance>> + 'a {
         let all = self.all;
         stream::try_unfold(
@@ -312,11 +312,11 @@ enum State<'a, T> {
     End,
 }
 
-async fn get_attribute_list<T: MessageService<Error = Error>>(
+async fn get_attribute_list<T: MessageService<Error = ClientError>>(
     ctx: &mut T,
     start_instance: u16,
 ) -> Result<(bool, Bytes)> {
-    let resp = ctx
+    let resp: MessageReply<BytesHolder> = ctx
         .send(MessageRequest::new(
             0x55,
             EPath::default()
@@ -329,36 +329,31 @@ async fn get_attribute_list<T: MessageService<Error = Error>>(
             ]),
         ))
         .await?;
-    if resp.reply_service != 0x55 + REPLY_MASK {
-        return Err(invalid_data(format!(
-            "unexpected reply service for write tag service: {:#0x}",
-            resp.reply_service
-        )));
-    }
+    resp.expect_service::<ClientError>(0x55 + REPLY_MASK)?;
     if !resp.status.is_ok() && !resp.status.has_more() {
-        return Err(CipError::Cip(resp.status).into());
+        return Err(cip_error_status(resp.status));
     }
-    Ok((resp.status.has_more(), resp.data))
+    Ok((resp.status.has_more(), resp.data.into()))
 }
 
 impl TryFrom<&mut Bytes> for SymbolInstance {
-    type Error = Error;
+    type Error = ClientError;
 
     fn try_from(buf: &mut Bytes) -> Result<Self> {
-        if buf.len() < 6 {
-            return Err(rseip_core::Error::<InnerError>::from_invalid_data()
-                .with_context("not enough data to decode")
-                .into());
+        if buf.remaining() < 6 {
+            return Err(Error::invalid_length(buf.len(), 6));
         }
         let id = buf.get_u16_le();
         buf.advance(2);
         let name_len = buf.get_u8() as usize;
         buf.advance(1);
-        if buf.len() < name_len + 2 {
-            return Err(invalid_data("not enough data to decode"));
+        if buf.remaining() < name_len + 2 {
+            return Err(Error::invalid_length(buf.remaining(), name_len + 2));
         }
-        let name =
-            String::from_utf8(buf.split_to(name_len).to_vec()).map_err(|e| e.utf8_error())?;
+        let name = {
+            let name_buf = buf.split_to(name_len);
+            String::from_utf8_lossy(&name_buf).into_owned()
+        };
         let symbol_type = buf.get_u16_le();
         Ok(SymbolInstance {
             id,

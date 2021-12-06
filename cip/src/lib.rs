@@ -11,10 +11,10 @@ pub mod codec;
 pub mod connection;
 mod cpf;
 pub mod epath;
-mod error;
+pub mod error;
 pub mod identity;
 mod list_service;
-pub mod message_request;
+pub mod message;
 mod revision;
 pub mod service;
 pub mod socket;
@@ -22,12 +22,8 @@ mod status;
 
 use core::result::Result as StdResult;
 pub use cpf::*;
-pub use error::CipError;
 pub use list_service::ListServiceItem;
-pub use message_request::*;
+pub use message::*;
 pub use revision::Revision;
 pub use rseip_core::cip::{CommonPacket, CommonPacketItem};
 pub use status::Status;
-
-pub type Error = rseip_core::Error<CipError>;
-pub type Result<T> = StdResult<T, Error>;

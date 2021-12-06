@@ -6,13 +6,14 @@
 
 use super::*;
 use futures_util::future::BoxFuture;
-pub use rseip_eip::EipDiscovery;
 pub use rseip_eip::{consts::*, EipContext};
 use std::{
     borrow::Cow,
     net::{SocketAddr, SocketAddrV4},
 };
 use tokio::net::{lookup_host, TcpSocket, TcpStream};
+
+pub type EipDiscovery = rseip_eip::EipDiscovery<ClientError>;
 
 /// Generic EIP Client
 pub type EipClient = Client<EipDriver>;
@@ -25,7 +26,7 @@ pub struct EipDriver;
 
 impl Driver for EipDriver {
     type Endpoint = SocketAddrV4;
-    type Service = EipContext<TcpStream>;
+    type Service = EipContext<TcpStream, ClientError>;
 
     fn build_service(addr: &Self::Endpoint) -> BoxFuture<Result<Self::Service>> {
         let addr = *addr;

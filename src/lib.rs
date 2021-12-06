@@ -71,10 +71,12 @@ pub mod client;
 mod error;
 
 #[doc(inline)]
-pub use error::ClientError as Error;
+pub use error::ClientError;
 pub use rseip_cip as cip;
 /// library result
-pub type Result<T> = core::result::Result<T, Error>;
+pub type Result<T> = core::result::Result<T, ClientError>;
+
+pub use core::result::Result as StdResult;
 
 #[cfg(test)]
 mod test {

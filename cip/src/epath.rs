@@ -5,9 +5,9 @@
 // License: MIT
 
 use bytes::{BufMut, Bytes, BytesMut};
+use core::ops::{Deref, DerefMut};
 use rseip_core::String;
 use smallvec::{smallvec, SmallVec};
-use std::ops::{Deref, DerefMut};
 
 /// EPATH for unconnected send
 pub const EPATH_CONNECTION_MANAGER: &[u8] = &[0x20, 0x06, 0x24, 0x01];
@@ -15,7 +15,7 @@ pub const EPATH_CONNECTION_MANAGER: &[u8] = &[0x20, 0x06, 0x24, 0x01];
 /// Segment of EPATH
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Segment {
-    /// symbolic
+    /// symbolic, ANSI Ext. String
     Symbol(String),
     /// class id
     Class(u16),
@@ -23,7 +23,7 @@ pub enum Segment {
     Instance(u16),
     /// attribute id
     Attribute(u16),
-    /// element id
+    /// element index
     Element(u32),
     /// port segment
     Port(PortSegment),
@@ -109,7 +109,7 @@ impl EPath {
         self
     }
 
-    /// from symbolic segment
+    /// from symbolic segment, ANSI Ext. String
     ///
     /// ## Note
     /// No validation applied

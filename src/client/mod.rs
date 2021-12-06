@@ -9,30 +9,31 @@ pub mod ab_eip;
 /// generic EIP
 pub mod eip;
 
+use crate::cip::{service::MessageService, MessageReply, MessageRequest};
 use crate::{
     adapters::Service,
     cip::{
-        connection::{ForwardCloseRequest, ForwardOpenReply, Options},
+        connection::{ForwardCloseRequest, Options},
         epath::EPath,
         service::request::UnconnectedSend,
     },
-    Error, Result,
+    ClientError, Result,
 };
+pub use ab_eip::{AbEipClient, AbEipConnection, AbEipDriver, AbService};
 use bytes::Bytes;
 use core::fmt;
+pub use eip::*;
 use futures_util::future::BoxFuture;
 use rseip_cip::service::Heartbeat;
-use rseip_core::Either;
+use rseip_core::{
+    codec::{Decode, Encode},
+    Either, Error,
+};
 use std::{
     io,
     ops::{Deref, DerefMut},
     sync::atomic::AtomicU16,
 };
-
-pub use ab_eip::{AbEipClient, AbEipConnection, AbEipDriver, AbService};
-pub use eip::*;
-
-use crate::cip::{codec::Encodable, service::MessageService, MessageReply, MessageRequest};
 
 /// driver for specified protocol
 pub trait Driver {
@@ -105,7 +106,7 @@ impl<B: Driver> Client<B> {
 
 #[async_trait::async_trait(?Send)]
 impl<B: Driver> Heartbeat for Client<B> {
-    type Error = Error;
+    type Error = ClientError;
     /// send Heartbeat message to keep underline transport alive
     #[inline]
     async fn heartbeat(&mut self) -> Result<()> {
@@ -119,14 +120,15 @@ impl<B: Driver> Heartbeat for Client<B> {
 /// message  request handler
 #[async_trait::async_trait(?Send)]
 impl<B: Driver> MessageService for Client<B> {
-    type Error = Error;
+    type Error = ClientError;
 
     /// unconnected send
     #[inline]
-    async fn send<P, D>(&mut self, mr: MessageRequest<P, D>) -> Result<MessageReply<Bytes>>
+    async fn send<'de, P, D, R>(&mut self, mr: MessageRequest<P, D>) -> Result<MessageReply<R>>
     where
-        P: Encodable,
-        D: Encodable,
+        P: Encode,
+        D: Encode,
+        R: Decode<'de> + 'static,
     {
         // create service if not created
         self.ensure_service().await?;
@@ -241,7 +243,7 @@ impl<B: Driver> Connection<B> {
         if self.connected_options.is_none() {
             let reply = service.forward_open(self.origin_options.clone()).await?;
             match reply {
-                ForwardOpenReply::Success { reply, .. } => {
+                Either::Left(reply) => {
                     let opts = self
                         .origin_options
                         .clone()
@@ -251,12 +253,7 @@ impl<B: Driver> Connection<B> {
                         .t_o_rpi(reply.t_o_api);
                     self.connected_options = Some(opts);
                 }
-                ForwardOpenReply::Fail(_) => {
-                    return Err(Error::from(io::Error::new(
-                        io::ErrorKind::Other,
-                        "ForwardOpen failed",
-                    )))
-                }
+                Either::Right(_) => return Err(Error::custom("forward open failed")),
             }
         }
         Ok(self.connection_id().unwrap())
@@ -284,7 +281,7 @@ impl<B: Driver> Connection<B> {
 
 #[async_trait::async_trait(?Send)]
 impl<B: Driver> Heartbeat for Connection<B> {
-    type Error = Error;
+    type Error = ClientError;
 
     /// send Heartbeat message to keep underline transport alive
     #[inline]
@@ -299,13 +296,14 @@ impl<B: Driver> Heartbeat for Connection<B> {
 
 #[async_trait::async_trait(?Send)]
 impl<B: Driver> MessageService for Connection<B> {
-    type Error = Error;
+    type Error = ClientError;
     /// connected send
     #[inline]
-    async fn send<P, D>(&mut self, mr: MessageRequest<P, D>) -> Result<MessageReply<Bytes>>
+    async fn send<'de, P, D, R>(&mut self, mr: MessageRequest<P, D>) -> Result<MessageReply<R>>
     where
-        P: Encodable,
-        D: Encodable,
+        P: Encode,
+        D: Encode,
+        R: Decode<'de> + 'static,
     {
         // create connection if not connected
         let cid = self.open_connection().await?;
@@ -350,7 +348,7 @@ impl<B: Driver> DerefMut for MaybeConnected<B> {
 
 #[async_trait::async_trait(?Send)]
 impl<B: Driver> Heartbeat for MaybeConnected<B> {
-    type Error = Error;
+    type Error = ClientError;
     /// send Heartbeat message to keep underline connection/transport alive
     #[inline]
     async fn heartbeat(&mut self) -> Result<()> {
@@ -363,13 +361,14 @@ impl<B: Driver> Heartbeat for MaybeConnected<B> {
 
 #[async_trait::async_trait(?Send)]
 impl<B: Driver> MessageService for MaybeConnected<B> {
-    type Error = Error;
+    type Error = ClientError;
     /// send message request
     #[inline]
-    async fn send<P, D>(&mut self, mr: MessageRequest<P, D>) -> Result<MessageReply<Bytes>>
+    async fn send<'de, P, D, R>(&mut self, mr: MessageRequest<P, D>) -> Result<MessageReply<R>>
     where
-        P: Encodable,
-        D: Encodable,
+        P: Encode,
+        D: Encode,
+        R: Decode<'de> + 'static,
     {
         match self.0 {
             Either::Left(ref mut c) => c.send(mr).await,

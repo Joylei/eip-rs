@@ -7,6 +7,7 @@
 use crate::epath::{EPath, PortSegment, Segment};
 use bytes::Bytes;
 use rand::Rng;
+use rseip_core::Either;
 
 /// connection type enumeration
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -163,18 +164,7 @@ impl Default for ConnectionParameters {
 }
 
 ///  forward open reply connection parameters
-#[derive(Debug)]
-pub enum ForwardOpenReply {
-    /// success of forward open
-    Success {
-        /// service code
-        service_code: u8,
-        /// reply detail
-        reply: ForwardOpenSuccess,
-    },
-    /// failure of forward open
-    Fail(ForwardRequestFail),
-}
+pub type ForwardOpenReply = Either<ForwardOpenSuccess, ForwardRequestFail>;
 
 /// forward open success
 #[derive(Debug, Default)]
@@ -228,13 +218,7 @@ pub struct ForwardCloseRequest<P> {
 }
 
 /// forward close reply
-#[derive(Debug)]
-pub enum ForwardCloseReply {
-    /// success of forward close
-    Success(ForwardCloseSuccess),
-    /// failure of forward close
-    Fail(ForwardRequestFail),
-}
+pub type ForwardCloseReply = Either<ForwardCloseSuccess, ForwardRequestFail>;
 
 /// success of forward close
 #[derive(Debug, Default)]

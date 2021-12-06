@@ -4,29 +4,45 @@
 // Copyright: 2021, Joylei <leingliu@gmail.com>
 // License: MIT
 
-use crate::{codec::Encodable, MessageRequest, Result};
-use bytes::{BufMut, BytesMut};
+use crate::MessageRequest;
+use bytes::BufMut;
+use rseip_core::codec::{Encode, Encoder};
 
-impl<P, D> Encodable for MessageRequest<P, D>
-where
-    P: Encodable,
-    D: Encodable,
-{
-    #[inline(always)]
-    fn encode(self, dst: &mut BytesMut) -> Result<()> {
+impl<P: Encode, D: Encode> Encode for MessageRequest<P, D> {
+    fn encode<A: Encoder>(self, buf: &mut bytes::BytesMut, encoder: &mut A) -> Result<(), A::Error>
+    where
+        Self: Sized,
+    {
         // service code
-        dst.put_u8(self.service_code);
+        buf.put_u8(self.service_code);
 
         let path_len = self.path.bytes_count();
         assert!(path_len <= u8::MAX as usize && path_len % 2 == 0);
-        dst.put_u8((path_len / 2) as u8);
+        buf.put_u8((path_len / 2) as u8);
 
-        self.path.encode(dst)?;
-        self.data.encode(dst)?;
+        self.path.encode(buf, encoder)?;
+        self.data.encode(buf, encoder)?;
         Ok(())
     }
 
-    #[inline(always)]
+    fn encode_by_ref<A: Encoder>(
+        &self,
+        buf: &mut bytes::BytesMut,
+        encoder: &mut A,
+    ) -> Result<(), A::Error> {
+        // service code
+        buf.put_u8(self.service_code);
+
+        let path_len = self.path.bytes_count();
+        assert!(path_len <= u8::MAX as usize && path_len % 2 == 0);
+        buf.put_u8((path_len / 2) as u8);
+
+        self.path.encode_by_ref(buf, encoder)?;
+        self.data.encode_by_ref(buf, encoder)?;
+        Ok(())
+    }
+
+    #[inline]
     fn bytes_count(&self) -> usize {
         2 + self.path.bytes_count() + self.data.bytes_count()
     }
@@ -35,7 +51,7 @@ where
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::epath::EPath;
+    use crate::{epath::EPath, MessageRequest};
     use bytes::Bytes;
 
     #[test]

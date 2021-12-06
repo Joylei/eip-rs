@@ -22,7 +22,7 @@ pub async fn main() -> Result<()> {
         .await?
         .with_connection_path(PortSegment::default());
     // test_car1_x, its instance id is 0x66b9
-    // see example ab-list-instances for how to fetch symbol instances
+    // see example ab-list-tag for how to fetch symbol instances
     let tag = EPath::default()
         .with_class(CLASS_SYMBOL)
         .with_instance(0x66b9);

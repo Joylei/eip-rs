@@ -4,113 +4,174 @@
 // Copyright: 2021, Joylei <leingliu@gmail.com>
 // License: MIT
 
-mod decode;
-mod encode;
+mod command;
 
-use crate::{Result, StdResult};
+use crate::{
+    consts::*,
+    error::{eip_error, eip_error_code},
+    EncapsulationHeader, EncapsulationPacket,
+};
+use byteorder::{ByteOrder, LittleEndian};
 use bytes::{BufMut, Bytes, BytesMut};
-use std::{fmt, io};
+use core::marker::PhantomData;
+use rseip_core::{
+    codec::{self, Decode, Encode, LittleEndianDecoder},
+    Error,
+};
+use tokio_util::codec::{Decoder, Encoder};
 
-#[derive(Debug, Default, PartialEq)]
-pub struct ClientCodec {}
+#[derive(Debug, PartialEq)]
+pub struct ClientCodec<E> {
+    _marker: PhantomData<E>,
+}
 
-pub trait Encoding {
-    fn bytes_count(&self) -> usize;
-    fn encode(self, buf: &mut BytesMut) -> Result<()>;
-
-    #[inline(always)]
-    fn try_into_bytes(self) -> Result<Bytes>
-    where
-        Self: Sized,
-    {
-        let mut buf = BytesMut::new();
-        self.encode(&mut buf)?;
-        Ok(buf.freeze())
+impl<E> ClientCodec<E> {
+    pub(crate) fn new() -> Self {
+        Self {
+            _marker: Default::default(),
+        }
     }
 }
 
-impl Encoding for () {
+impl<E: Error> codec::Encoder for ClientCodec<E> {
+    type Error = E;
+
     #[inline(always)]
-    fn bytes_count(&self) -> usize {
-        0
+    fn encode_bool(&mut self, item: bool, buf: &mut BytesMut) -> Result<(), Self::Error> {
+        if item {
+            buf.put_u8(255);
+        } else {
+            buf.put_u8(0);
+        }
+        Ok(())
     }
+
     #[inline(always)]
-    fn encode(self, _buf: &mut BytesMut) -> Result<()> {
+    fn encode_i8(&mut self, item: i8, buf: &mut BytesMut) -> Result<(), Self::Error> {
+        buf.put_i8(item);
+        Ok(())
+    }
+
+    #[inline(always)]
+    fn encode_u8(&mut self, item: u8, buf: &mut BytesMut) -> Result<(), Self::Error> {
+        buf.put_u8(item);
+        Ok(())
+    }
+
+    #[inline(always)]
+    fn encode_i16(&mut self, item: i16, buf: &mut BytesMut) -> Result<(), Self::Error> {
+        buf.put_i16_le(item);
+        Ok(())
+    }
+
+    #[inline(always)]
+    fn encode_u16(&mut self, item: u16, buf: &mut BytesMut) -> Result<(), Self::Error> {
+        buf.put_u16_le(item);
+        Ok(())
+    }
+
+    #[inline(always)]
+    fn encode_i32(&mut self, item: i32, buf: &mut BytesMut) -> Result<(), Self::Error> {
+        buf.put_i32_le(item);
+        Ok(())
+    }
+
+    #[inline(always)]
+    fn encode_u32(&mut self, item: u32, buf: &mut BytesMut) -> Result<(), Self::Error> {
+        buf.put_u32_le(item);
+        Ok(())
+    }
+
+    #[inline(always)]
+    fn encode_i64(&mut self, item: i64, buf: &mut BytesMut) -> Result<(), Self::Error> {
+        buf.put_i64_le(item);
+        Ok(())
+    }
+
+    #[inline(always)]
+    fn encode_u64(&mut self, item: u64, buf: &mut BytesMut) -> Result<(), Self::Error> {
+        buf.put_u64_le(item);
+        Ok(())
+    }
+
+    #[inline(always)]
+    fn encode_f32(&mut self, item: f32, buf: &mut BytesMut) -> Result<(), Self::Error> {
+        buf.put_f32_le(item);
+        Ok(())
+    }
+
+    #[inline(always)]
+    fn encode_f64(&mut self, item: f64, buf: &mut BytesMut) -> Result<(), Self::Error> {
+        buf.put_f64_le(item);
+        Ok(())
+    }
+
+    #[inline(always)]
+    fn encode_i128(&mut self, item: i128, buf: &mut BytesMut) -> Result<(), Self::Error> {
+        buf.put_i128_le(item);
+        Ok(())
+    }
+
+    #[inline(always)]
+    fn encode_u128(&mut self, item: u128, buf: &mut BytesMut) -> Result<(), Self::Error> {
+        buf.put_u128_le(item);
         Ok(())
     }
 }
 
-impl Encoding for &[u8] {
-    #[inline(always)]
-    fn encode(self, dst: &mut BytesMut) -> Result<()> {
-        dst.put_slice(self);
-        Ok(())
-    }
-    #[inline(always)]
-    fn bytes_count(&self) -> usize {
-        self.len()
-    }
-}
-
-pub(crate) struct LazyEncode<F> {
-    pub f: F,
-    pub bytes_count: usize,
-}
-
-impl<F> Encoding for LazyEncode<F>
+impl<I, E> Encoder<EncapsulationPacket<I>> for ClientCodec<E>
 where
-    F: FnOnce(&mut BytesMut) -> Result<()>,
+    I: codec::Encode + Sized,
+    E: Error,
 {
-    #[inline(always)]
-    fn encode(self, dst: &mut BytesMut) -> Result<()> {
-        (self.f)(dst)
-    }
-
-    #[inline(always)]
-    fn bytes_count(&self) -> usize {
-        self.bytes_count
-    }
-}
-
-impl<F> fmt::Debug for LazyEncode<F> {
+    type Error = E;
     #[inline]
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("LazyEncode")
-            .field("f", &"closure..")
-            .field("bytes_count", &self.bytes_count)
-            .finish()
+    fn encode(
+        &mut self,
+        item: EncapsulationPacket<I>,
+        buf: &mut BytesMut,
+    ) -> Result<(), Self::Error> {
+        item.encode(buf, self)
     }
 }
 
-pub struct Frame<F, E>
-where
-    F: FnOnce(&mut BytesMut) -> StdResult<(), E>,
-{
-    pub(crate) bytes_count: usize,
-    pub(crate) f: F,
-}
-
-impl<F, E> Frame<F, E>
-where
-    F: FnOnce(&mut BytesMut) -> StdResult<(), E>,
-{
+impl<E: Error> Decoder for ClientCodec<E> {
+    type Error = E;
+    type Item = EncapsulationPacket<Bytes>;
     #[inline]
-    pub fn new(bytes_count: usize, f: F) -> Self {
-        Self { bytes_count, f }
-    }
-}
-
-impl<F, E> Encoding for Frame<F, E>
-where
-    F: FnOnce(&mut BytesMut) -> StdResult<(), E>,
-{
-    #[inline]
-    fn encode(self, buf: &mut BytesMut) -> Result<()> {
-        (self.f)(buf).map_err(|_| io::Error::new(io::ErrorKind::Other, "encoding failure").into())
-    }
-
-    #[inline(always)]
-    fn bytes_count(&self) -> usize {
-        self.bytes_count
+    fn decode(&mut self, src: &mut BytesMut) -> Result<Option<Self::Item>, Self::Error> {
+        if src.len() < ENCAPSULATION_HEADER_LEN {
+            return Ok(None);
+        }
+        let data_len = LittleEndian::read_u16(&src[2..4]) as usize;
+        //verify data length
+        if ENCAPSULATION_HEADER_LEN + data_len > u16::MAX as usize {
+            return Err(E::invalid_length(
+                ENCAPSULATION_HEADER_LEN + data_len,
+                "below u16::MAX",
+            ));
+        }
+        if src.len() < ENCAPSULATION_HEADER_LEN + data_len {
+            return Ok(None);
+        }
+        if src.len() > ENCAPSULATION_HEADER_LEN + data_len {
+            // should no remaining buffer
+            return Err(E::invalid_length(
+                src.len(),
+                ENCAPSULATION_HEADER_LEN + data_len,
+            ));
+        }
+        let header_bytes = src.split_to(ENCAPSULATION_HEADER_LEN).freeze();
+        let decoder = LittleEndianDecoder::<E>::new(header_bytes);
+        let hdr = EncapsulationHeader::decode(decoder)?;
+        match hdr.status {
+            0 => {}
+            v if v > u16::MAX as u32 => {
+                return Err(eip_error(format_args!("invalid status code {:#04x?}", v)));
+            }
+            v => return Err(eip_error_code(v as u16)),
+        }
+        let data = src.split_to(data_len).freeze();
+        Ok(Some(EncapsulationPacket { hdr, data }))
     }
 }

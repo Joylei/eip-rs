@@ -12,10 +12,14 @@ use crate::{
 };
 use bytes::Bytes;
 use futures_util::{stream, SinkExt, Stream, StreamExt};
-use rseip_core::cip::CommonPacketIter;
+use rseip_core::{
+    cip::{CommonPacketItem, CommonPacketIter},
+    codec::{Decode, LittleEndianDecoder},
+    Error,
+};
 use std::{
-    convert::TryFrom,
     io,
+    marker::PhantomData,
     net::{Ipv4Addr, SocketAddr, SocketAddrV4},
     time::Duration,
 };
@@ -24,14 +28,15 @@ use tokio_util::udp::UdpFramed;
 
 /// device discovery
 #[derive(Debug)]
-pub struct EipDiscovery {
+pub struct EipDiscovery<E> {
     listen_addr: SocketAddrV4,
     broadcast_addr: SocketAddrV4,
     times: Option<usize>,
     interval: Duration,
+    _marker: PhantomData<E>,
 }
 
-impl EipDiscovery {
+impl<E> EipDiscovery<E> {
     /// create [`EipDiscovery`]
     #[inline]
     pub fn new(listen_addr: Ipv4Addr) -> Self {
@@ -40,6 +45,7 @@ impl EipDiscovery {
             broadcast_addr: SocketAddrV4::new(Ipv4Addr::BROADCAST, EIP_DEFAULT_PORT),
             times: Some(1),
             interval: Duration::from_secs(1),
+            _marker: Default::default(),
         }
     }
 
@@ -72,17 +78,18 @@ impl EipDiscovery {
     }
 }
 
-impl EipDiscovery {
+impl<E> EipDiscovery<E>
+where
+    E: Error + 'static,
+{
     /// send requests to discover devices
-    pub async fn run<I, E>(self) -> io::Result<impl Stream<Item = (I, SocketAddr)>>
+    pub async fn run<'de, I>(self) -> io::Result<impl Stream<Item = (I, SocketAddr)>>
     where
-        I: TryFrom<Bytes>,
-        I::Error: Into<E>,
-        E: From<io::Error>,
+        I: Decode<'de> + 'static,
     {
         let socket = UdpSocket::bind(self.listen_addr).await?;
         socket.set_broadcast(true)?;
-        let service = UdpFramed::new(socket, ClientCodec {});
+        let service = UdpFramed::new(socket, ClientCodec::<E>::new());
         let (mut tx, rx) = service.split();
 
         let tx_fut = {
@@ -121,7 +128,7 @@ impl EipDiscovery {
                                 if pkt.hdr.command != EIP_COMMAND_LIST_IDENTITY {
                                     None
                                 } else {
-                                    decode_identity(pkt.data).ok().flatten().map(|v| (v, addr))
+                                    decode_identity::<'_,_,E>(pkt.data).ok().flatten().map(|v| (v, addr))
                                 }
                             }) {
                                 return Some((v, state))
@@ -142,18 +149,16 @@ impl EipDiscovery {
 }
 
 #[inline]
-fn decode_identity<I, E>(data: Bytes) -> StdResult<Option<I>, E>
+fn decode_identity<'de, I, E>(data: Bytes) -> StdResult<Option<I>, E>
 where
-    I: TryFrom<Bytes>,
-    I::Error: Into<E>,
-    E: From<io::Error>,
+    I: Decode<'de> + 'static,
+    E: Error + 'static,
 {
-    let mut cpf = CommonPacketIter::new(data)?;
-    if let Some(item) = cpf.next() {
-        let item = item?;
-        item.ensure_type_code(0x0C)?;
-        let res = I::try_from(item.data).map_err(|e| e.into())?;
-        return Ok(Some(res));
+    let mut cpf = CommonPacketIter::new(LittleEndianDecoder::<E>::new(data))?;
+    if let Some(item) = cpf.next_typed() {
+        let item: CommonPacketItem<I> = item?;
+        item.ensure_type_code::<E>(0x0C)?;
+        return Ok(Some(item.data));
     }
     Ok(None)
 }

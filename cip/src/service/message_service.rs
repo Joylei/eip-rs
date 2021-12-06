@@ -4,20 +4,24 @@
 // Copyright: 2021, Joylei <leingliu@gmail.com>
 // License: MIT
 
-use crate::{codec::Encodable, Error, MessageReply, MessageRequest, StdResult};
-use bytes::Bytes;
+use crate::{MessageReply, MessageRequest, StdResult};
+use rseip_core::{
+    codec::{Decode, Encode},
+    Error,
+};
 
 #[async_trait::async_trait(?Send)]
 pub trait MessageService {
-    type Error: From<Error>;
-    /// send message router request
-    async fn send<P, D>(
+    type Error: Error;
+    /// send message request
+    async fn send<'de, P, D, R>(
         &mut self,
         mr: MessageRequest<P, D>,
-    ) -> StdResult<MessageReply<Bytes>, Self::Error>
+    ) -> StdResult<MessageReply<R>, Self::Error>
     where
-        P: Encodable,
-        D: Encodable;
+        P: Encode,
+        D: Encode,
+        R: Decode<'de> + 'static;
 
     /// close underline transport
     async fn close(&mut self) -> StdResult<(), Self::Error>;

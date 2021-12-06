@@ -9,21 +9,22 @@ mod decoder;
 use super::{symbol::SymbolType, HasMore, CLASS_TEMPLATE, REPLY_MASK, SERVICE_TEMPLATE_READ};
 use crate::{
     cip::{
-        codec::LazyEncode,
         epath::EPath,
         service::{CommonServices, MessageService},
-        CipError, MessageRequest,
+        MessageRequest,
     },
-    error::invalid_data,
-    Error, Result,
+    ClientError, Result,
 };
-use bytes::{Buf, BufMut, Bytes, BytesMut};
+use bytes::{Buf, Bytes};
 use decoder::{DefaultDefinitionDecoder, DefinitionDecoder};
-use rseip_core::{String, StringExt};
+use rseip_cip::{error::cip_error_status, MessageReply};
+use rseip_core::{
+    codec::{BytesHolder, Decode, Decoder},
+    Error, String, StringExt,
+};
 use smallvec::SmallVec;
 use std::{
     collections::HashMap,
-    convert::TryFrom,
     mem,
     ops::{Deref, DerefMut},
     result::Result as StdResult,
@@ -41,7 +42,7 @@ pub trait TemplateService {
 }
 
 #[async_trait::async_trait(?Send)]
-impl<T: MessageService<Error = Error>> TemplateService for T {
+impl<T: MessageService<Error = ClientError>> TemplateService for T {
     /// fetch template instance for specified instance id
     async fn find_template(&mut self, instance_id: u16) -> Result<Template> {
         let path = EPath::default()
@@ -147,18 +148,18 @@ impl<'a, T, D: DefinitionDecoder> TemplateRead<'a, T, D> {
 
 impl<'a, T, D> TemplateRead<'a, T, D>
 where
-    T: MessageService<Error = Error>,
+    T: MessageService<Error = ClientError>,
     D: DefinitionDecoder,
-    D::Error: Into<Error>,
+    D::Error: Into<ClientError>,
 {
     pub async fn call(mut self) -> Result<D::Item> {
         if self.member_count < 2 {
-            return Err(invalid_data(
+            return Err(Error::custom(
                 "read template - need to initialize `member_count`",
             ));
         }
         if self.object_size < 23 {
-            return Err(invalid_data(
+            return Err(Error::custom(
                 "read template - need to initialize `object_size`",
             ));
         }
@@ -201,7 +202,7 @@ where
                 return Ok(res);
             }
         }
-        Err(invalid_data("read template - offset out of range"))
+        Err(Error::custom("read template - offset out of range"))
     }
 }
 
@@ -212,31 +213,19 @@ async fn read_template<T>(
     bytes_read: u16,
 ) -> Result<(bool, Bytes)>
 where
-    T: MessageService<Error = Error>,
+    T: MessageService<Error = ClientError>,
 {
     let path = EPath::default()
         .with_class(CLASS_TEMPLATE)
         .with_instance(instance_id);
-    let data = LazyEncode {
-        bytes_count: 6,
-        f: |buf: &mut BytesMut| {
-            buf.put_u32_le(offset);
-            buf.put_u16_le(bytes_read);
-            Ok(())
-        },
-    };
+    let data = (offset, bytes_read);
     let req = MessageRequest::new(SERVICE_TEMPLATE_READ, path, data);
-    let resp = ctx.send(req).await?;
-    if resp.reply_service != SERVICE_TEMPLATE_READ + REPLY_MASK {
-        return Err(invalid_data(format!(
-            "read template - unexpected reply service: {:#0x}",
-            resp.reply_service
-        )));
-    }
+    let resp: MessageReply<BytesHolder> = ctx.send(req).await?;
+    resp.expect_service::<ClientError>(SERVICE_TEMPLATE_READ + REPLY_MASK)?;
     if !resp.status.is_ok() && !resp.status.has_more() {
-        return Err(CipError::Cip(resp.status).into());
+        return Err(cip_error_status(resp.status));
     }
-    Ok((resp.has_more(), resp.data))
+    Ok((resp.has_more(), resp.data.into()))
 }
 
 /// template definition
@@ -301,29 +290,26 @@ pub struct Template {
     pub struct_size: u32,
 }
 
-impl TryFrom<Bytes> for Template {
-    type Error = Error;
-    fn try_from(mut buf: Bytes) -> Result<Self> {
-        if buf.len() < 4 {
-            return Err(invalid_data("template - not enough data to decode"));
-        }
-        let count = buf.get_u16_le();
+impl<'de> Decode<'de> for Template {
+    fn decode<D>(mut decoder: D) -> StdResult<Self, D::Error>
+    where
+        D: Decoder<'de>,
+    {
+        decoder.ensure_size(28)?;
+        let count = decoder.decode_u16(); // buf[0..2]
         if count != 4 {
-            return Err(invalid_data(
+            return Err(Error::custom(
                 "template - unexpected count of items returned",
             ));
         }
-        if buf.len() < 28 {
-            return Err(invalid_data("template - not enough data to decode"));
-        }
 
-        let handle = decode_attr(&mut buf, 1, |buf| Ok(buf.get_u16_le()))?;
-        let member_count = decode_attr(&mut buf, 2, |buf| Ok(buf.get_u16_le()))?;
-        let object_size = decode_attr(&mut buf, 4, |buf| Ok(buf.get_u32_le()))?;
-        let struct_size = decode_attr(&mut buf, 5, |buf| Ok(buf.get_u32_le()))?;
+        let handle: u16 = decode_attr(&mut decoder, 1)?;
+        let member_count: u16 = decode_attr(&mut decoder, 2)?;
+        let object_size: u32 = decode_attr(&mut decoder, 4)?;
+        let struct_size: u32 = decode_attr(&mut decoder, 5)?;
 
-        if !buf.is_empty() {
-            return Err(invalid_data("template - too much data to decode"));
+        if decoder.buf().has_remaining() {
+            return Err(Error::custom("template - too much data to decode"));
         }
         Ok(Self {
             instance_id: 0,
@@ -335,23 +321,24 @@ impl TryFrom<Bytes> for Template {
     }
 }
 
-fn decode_attr<F, R>(buf: &mut Bytes, attr_id: u16, f: F) -> Result<R>
+fn decode_attr<'de, D, R>(buf: &mut D, attr_id: u16) -> StdResult<R, D::Error>
 where
-    F: Fn(&mut Bytes) -> Result<R>,
+    D: Decoder<'de>,
+    R: Decode<'de>,
 {
-    let id = buf.get_u16_le();
-    let status = buf.get_u16_le();
+    let id = buf.decode_u16();
+    let status = buf.decode_u16();
     if status != 0 {
-        return Err(invalid_data(format!(
+        return Err(Error::custom(format!(
             "attribute - bad attribute[{}] status: {:#0x}",
             id, status
         )));
     }
     if attr_id != id {
-        return Err(invalid_data(format!(
+        return Err(Error::custom(format!(
             "attribute -unexpected attribute[{}]",
             id
         )));
     }
-    f(buf)
+    buf.decode_any()
 }

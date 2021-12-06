@@ -5,7 +5,8 @@
 // License: MIT
 
 use super::Status;
-use crate::codec::Encodable;
+use crate::error::cip_error_reply;
+use rseip_core::{codec::Encode, Error};
 
 /// Message request
 #[derive(Debug, Default, PartialEq, Eq)]
@@ -20,32 +21,16 @@ pub struct MessageRequest<P, D> {
 
 impl<P, D> MessageRequest<P, D>
 where
-    P: Encodable,
-    D: Encodable,
+    P: Encode,
+    D: Encode,
 {
-    #[inline(always)]
+    #[inline]
     pub fn new(service_code: u8, path: P, data: D) -> Self {
         Self {
             service_code,
             path,
             data,
         }
-    }
-
-    #[inline(always)]
-    pub fn set_service_code(mut self, service_code: u8) -> Self {
-        self.service_code = service_code;
-        self
-    }
-    #[inline(always)]
-    pub fn set_path(mut self, path: P) -> Self {
-        self.path = path;
-        self
-    }
-    #[inline(always)]
-    pub fn set_data(mut self, data: D) -> Self {
-        self.data = data;
-        self
     }
 }
 
@@ -62,7 +47,7 @@ pub struct MessageReply<D> {
 }
 
 impl<D> MessageReply<D> {
-    #[inline(always)]
+    #[inline]
     pub fn new(reply_service: u8, status: Status, data: D) -> Self {
         Self {
             reply_service,
@@ -72,21 +57,12 @@ impl<D> MessageReply<D> {
         }
     }
 
-    #[inline(always)]
-    pub fn set_reply_service(mut self, reply_service: u8) -> Self {
-        self.reply_service = reply_service;
-        self
-    }
-
-    #[inline(always)]
-    pub fn set_status(mut self, status: Status) -> Self {
-        self.status = status;
-        self
-    }
-
-    #[inline(always)]
-    pub fn set_data(mut self, data: D) -> Self {
-        self.data = data;
-        self
+    #[inline]
+    pub fn expect_service<E: Error>(&self, expected_service: u8) -> Result<(), E> {
+        if self.reply_service != expected_service {
+            Err(cip_error_reply(self.reply_service, expected_service))
+        } else {
+            Ok(())
+        }
     }
 }

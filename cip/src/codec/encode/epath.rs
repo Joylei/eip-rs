@@ -4,38 +4,39 @@
 // Copyright: 2021, Joylei <leingliu@gmail.com>
 // License: MIT
 
-use crate::{
-    codec::Encodable,
-    epath::{EPath, PortSegment, Segment},
-    Result,
-};
+use crate::epath::*;
 use bytes::{BufMut, BytesMut};
+use rseip_core::codec::{Encode, Encoder};
 
-impl Encodable for PortSegment {
+impl Encode for PortSegment {
     #[inline]
-    fn encode(self, dst: &mut BytesMut) -> Result<()> {
+    fn encode_by_ref<A: Encoder>(
+        &self,
+        buf: &mut BytesMut,
+        _encoder: &mut A,
+    ) -> Result<(), A::Error> {
         const EXTENDED_LINKED_ADDRESS_SIZE: u16 = 1 << 4; // 0x10
 
         let link_addr_len = self.link.len();
-        assert!(link_addr_len < u8::MAX as usize);
+        debug_assert!(link_addr_len < u8::MAX as usize);
 
-        let start_pos = dst.len();
+        let start_pos = buf.len();
         let mut segment_byte = if self.port > 14 { 0x0F } else { self.port };
         if link_addr_len > 1 {
             segment_byte |= EXTENDED_LINKED_ADDRESS_SIZE;
         }
-        dst.put_u8(segment_byte as u8);
+        buf.put_u8(segment_byte as u8);
         if link_addr_len > 1 {
-            dst.put_u8(link_addr_len as u8);
+            buf.put_u8(link_addr_len as u8);
         }
         if self.port > 14 {
-            dst.put_u16(self.port);
+            buf.put_u16(self.port);
         }
 
-        dst.put_slice(&self.link);
-        let end_pos = dst.len();
+        buf.put_slice(&self.link);
+        let end_pos = buf.len();
         if (end_pos - start_pos) % 2 != 0 {
-            dst.put_u8(0);
+            buf.put_u8(0);
         }
         Ok(())
     }
@@ -55,7 +56,127 @@ impl Encodable for PortSegment {
     }
 }
 
-impl Encodable for Segment {
+impl Segment {
+    #[inline]
+    fn encode_class<A: Encoder>(
+        v: u16,
+        buf: &mut BytesMut,
+        _encoder: &mut A,
+    ) -> Result<(), A::Error> {
+        if v <= u8::MAX as u16 {
+            buf.put_u8(0x20);
+            buf.put_u8(v as u8);
+        } else {
+            buf.put_u8(0x21);
+            buf.put_u8(0);
+            buf.put_u16_le(v);
+        }
+        Ok(())
+    }
+    #[inline]
+    fn encode_instance<A: Encoder>(
+        v: u16,
+        buf: &mut BytesMut,
+        _encoder: &mut A,
+    ) -> Result<(), A::Error> {
+        if v <= u8::MAX as u16 {
+            buf.put_u8(0x24);
+            buf.put_u8(v as u8);
+        } else {
+            buf.put_u8(0x25);
+            buf.put_u8(0);
+            buf.put_u16_le(v);
+        }
+        Ok(())
+    }
+    #[inline]
+    fn encode_attribute<A: Encoder>(
+        v: u16,
+        buf: &mut BytesMut,
+        _encoder: &mut A,
+    ) -> Result<(), A::Error> {
+        if v <= u8::MAX as u16 {
+            buf.put_u8(0x30);
+            buf.put_u8(v as u8);
+        } else {
+            buf.put_u8(0x31);
+            buf.put_u8(0);
+            buf.put_u16_le(v);
+        }
+        Ok(())
+    }
+    #[inline]
+    fn encode_element<A: Encoder>(
+        elem: u32,
+        buf: &mut BytesMut,
+        _encoder: &mut A,
+    ) -> Result<(), A::Error> {
+        match elem {
+            v if v <= (u8::MAX as u32) => {
+                buf.put_u8(0x28);
+                buf.put_u8(v as u8);
+            }
+            v if v <= (u16::MAX as u32) => {
+                buf.put_u8(0x29);
+                buf.put_u8(0);
+                buf.put_u16_le(v as u16);
+            }
+            v => {
+                buf.put_u8(0x2A);
+                buf.put_u8(0);
+                buf.put_u32_le(v);
+            }
+        }
+        Ok(())
+    }
+    #[inline]
+    fn encode_symbol<A: Encoder>(
+        symbol: &[u8],
+        buf: &mut BytesMut,
+        _encoder: &mut A,
+    ) -> Result<(), A::Error> {
+        let char_count = symbol.len();
+        assert!(char_count <= u8::MAX as usize);
+        buf.put_u8(0x91);
+        buf.put_u8(char_count as u8);
+        buf.put_slice(symbol);
+        if char_count % 2 != 0 {
+            buf.put_u8(0);
+        }
+        Ok(())
+    }
+}
+
+impl Encode for Segment {
+    #[inline]
+    fn encode<A: Encoder>(self, buf: &mut BytesMut, encoder: &mut A) -> Result<(), A::Error> {
+        match self {
+            Segment::Class(v) => Self::encode_class(v, buf, encoder),
+            Segment::Instance(v) => Self::encode_instance(v, buf, encoder),
+            Segment::Attribute(v) => Self::encode_attribute(v, buf, encoder),
+            Segment::Element(v) => Self::encode_element(v, buf, encoder),
+            Segment::Port(port) => port.encode_by_ref(buf, encoder),
+            Segment::Symbol(symbol) => Self::encode_symbol(symbol.as_bytes(), buf, encoder),
+        }
+    }
+
+    #[inline]
+    fn encode_by_ref<A: Encoder>(
+        &self,
+        buf: &mut BytesMut,
+        encoder: &mut A,
+    ) -> Result<(), A::Error> {
+        match self {
+            Segment::Class(v) => Self::encode_class(*v, buf, encoder),
+            Segment::Instance(v) => Self::encode_instance(*v, buf, encoder),
+            Segment::Attribute(v) => Self::encode_attribute(*v, buf, encoder),
+            Segment::Element(v) => Self::encode_element(*v, buf, encoder),
+            Segment::Port(port) => port.encode_by_ref(buf, encoder),
+            Segment::Symbol(symbol) => Self::encode_symbol(symbol.as_bytes(), buf, encoder),
+        }
+    }
+
+    #[inline]
     fn bytes_count(&self) -> usize {
         match self {
             Segment::Class(v) | Segment::Instance(v) | Segment::Attribute(v) => {
@@ -77,77 +198,24 @@ impl Encodable for Segment {
             }
         }
     }
+}
 
+impl Encode for EPath {
     #[inline]
-    fn encode(self, dst: &mut BytesMut) -> Result<()> {
-        match self {
-            Segment::Class(v) => {
-                if v <= u8::MAX as u16 {
-                    dst.put_u8(0x20);
-                    dst.put_u8(v as u8);
-                } else {
-                    dst.put_u8(0x21);
-                    dst.put_u8(0);
-                    dst.put_u16_le(v);
-                }
-            }
-            Segment::Instance(v) => {
-                if v <= u8::MAX as u16 {
-                    dst.put_u8(0x24);
-                    dst.put_u8(v as u8);
-                } else {
-                    dst.put_u8(0x25);
-                    dst.put_u8(0);
-                    dst.put_u16_le(v);
-                }
-            }
-            Segment::Attribute(v) => {
-                if v <= u8::MAX as u16 {
-                    dst.put_u8(0x30);
-                    dst.put_u8(v as u8);
-                } else {
-                    dst.put_u8(0x31);
-                    dst.put_u8(0);
-                    dst.put_u16_le(v);
-                }
-            }
-            Segment::Element(elem) => match elem {
-                v if v <= (u8::MAX as u32) => {
-                    dst.put_u8(0x28);
-                    dst.put_u8(v as u8);
-                }
-                v if v <= (u16::MAX as u32) => {
-                    dst.put_u8(0x29);
-                    dst.put_u8(0);
-                    dst.put_u16_le(v as u16);
-                }
-                v => {
-                    dst.put_u8(0x2A);
-                    dst.put_u8(0);
-                    dst.put_u32_le(v);
-                }
-            },
-            Segment::Port(port) => port.encode(dst)?,
-            Segment::Symbol(symbol) => {
-                let char_count = symbol.as_bytes().len();
-                assert!(char_count <= u8::MAX as usize);
-                dst.put_u8(0x91);
-                dst.put_u8(char_count as u8);
-                dst.put_slice(symbol.as_bytes());
-                if char_count % 2 != 0 {
-                    dst.put_u8(0);
-                }
-            }
+    fn encode<A: Encoder>(self, buf: &mut BytesMut, encoder: &mut A) -> Result<(), A::Error> {
+        for item in self {
+            item.encode(buf, encoder)?;
         }
         Ok(())
     }
-}
-
-impl Encodable for EPath {
     #[inline]
-    fn encode(self: EPath, dst: &mut BytesMut) -> Result<()> {
-        for item in self {
-            item.encode(dst)?;
+    fn encode_by_ref<A: Encoder>(
+        &self,
+        buf: &mut BytesMut,
+        encoder: &mut A,
+    ) -> Result<(), A::Error> {
+        for item in self.iter() {
+            item.encode_by_ref(buf, encoder)?;
         }
         Ok(())
     }

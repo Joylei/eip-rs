@@ -1,3 +1,9 @@
+// rseip
+//
+// rseip - EIP&CIP in pure Rust.
+// Copyright: 2021, Joylei <leingliu@gmail.com>
+// License: MIT
+
 use core::fmt;
 use core::fmt::Debug;
 use std::fmt::LowerHex;
