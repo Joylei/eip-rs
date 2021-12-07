@@ -34,7 +34,7 @@ where
     }
 }
 
-/// message router reply
+/// message reply
 #[derive(Debug)]
 pub struct MessageReply<D> {
     /// reply service code
@@ -56,11 +56,43 @@ impl<D> MessageReply<D> {
             data,
         }
     }
+}
+
+impl<D> MessageReplyInterface for MessageReply<D> {
+    type Value = D;
+
+    fn reply_service(&self) -> u8 {
+        self.reply_service
+    }
+
+    fn status(&self) -> Status {
+        self.status
+    }
+
+    fn value(&self) -> &Self::Value {
+        &self.data
+    }
+
+    fn into_value(self) -> Self::Value {
+        self.data
+    }
+}
+
+pub trait MessageReplyInterface {
+    type Value;
+
+    fn reply_service(&self) -> u8;
+
+    fn status(&self) -> Status;
+
+    fn value(&self) -> &Self::Value;
+
+    fn into_value(self) -> Self::Value;
 
     #[inline]
-    pub fn expect_service<E: Error>(&self, expected_service: u8) -> Result<(), E> {
-        if self.reply_service != expected_service {
-            Err(cip_error_reply(self.reply_service, expected_service))
+    fn expect_service<E: Error>(&self, expected_service: u8) -> Result<(), E> {
+        if self.reply_service() != expected_service {
+            Err(cip_error_reply(self.reply_service(), expected_service))
         } else {
             Ok(())
         }

@@ -7,6 +7,7 @@
 use super::symbol::GetInstanceAttributeList;
 use super::*;
 use crate::cip;
+use crate::client::ab_eip::interceptor::HasMoreInterceptor;
 use crate::StdResult;
 use byteorder::{ByteOrder, LittleEndian};
 use bytes::{BufMut, BytesMut};
@@ -143,7 +144,7 @@ where
 {
     let req: TagRequest = req.into();
     let mr = MessageRequest::new(SERVICE_READ_TAG, req.tag, req.count);
-    let resp = client.send(mr).await?;
+    let resp: MessageReply<_> = client.send(mr).await?;
     resp.expect_service::<ClientError>(SERVICE_READ_TAG + REPLY_MASK)?;
     if resp.status.is_err() {
         return Err(cip_error_status(resp.status));
@@ -185,16 +186,14 @@ where
     } = req;
 
     let mr = MessageRequest::new(SERVICE_READ_TAG_FRAGMENTED, tag, [total, offset, 0]);
-    let resp: MessageReply<BytesHolder> = client.send(mr).await?;
-    resp.expect_service::<ClientError>(SERVICE_READ_TAG_FRAGMENTED + REPLY_MASK)?;
-    if resp.status.is_err() && !resp.status.has_more() {
-        return Err(cip_error_status(resp.status));
-    }
-    let data: Bytes = resp.data.into();
+    let resp: HasMoreInterceptor<BytesHolder> = client.send(mr).await?;
+    resp.0
+        .expect_service::<ClientError>(SERVICE_READ_TAG_FRAGMENTED + REPLY_MASK)?;
+    let data: Bytes = resp.0.data.into();
     assert!(data.len() >= 4);
     let tag_type = LittleEndian::read_u16(&data[0..2]);
     let data = (decoder)(tag_type, data.slice(2..))?;
-    Ok((resp.status.has_more(), data))
+    Ok((resp.0.status.has_more(), data))
 }
 
 /// Write Tag Fragmented Service, enables client applications to write to a tag
@@ -265,13 +264,9 @@ where
             data,
         },
     );
-    let resp: MessageReply<()> = client.send(mr).await?;
+    let resp: HasMoreInterceptor<()> = client.send(mr).await?;
     resp.expect_service::<ClientError>(SERVICE_WRITE_TAG_FRAGMENTED + REPLY_MASK)?;
-    if resp.status.general != 0 && !resp.status.has_more() {
-        return Err(cip_error_status(resp.status));
-    }
-
-    Ok(resp.status.has_more())
+    Ok(resp.0.status.has_more())
 }
 
 /// Read Modify Write Tag Service, modifies Tag data with individual bit resolution

@@ -8,7 +8,7 @@ use super::*;
 use core::marker::PhantomData;
 use core::mem;
 
-impl<'t, 'de, T: Decoder<'de>> Decoder<'de> for &'t mut T {
+impl<'de, T: Decoder<'de>> Decoder<'de> for &mut T {
     type Error = T::Error;
     type Buf = T::Buf;
 
@@ -23,16 +23,15 @@ impl<'t, 'de, T: Decoder<'de>> Decoder<'de> for &'t mut T {
     }
 
     #[inline]
-    fn decode_sized<F, R>(&mut self, size: usize, f: F) -> Result<R, Self::Error>
+    fn decode_sized<V: Visitor<'de>>(
+        &mut self,
+        size: usize,
+        visitor: V,
+    ) -> Result<V::Value, Self::Error>
     where
         Self: Sized,
-        F: FnOnce(Self) -> Result<R, Self::Error>,
     {
-        (**self).decode_sized(size, |mut x| {
-            // problem here?
-            let x: &'t mut T = unsafe { mem::transmute(&mut x) };
-            f(x)
-        })
+        (**self).decode_sized(size, visitor)
     }
 }
 

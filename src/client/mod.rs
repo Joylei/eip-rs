@@ -25,6 +25,7 @@ use core::fmt;
 pub use eip::*;
 use futures_util::future::BoxFuture;
 use rseip_cip::service::Heartbeat;
+use rseip_cip::MessageReplyInterface;
 use rseip_core::{
     codec::{Decode, Encode},
     Either, Error,
@@ -124,11 +125,11 @@ impl<B: Driver> MessageService for Client<B> {
 
     /// unconnected send
     #[inline]
-    async fn send<'de, P, D, R>(&mut self, mr: MessageRequest<P, D>) -> Result<MessageReply<R>>
+    async fn send<'de, P, D, R>(&mut self, mr: MessageRequest<P, D>) -> Result<R>
     where
         P: Encode,
         D: Encode,
-        R: Decode<'de> + 'static,
+        R: MessageReplyInterface + Decode<'de> + 'static,
     {
         // create service if not created
         self.ensure_service().await?;
@@ -242,7 +243,7 @@ impl<B: Driver> Connection<B> {
         let service = self.service.as_mut().expect("expected service");
         if self.connected_options.is_none() {
             let reply = service.forward_open(self.origin_options.clone()).await?;
-            match reply {
+            match reply.into_value() {
                 Either::Left(reply) => {
                     let opts = self
                         .origin_options
@@ -299,11 +300,11 @@ impl<B: Driver> MessageService for Connection<B> {
     type Error = ClientError;
     /// connected send
     #[inline]
-    async fn send<'de, P, D, R>(&mut self, mr: MessageRequest<P, D>) -> Result<MessageReply<R>>
+    async fn send<'de, P, D, R>(&mut self, mr: MessageRequest<P, D>) -> Result<R>
     where
         P: Encode,
         D: Encode,
-        R: Decode<'de> + 'static,
+        R: MessageReplyInterface + Decode<'de> + 'static,
     {
         // create connection if not connected
         let cid = self.open_connection().await?;
@@ -364,11 +365,11 @@ impl<B: Driver> MessageService for MaybeConnected<B> {
     type Error = ClientError;
     /// send message request
     #[inline]
-    async fn send<'de, P, D, R>(&mut self, mr: MessageRequest<P, D>) -> Result<MessageReply<R>>
+    async fn send<'de, P, D, R>(&mut self, mr: MessageRequest<P, D>) -> Result<R>
     where
         P: Encode,
         D: Encode,
-        R: Decode<'de> + 'static,
+        R: MessageReplyInterface + Decode<'de> + 'static,
     {
         match self.0 {
             Either::Left(ref mut c) => c.send(mr).await,

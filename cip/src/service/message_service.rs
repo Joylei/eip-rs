@@ -4,7 +4,7 @@
 // Copyright: 2021, Joylei <leingliu@gmail.com>
 // License: MIT
 
-use crate::{MessageReply, MessageRequest, StdResult};
+use crate::{MessageReplyInterface, MessageRequest, StdResult};
 use rseip_core::{
     codec::{Decode, Encode},
     Error,
@@ -14,14 +14,11 @@ use rseip_core::{
 pub trait MessageService {
     type Error: Error;
     /// send message request
-    async fn send<'de, P, D, R>(
-        &mut self,
-        mr: MessageRequest<P, D>,
-    ) -> StdResult<MessageReply<R>, Self::Error>
+    async fn send<'de, P, D, R>(&mut self, mr: MessageRequest<P, D>) -> StdResult<R, Self::Error>
     where
         P: Encode,
         D: Encode,
-        R: Decode<'de> + 'static;
+        R: MessageReplyInterface + Decode<'de> + 'static;
 
     /// close underline transport
     async fn close(&mut self) -> StdResult<(), Self::Error>;

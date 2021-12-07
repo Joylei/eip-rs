@@ -13,11 +13,12 @@ use rseip::{
         MessageRequest,
     },
     client::{
-        ab_eip::{ElementCount, PathParser, TagValue, REPLY_MASK, SERVICE_READ_TAG},
+        ab_eip::{PathParser, TagValue, TagValueIter, REPLY_MASK, SERVICE_READ_TAG},
         AbEipConnection,
     },
+    ClientError,
 };
-use std::convert::TryFrom;
+use rseip_cip::MessageReply;
 
 #[tokio::main]
 pub async fn main() -> Result<()> {
@@ -27,21 +28,21 @@ pub async fn main() -> Result<()> {
         .push(MessageRequest::new(
             SERVICE_READ_TAG,
             EPath::parse_tag("test_car1_x")?,
-            ElementCount(1),
+            1_u16, // number of elements to read, u16
         ))
         .push(MessageRequest::new(
             SERVICE_READ_TAG,
             EPath::parse_tag("test_car2_x")?,
-            ElementCount(1),
+            1_u16, // number of elements to read, u16
         ));
-    let iter = mr.call().await?;
-    for item in iter {
-        let item = item?;
+    let mut iter = mr.call().await?;
+    while let Some(item) = iter.next() {
+        let item: MessageReply<TagValue<i32>> = item?;
         assert_eq!(item.reply_service, SERVICE_READ_TAG + REPLY_MASK);
         if item.status.is_err() {
             println!("error read tag: {}", item.status);
         } else {
-            let value = TagValue::try_from(item.data);
+            let value = item.data;
             println!("tag value: {:?}", value);
         }
     }

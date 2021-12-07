@@ -4,7 +4,10 @@
 // Copyright: 2021, Joylei <leingliu@gmail.com>
 // License: MIT
 
-use crate::epath::{EPath, PortSegment, Segment};
+use crate::{
+    epath::{EPath, PortSegment, Segment},
+    MessageReply, MessageReplyInterface, Status,
+};
 use bytes::Bytes;
 use rand::Rng;
 use rseip_core::Either;
@@ -164,7 +167,27 @@ impl Default for ConnectionParameters {
 }
 
 ///  forward open reply connection parameters
-pub type ForwardOpenReply = Either<ForwardOpenSuccess, ForwardRequestFail>;
+pub struct ForwardOpenReply(pub MessageReply<Either<ForwardOpenSuccess, ForwardRequestFail>>);
+
+impl MessageReplyInterface for ForwardOpenReply {
+    type Value = Either<ForwardOpenSuccess, ForwardRequestFail>;
+
+    fn reply_service(&self) -> u8 {
+        self.0.reply_service
+    }
+
+    fn status(&self) -> Status {
+        self.0.status
+    }
+
+    fn value(&self) -> &Self::Value {
+        &self.0.data
+    }
+
+    fn into_value(self) -> Self::Value {
+        self.0.data
+    }
+}
 
 /// forward open success
 #[derive(Debug, Default)]
@@ -218,7 +241,27 @@ pub struct ForwardCloseRequest<P> {
 }
 
 /// forward close reply
-pub type ForwardCloseReply = Either<ForwardCloseSuccess, ForwardRequestFail>;
+pub struct ForwardCloseReply(pub MessageReply<Either<ForwardCloseSuccess, ForwardRequestFail>>);
+
+impl MessageReplyInterface for ForwardCloseReply {
+    type Value = Either<ForwardCloseSuccess, ForwardRequestFail>;
+
+    fn reply_service(&self) -> u8 {
+        self.0.reply_service
+    }
+
+    fn status(&self) -> Status {
+        self.0.status
+    }
+
+    fn value(&self) -> &Self::Value {
+        &self.0.data
+    }
+
+    fn into_value(self) -> Self::Value {
+        self.0.data
+    }
+}
 
 /// success of forward close
 #[derive(Debug, Default)]

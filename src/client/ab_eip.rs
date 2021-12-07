@@ -4,6 +4,7 @@
 // Copyright: 2021, Joylei <leingliu@gmail.com>
 // License: MIT
 
+pub(crate) mod interceptor;
 mod path;
 mod service;
 mod symbol;

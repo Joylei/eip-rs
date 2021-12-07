@@ -199,14 +199,19 @@ where
 
     /// visit next common packet item
     #[inline]
-    pub fn visit<F, T>(&mut self, f: F) -> Option<Result<CommonPacketItem<T>, D::Error>>
+    pub fn accept<V>(
+        &mut self,
+        expected_type_code: u16,
+        visitor: V,
+    ) -> Option<Result<CommonPacketItem<V::Value>, D::Error>>
     where
-        F: Fn(&mut D, u16) -> Result<T, D::Error>,
+        V: Visitor<'de>,
     {
         if !self.has_remaining() {
             return None;
         }
-        let res = CommonPacketItem::<T>::decode_with(&mut self.decoder, f);
+        let res =
+            CommonPacketItem::validate_and_decode(&mut self.decoder, expected_type_code, visitor);
         if res.is_ok() {
             self.offset += 1;
         }
@@ -249,15 +254,37 @@ impl<T: Encode> Encode for CommonPacket<T> {
 }
 
 impl<T> CommonPacketItem<T> {
-    pub fn decode_with<'de, D, F>(mut decoder: D, f: F) -> Result<Self, D::Error>
+    pub fn validate_and_decode<'de, D, V>(
+        mut decoder: D,
+        expected_type_code: u16,
+        visitor: V,
+    ) -> Result<Self, D::Error>
     where
         D: Decoder<'de>,
-        F: Fn(D, u16) -> Result<T, D::Error>,
+        V: Visitor<'de, Value = T>,
+    {
+        decoder.ensure_size(4)?;
+        let type_code = decoder.decode_u16();
+        if type_code != expected_type_code {
+            return Err(Error::invalid_value(
+                format_args!("common packet type code {:#02x}", type_code),
+                expected_type_code.as_hex(),
+            ));
+        }
+        let item_length = decoder.decode_u16();
+        let data = decoder.decode_sized(item_length as usize, visitor)?;
+        Ok(Self { type_code, data })
+    }
+
+    pub fn decode_with<'de, D, V>(mut decoder: D, visitor: V) -> Result<Self, D::Error>
+    where
+        D: Decoder<'de>,
+        V: Visitor<'de, Value = T>,
     {
         decoder.ensure_size(4)?;
         let type_code = decoder.decode_u16();
         let item_length = decoder.decode_u16();
-        let data = decoder.decode_sized(item_length as usize, |d| f(d, type_code))?;
+        let data = decoder.decode_sized(item_length as usize, visitor)?;
         Ok(Self { type_code, data })
     }
 }
@@ -300,7 +327,7 @@ impl<'de, T: Decode<'de> + 'static> Decode<'de> for CommonPacketItem<T> {
     where
         D: Decoder<'de>,
     {
-        Self::decode_with(decoder, |mut d, _| d.decode_any())
+        Self::decode_with(decoder, visitor::any())
     }
 }
 

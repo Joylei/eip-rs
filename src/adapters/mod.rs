@@ -10,10 +10,11 @@ use crate::{
     cip::{
         connection::{ForwardCloseReply, ForwardCloseRequest, ForwardOpenReply, Options},
         service::request::UnconnectedSend,
-        MessageReply, MessageRequest,
+        MessageRequest,
     },
     Result,
 };
+use rseip_cip::MessageReplyInterface;
 use rseip_core::codec::{Decode, Encode};
 
 /// abstraction for basic CIP services;
@@ -38,12 +39,12 @@ pub trait Service {
     async fn unconnected_send<'de, CP, P, D, R>(
         &mut self,
         request: UnconnectedSend<CP, MessageRequest<P, D>>,
-    ) -> Result<MessageReply<R>>
+    ) -> Result<R>
     where
         CP: Encode,
         P: Encode,
         D: Encode,
-        R: Decode<'de> + 'static;
+        R: MessageReplyInterface + Decode<'de> + 'static;
 
     /// connected send
     async fn connected_send<'de, P, D, R>(
@@ -51,11 +52,11 @@ pub trait Service {
         connection_id: u32,
         sequence_number: u16,
         request: MessageRequest<P, D>,
-    ) -> Result<MessageReply<R>>
+    ) -> Result<R>
     where
         P: Encode,
         D: Encode,
-        R: Decode<'de> + 'static;
+        R: MessageReplyInterface + Decode<'de> + 'static;
 
     /// forward open
     async fn forward_open<P>(&mut self, request: Options<P>) -> Result<ForwardOpenReply>

@@ -27,7 +27,7 @@ pub async fn main() -> Result<()> {
         .with_class(CLASS_SYMBOL)
         .with_instance(0x66b9);
     println!("read tag...");
-    let value: TagValue = client.read_tag(tag.clone()).await?;
+    let value: TagValue<i32> = client.read_tag(tag.clone()).await?;
     println!("tag value: {:?}", value);
     client.write_tag(tag, value).await?;
     println!("write tag - done");

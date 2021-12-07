@@ -6,10 +6,12 @@
 
 mod impls;
 mod little_endian;
+pub mod visitor;
 
 use crate::Error;
 use bytes::Buf;
 pub use little_endian::LittleEndianDecoder;
+pub use visitor::Visitor;
 
 pub trait Decoder<'de> {
     type Error: Error;
@@ -129,10 +131,23 @@ pub trait Decoder<'de> {
         self.buf().has_remaining()
     }
 
-    fn decode_sized<F, R>(&mut self, size: usize, f: F) -> Result<R, Self::Error>
+    /// decode with a dedicated [`Visitor`]. A [`Visitor`] gives you some context information while decoding.
+    #[inline(always)]
+    fn decode_with<V: Visitor<'de>>(&mut self, visitor: V) -> Result<V::Value, Self::Error>
     where
         Self: Sized,
-        F: FnOnce(Self) -> Result<R, Self::Error>;
+    {
+        visitor.visit(self)
+    }
+
+    /// take specified number of bytes, and decode it with the specified visitor
+    fn decode_sized<V: Visitor<'de>>(
+        &mut self,
+        size: usize,
+        visitor: V,
+    ) -> Result<V::Value, Self::Error>
+    where
+        Self: Sized;
 }
 
 pub trait Decode<'de>: Sized {

@@ -4,5 +4,5 @@
 // Copyright: 2021, Joylei <leingliu@gmail.com>
 // License: MIT
 
-mod decode;
+pub mod decode;
 mod encode;

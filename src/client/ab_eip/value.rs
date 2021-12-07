@@ -4,7 +4,7 @@
 // Copyright: 2021, Joylei <leingliu@gmail.com>
 // License: MIT
 
-use crate::StdResult;
+use crate::{ClientError, StdResult};
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 use core::marker::PhantomData;
 use rseip_core::{codec::*, Error};
@@ -394,27 +394,37 @@ where
     }
 }
 
-pub struct TagValueIter<T, E> {
+#[derive(Debug)]
+pub struct TagValueTypedIter<T> {
     tag_type: TagType,
-    decoder: LittleEndianDecoder<E>,
+    decoder: LittleEndianDecoder<ClientError>,
     _marker: PhantomData<T>,
 }
 
-impl<T, E> TagValueIter<T, E> {
+impl<T> TagValueTypedIter<T> {
     #[allow(unused)]
     pub fn tag_type(&self) -> TagType {
         self.tag_type
     }
+
+    pub fn from_bytes(buf: Bytes) -> Result<Self, ClientError> {
+        let mut decoder = LittleEndianDecoder::new(buf);
+        let tag_type = decoder.decode_any()?;
+        Ok(Self {
+            tag_type,
+            decoder,
+            _marker: Default::default(),
+        })
+    }
 }
 
-impl<'de, T, E> Iterator for TagValueIter<T, E>
+impl<'de, T> Iterator for TagValueTypedIter<T>
 where
     T: Decode<'de>,
-    E: Error,
 {
-    type Item = StdResult<T, E>;
+    type Item = Result<T, ClientError>;
     fn next(&mut self) -> Option<Self::Item> {
-        if self.decoder.buf().has_remaining() {
+        if self.decoder.has_remaining() {
             Some(self.decoder.decode_any())
         } else {
             None
@@ -422,7 +432,7 @@ where
     }
 }
 
-impl<'de, T, E> Decode<'de> for TagValueIter<T, E> {
+impl<'de, T> Decode<'de> for TagValueTypedIter<T> {
     fn decode<D>(mut decoder: D) -> StdResult<Self, D::Error>
     where
         D: Decoder<'de>,
@@ -434,6 +444,54 @@ impl<'de, T, E> Decode<'de> for TagValueIter<T, E> {
             tag_type,
             decoder: LittleEndianDecoder::new(buf),
             _marker: Default::default(),
+        };
+        Ok(res)
+    }
+}
+
+#[derive(Debug)]
+pub struct TagValueIter {
+    tag_type: TagType,
+    decoder: LittleEndianDecoder<ClientError>,
+}
+
+impl TagValueIter {
+    #[allow(unused)]
+    pub fn tag_type(&self) -> TagType {
+        self.tag_type
+    }
+
+    pub fn from_bytes(buf: Bytes) -> Result<Self, ClientError> {
+        let mut decoder = LittleEndianDecoder::new(buf);
+        let tag_type = decoder.decode_any()?;
+        Ok(Self { tag_type, decoder })
+    }
+}
+
+impl TagValueIter {
+    pub fn next<'de, T>(&mut self) -> Option<Result<T, ClientError>>
+    where
+        T: Decode<'de>,
+    {
+        if self.decoder.has_remaining() {
+            Some(self.decoder.decode_any())
+        } else {
+            None
+        }
+    }
+}
+
+impl<'de> Decode<'de> for TagValueIter {
+    fn decode<D>(mut decoder: D) -> StdResult<Self, D::Error>
+    where
+        D: Decoder<'de>,
+    {
+        let tag_type: TagType = decoder.decode_any()?;
+        let len = decoder.buf_mut().remaining();
+        let buf = decoder.buf_mut().copy_to_bytes(len);
+        let res = Self {
+            tag_type,
+            decoder: LittleEndianDecoder::new(buf),
         };
         Ok(res)
     }

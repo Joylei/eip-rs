@@ -23,9 +23,10 @@ pub async fn main() -> Result<()> {
         .with_connection_path(PortSegment::default());
     let tag = EPath::parse_tag("proGram:MainProgram.test")?;
     println!("read tag...");
-    let value: TagValue = client.read_tag(tag.clone()).await?;
-    println!("tag value: {:?}", value);
-    client.write_tag(tag, value).await?;
+    let mut holder: TagValue<bool> = client.read_tag(tag.clone()).await?;
+    println!("tag value: {:?}", holder);
+    holder.value = !holder.value;
+    client.write_tag(tag, holder).await?;
     println!("write tag - done");
     client.close().await?;
     Ok(())

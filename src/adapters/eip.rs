@@ -6,6 +6,7 @@
 
 use super::*;
 use crate::{cip::epath::EPATH_CONNECTION_MANAGER, cip::service::*, ClientError, Result};
+use rseip_cip::codec::decode::message_reply;
 use rseip_core::codec::{Decode, Encode};
 use rseip_eip::EipContext;
 use tokio::io::{AsyncRead, AsyncWrite};
@@ -48,12 +49,12 @@ where
     async fn unconnected_send<'de, CP, P, D, R>(
         &mut self,
         request: UnconnectedSend<CP, MessageRequest<P, D>>,
-    ) -> Result<MessageReply<R>>
+    ) -> Result<R>
     where
         CP: Encode,
         P: Encode,
         D: Encode,
-        R: Decode<'de> + 'static,
+        R: MessageReplyInterface + Decode<'de> + 'static,
     {
         let service_code = request.data.service_code;
 
@@ -64,7 +65,7 @@ where
         };
 
         let cpf = self.send_rrdata(unconnected_send).await?;
-        let reply = MessageReply::decode_unconnected_send(cpf)?;
+        let reply: R = message_reply::decode_unconnected_send(cpf)?;
         reply.expect_service::<ClientError>(service_code + 0x80)?;
         Ok(reply)
     }
@@ -76,18 +77,18 @@ where
         connection_id: u32,
         sequence_number: u16,
         request: MessageRequest<P, D>,
-    ) -> Result<MessageReply<R>>
+    ) -> Result<R>
     where
         P: Encode,
         D: Encode,
-        R: Decode<'de> + 'static,
+        R: MessageReplyInterface + Decode<'de> + 'static,
     {
         let service_code = request.service_code;
         let cpf = self
             .send_unit_data(connection_id, sequence_number, request)
             .await?;
 
-        let (seq_reply, reply) = MessageReply::decode_connected_send(cpf)?;
+        let (seq_reply, reply): (_, R) = message_reply::decode_connected_send(cpf)?;
         debug_assert_eq!(sequence_number, seq_reply);
         reply.expect_service::<ClientError>(service_code + 0x80)?;
         Ok(reply)
@@ -106,8 +107,8 @@ where
         };
 
         let cpf = self.send_rrdata(req).await?;
-        let reply = MessageReply::decode_forward_open(cpf)?;
-        Ok(reply.data)
+        let reply: ForwardOpenReply = message_reply::decode_unconnected_send(cpf)?;
+        Ok(reply)
     }
 
     /// close CIP connection
@@ -126,7 +127,7 @@ where
         };
 
         let cpf = self.send_rrdata(req).await?;
-        let reply = MessageReply::decode_forward_close(cpf)?;
-        Ok(reply.data)
+        let reply: ForwardCloseReply = message_reply::decode_unconnected_send(cpf)?;
+        Ok(reply)
     }
 }

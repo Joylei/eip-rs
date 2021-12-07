@@ -6,7 +6,10 @@
 
 mod decoder;
 
-use super::{symbol::SymbolType, HasMore, CLASS_TEMPLATE, REPLY_MASK, SERVICE_TEMPLATE_READ};
+use super::{
+    interceptor::HasMoreInterceptor, symbol::SymbolType, HasMore, CLASS_TEMPLATE, REPLY_MASK,
+    SERVICE_TEMPLATE_READ,
+};
 use crate::{
     cip::{
         epath::EPath,
@@ -17,7 +20,7 @@ use crate::{
 };
 use bytes::{Buf, Bytes};
 use decoder::{DefaultDefinitionDecoder, DefinitionDecoder};
-use rseip_cip::{error::cip_error_status, MessageReply};
+use rseip_cip::MessageReplyInterface;
 use rseip_core::{
     codec::{BytesHolder, Decode, Decoder},
     Error, String, StringExt,
@@ -220,12 +223,9 @@ where
         .with_instance(instance_id);
     let data = (offset, bytes_read);
     let req = MessageRequest::new(SERVICE_TEMPLATE_READ, path, data);
-    let resp: MessageReply<BytesHolder> = ctx.send(req).await?;
+    let resp: HasMoreInterceptor<BytesHolder> = ctx.send(req).await?;
     resp.expect_service::<ClientError>(SERVICE_TEMPLATE_READ + REPLY_MASK)?;
-    if !resp.status.is_ok() && !resp.status.has_more() {
-        return Err(cip_error_status(resp.status));
-    }
-    Ok((resp.has_more(), resp.data.into()))
+    Ok((resp.0.has_more(), resp.0.data.into()))
 }
 
 /// template definition

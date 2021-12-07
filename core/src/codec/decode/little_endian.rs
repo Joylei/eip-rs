@@ -8,6 +8,7 @@ use super::*;
 use bytes::Bytes;
 use core::marker::PhantomData;
 
+#[derive(Debug)]
 pub struct LittleEndianDecoder<E> {
     buf: Bytes,
     _marker: PhantomData<E>,
@@ -19,6 +20,10 @@ impl<E> LittleEndianDecoder<E> {
             buf,
             _marker: Default::default(),
         }
+    }
+
+    pub fn into_inner(self) -> Bytes {
+        self.buf
     }
 }
 
@@ -37,14 +42,17 @@ impl<'de, E: Error> Decoder<'de> for LittleEndianDecoder<E> {
     }
 
     #[inline]
-    fn decode_sized<F, R>(&mut self, size: usize, f: F) -> Result<R, Self::Error>
+    fn decode_sized<V: Visitor<'de>>(
+        &mut self,
+        size: usize,
+        visitor: V,
+    ) -> Result<V::Value, Self::Error>
     where
         Self: Sized,
-        F: FnOnce(Self) -> Result<R, Self::Error>,
     {
         self.ensure_size(size)?;
         let buf = self.buf.split_to(size);
         let decoder = Self::new(buf);
-        f(decoder)
+        visitor.visit(decoder)
     }
 }

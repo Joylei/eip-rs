@@ -4,7 +4,7 @@
 // Copyright: 2021, Joylei <leingliu@gmail.com>
 // License: MIT
 
-use super::{HasMore, CLASS_SYMBOL, REPLY_MASK};
+use super::{interceptor::HasMoreInterceptor, HasMore, CLASS_SYMBOL, REPLY_MASK};
 use crate::{
     cip::{epath::EPath, service::MessageService, MessageRequest},
     ClientError, Result,
@@ -12,7 +12,7 @@ use crate::{
 use bytes::{Buf, Bytes};
 use core::fmt;
 use futures_util::{stream, Stream};
-use rseip_cip::{error::cip_error_status, MessageReply};
+use rseip_cip::MessageReplyInterface;
 use rseip_core::{codec::BytesHolder, hex::AsHex, Error};
 use std::convert::TryFrom;
 
@@ -220,6 +220,8 @@ impl<'a, T> GetInstanceAttributeList<'a, T> {
     }
 
     /// continue to send request if reply general status indicates more data to read
+    ///
+    /// default true
     pub fn retrieve_all(mut self, all: bool) -> Self {
         self.all = all;
         self
@@ -316,7 +318,7 @@ async fn get_attribute_list<T: MessageService<Error = ClientError>>(
     ctx: &mut T,
     start_instance: u16,
 ) -> Result<(bool, Bytes)> {
-    let resp: MessageReply<BytesHolder> = ctx
+    let resp: HasMoreInterceptor<BytesHolder> = ctx
         .send(MessageRequest::new(
             0x55,
             EPath::default()
@@ -330,10 +332,7 @@ async fn get_attribute_list<T: MessageService<Error = ClientError>>(
         ))
         .await?;
     resp.expect_service::<ClientError>(0x55 + REPLY_MASK)?;
-    if !resp.status.is_ok() && !resp.status.has_more() {
-        return Err(cip_error_status(resp.status));
-    }
-    Ok((resp.status.has_more(), resp.data.into()))
+    Ok((resp.0.status.has_more(), resp.0.data.into()))
 }
 
 impl TryFrom<&mut Bytes> for SymbolInstance {
