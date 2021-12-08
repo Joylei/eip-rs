@@ -2,13 +2,13 @@
 name = "rseip-core"
 version = "0.1.0"
 edition = "2018"
-description = "reseip - core module"
+description = "reseip-core: core module"
 license = "MIT"
 homepage = "https://github.com/Joylei/eip-rs"
 repository = "https://github.com/Joylei/eip-rs.git"
-#documentation = "https://docs.rs/crate/rseip/"
+documentation = "https://docs.rs/crate/rseip-core/"
 keywords = ["ethernet", "codec", "industry", "eip", "cip"]
-categories = ["asynchronous"]
+categories = ["asynchronous", "hardware-support"]
 authors = ["joylei <leingliu@gmail.com>"]
 resolver = "2"
 

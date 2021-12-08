@@ -7,7 +7,7 @@
 /*!
 # rseip
 
-rseip - EIP&CIP in pure Rust
+rseip - EIP&CIP client in pure Rust
 
 ## Features
 

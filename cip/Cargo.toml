@@ -2,13 +2,13 @@
 name = "rseip-cip"
 version = "0.1.0"
 edition = "2018"
-description = "reseip - common industry protocol"
+description = "rseip-cip: common industry protocol"
 license = "MIT"
 homepage = "https://github.com/Joylei/eip-rs"
 repository = "https://github.com/Joylei/eip-rs.git"
-#documentation = "https://docs.rs/crate/rseip/"
+documentation = "https://docs.rs/crate/rseip-cip/"
 keywords = ["ethernet", "codec", "industry", "eip", "cip"]
-categories = ["asynchronous"]
+categories = ["asynchronous", "hardware-support"]
 authors = ["joylei <leingliu@gmail.com>"]
 resolver = "2"
 

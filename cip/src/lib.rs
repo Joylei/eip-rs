@@ -4,6 +4,18 @@
 // Copyright: 2021, Joylei <leingliu@gmail.com>
 // License: MIT
 
+/*!
+
+# rseip-cip
+
+Common industry protocol for `rseip`, please look at [rseip project](https://github.com/Joylei/eip-rs) for more information.
+
+ ## License
+
+ MIT
+
+*/
+
 //#![warn(missing_docs)]
 #![allow(clippy::match_like_matches_macro)]
 

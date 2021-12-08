@@ -4,8 +4,16 @@
 // Copyright: 2021, Joylei <leingliu@gmail.com>
 // License: MIT
 
-//#![warn(missing_docs)]
+/*!
+# rseip-core
+core module for `rseip`, please look at [rseip project](https://github.com/Joylei/eip-rs) for more information.
 
+## License
+
+MIT
+*/
+
+//#![warn(missing_docs)]
 #![allow(clippy::match_like_matches_macro)]
 
 #[cfg_attr(feature = "no_std", macro_use)]
