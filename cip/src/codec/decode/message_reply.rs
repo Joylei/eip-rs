@@ -17,6 +17,7 @@ use rseip_core::{
     Either, Error,
 };
 
+#[inline]
 pub fn decode_service_and_status<'de, D>(mut decoder: D) -> Result<(u8, Status), D::Error>
 where
     D: Decoder<'de>,
@@ -45,6 +46,7 @@ impl<'de, R> Decode<'de> for MessageReply<R>
 where
     R: Decode<'de>,
 {
+    #[inline]
     fn decode<D>(mut decoder: D) -> Result<Self, D::Error>
     where
         D: Decoder<'de>,
@@ -112,6 +114,7 @@ where
 }
 
 impl<'de> Decode<'de> for ForwardOpenReply {
+    #[inline]
     fn decode<D>(mut decoder: D) -> StdResult<Self, D::Error>
     where
         D: Decoder<'de>,
@@ -129,6 +132,7 @@ impl<'de> Decode<'de> for ForwardOpenReply {
 }
 
 impl<'de> Decode<'de> for ForwardCloseReply {
+    #[inline]
     fn decode<D>(mut decoder: D) -> StdResult<Self, D::Error>
     where
         D: Decoder<'de>,
@@ -145,6 +149,7 @@ impl<'de> Decode<'de> for ForwardCloseReply {
     }
 }
 
+#[inline]
 fn decode_forward_open_success<'de, D>(mut decoder: D) -> Result<ForwardOpenSuccess, D::Error>
 where
     D: Decoder<'de>,
@@ -169,6 +174,7 @@ where
     Ok(v)
 }
 
+#[inline]
 fn decode_forward_close_success<'de, D>(mut decoder: D) -> Result<ForwardCloseSuccess, D::Error>
 where
     D: Decoder<'de>,
@@ -189,6 +195,7 @@ where
     Ok(v)
 }
 
+#[inline]
 fn decode_forward_fail<'de, D>(
     mut decoder: D,
     status: Status,
@@ -212,6 +219,7 @@ where
     Ok(res)
 }
 
+#[inline]
 pub fn ensure_null_address<'de, D>(cpf: &mut CommonPacketIter<'de, D>) -> Result<(), D::Error>
 where
     D: Decoder<'de>,
@@ -225,6 +233,7 @@ where
     Err(cip_error("common packet - expect null address"))
 }
 
+#[inline]
 pub fn ensure_connected_address<'de, D>(cpf: &mut CommonPacketIter<'de, D>) -> Result<(), D::Error>
 where
     D: Decoder<'de>,

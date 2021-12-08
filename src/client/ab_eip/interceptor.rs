@@ -15,8 +15,8 @@ impl<T> MessageReplyInterface for HasMoreInterceptor<T> {
         self.0.reply_service
     }
 
-    fn status(&self) -> Status {
-        self.0.status
+    fn status(&self) -> &Status {
+        &self.0.status
     }
 
     fn value(&self) -> &Self::Value {

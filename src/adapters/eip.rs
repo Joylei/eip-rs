@@ -44,7 +44,7 @@ where
         Ok(())
     }
 
-    /// send message router request without CIP connection
+    /// send CIP message request without CIP connection
     #[inline]
     async fn unconnected_send<'de, CP, P, D, R>(
         &mut self,
@@ -70,7 +70,7 @@ where
         Ok(reply)
     }
 
-    /// send message router request with CIP explicit messaging connection
+    /// send CIP message request with CIP explicit messaging connection
     #[inline]
     async fn connected_send<'de, P, D, R>(
         &mut self,

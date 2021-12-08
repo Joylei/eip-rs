@@ -65,8 +65,8 @@ impl<D> MessageReplyInterface for MessageReply<D> {
         self.reply_service
     }
 
-    fn status(&self) -> Status {
-        self.status
+    fn status(&self) -> &Status {
+        &self.status
     }
 
     fn value(&self) -> &Self::Value {
@@ -78,12 +78,13 @@ impl<D> MessageReplyInterface for MessageReply<D> {
     }
 }
 
+/// CIP message reply abstraction
 pub trait MessageReplyInterface {
     type Value;
 
     fn reply_service(&self) -> u8;
 
-    fn status(&self) -> Status;
+    fn status(&self) -> &Status;
 
     fn value(&self) -> &Self::Value;
 

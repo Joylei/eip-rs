@@ -176,8 +176,8 @@ impl MessageReplyInterface for ForwardOpenReply {
         self.0.reply_service
     }
 
-    fn status(&self) -> Status {
-        self.0.status
+    fn status(&self) -> &Status {
+        &self.0.status
     }
 
     fn value(&self) -> &Self::Value {
@@ -250,8 +250,8 @@ impl MessageReplyInterface for ForwardCloseReply {
         self.0.reply_service
     }
 
-    fn status(&self) -> Status {
-        self.0.status
+    fn status(&self) -> &Status {
+        &self.0.status
     }
 
     fn value(&self) -> &Self::Value {

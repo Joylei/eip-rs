@@ -7,7 +7,7 @@
 use crate::StdResult;
 use core::fmt;
 
-/// message router reply status
+/// message reply status
 #[derive(Debug, Clone, Copy)]
 pub struct Status {
     pub general: u8,
