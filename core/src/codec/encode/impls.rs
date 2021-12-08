@@ -14,54 +14,67 @@ use smallvec::SmallVec;
 impl<A: Encoder> Encoder for &mut A {
     type Error = A::Error;
 
+    #[inline]
     fn encode_bool(&mut self, item: bool, buf: &mut BytesMut) -> Result<(), Self::Error> {
         (**self).encode_bool(item, buf)
     }
 
+    #[inline]
     fn encode_i8(&mut self, item: i8, buf: &mut BytesMut) -> Result<(), Self::Error> {
         (**self).encode_i8(item, buf)
     }
 
+    #[inline]
     fn encode_u8(&mut self, item: u8, buf: &mut BytesMut) -> Result<(), Self::Error> {
         (**self).encode_u8(item, buf)
     }
 
+    #[inline]
     fn encode_i16(&mut self, item: i16, buf: &mut BytesMut) -> Result<(), Self::Error> {
         (**self).encode_i16(item, buf)
     }
 
+    #[inline]
     fn encode_u16(&mut self, item: u16, buf: &mut BytesMut) -> Result<(), Self::Error> {
         (**self).encode_u16(item, buf)
     }
 
+    #[inline]
     fn encode_i32(&mut self, item: i32, buf: &mut BytesMut) -> Result<(), Self::Error> {
         (**self).encode_i32(item, buf)
     }
 
+    #[inline]
     fn encode_u32(&mut self, item: u32, buf: &mut BytesMut) -> Result<(), Self::Error> {
         (**self).encode_u32(item, buf)
     }
 
+    #[inline]
     fn encode_i64(&mut self, item: i64, buf: &mut BytesMut) -> Result<(), Self::Error> {
         (**self).encode_i64(item, buf)
     }
 
+    #[inline]
     fn encode_u64(&mut self, item: u64, buf: &mut BytesMut) -> Result<(), Self::Error> {
         (**self).encode_u64(item, buf)
     }
 
+    #[inline]
     fn encode_f32(&mut self, item: f32, buf: &mut BytesMut) -> Result<(), Self::Error> {
         (**self).encode_f32(item, buf)
     }
 
+    #[inline]
     fn encode_f64(&mut self, item: f64, buf: &mut BytesMut) -> Result<(), Self::Error> {
         (**self).encode_f64(item, buf)
     }
 
+    #[inline]
     fn encode_i128(&mut self, item: i128, buf: &mut BytesMut) -> Result<(), Self::Error> {
         (**self).encode_i128(item, buf)
     }
 
+    #[inline]
     fn encode_u128(&mut self, item: u128, buf: &mut BytesMut) -> Result<(), Self::Error> {
         (**self).encode_u128(item, buf)
     }
