@@ -102,6 +102,28 @@ where
     }
 }
 
+impl<'de, T, const N: usize> Decode<'de> for [T; N]
+where
+    T: Decode<'de>,
+    Self: Default,
+{
+    #[inline]
+    fn decode<D>(mut decoder: D) -> Result<Self, D::Error>
+    where
+        D: Decoder<'de>,
+    {
+        let mut res: [T; N] = Default::default();
+        for item in res.iter_mut() {
+            if decoder.has_remaining() {
+                T::decode_in_place(&mut decoder, item)?;
+            } else {
+                break;
+            }
+        }
+        Ok(res)
+    }
+}
+
 macro_rules! impl_tuple {
     ($($n:tt $name:ident)+) => {
         impl<'de, $($name,)+> Decode<'de> for ($($name,)+)
