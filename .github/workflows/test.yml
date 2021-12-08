@@ -1,0 +1,36 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macOS-latest]
+        rust: [stable, beta]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          components: rustfmt
+          override: true
+      - name: Verify versions
+        run: rustc --version && rustup --version && cargo --version
+      - name: Cargo Build
+        run: cargo build --verbose
+      - name: Build examples
+        run: cargo build --examples
+      - name: Run tests
+        run: cargo test --verbose
+      - name: Check code style
+        run: cargo fmt -- --check
