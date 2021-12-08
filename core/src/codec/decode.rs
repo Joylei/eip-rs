@@ -23,7 +23,7 @@ pub trait Decoder<'de> {
     fn buf_mut(&mut self) -> &mut Self::Buf;
 
     /// check remaining buffer size
-    #[inline(always)]
+    #[inline]
     fn ensure_size(&self, expected: usize) -> Result<(), Self::Error> {
         let actual_len = self.buf().remaining();
         if actual_len < expected {
@@ -121,18 +121,18 @@ pub trait Decoder<'de> {
         self.buf_mut().get_u128_le()
     }
 
-    #[inline(always)]
+    #[inline]
     fn remaining(&mut self) -> usize {
         self.buf().remaining()
     }
 
-    #[inline(always)]
+    #[inline]
     fn has_remaining(&mut self) -> bool {
         self.buf().has_remaining()
     }
 
     /// decode with a dedicated [`Visitor`]. A [`Visitor`] gives you some context information while decoding.
-    #[inline(always)]
+    #[inline]
     fn decode_with<V: Visitor<'de>>(&mut self, visitor: V) -> Result<V::Value, Self::Error>
     where
         Self: Sized,

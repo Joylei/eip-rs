@@ -32,6 +32,7 @@ impl<'de, T> Decode<'de> for HasMoreInterceptor<T>
 where
     T: Decode<'de>,
 {
+    #[inline]
     fn decode<D>(mut decoder: D) -> Result<Self, D::Error>
     where
         D: Decoder<'de>,

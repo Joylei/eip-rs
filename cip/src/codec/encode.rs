@@ -92,7 +92,7 @@ impl<P: Encode> Encode for OpenOptions<P> {
         Ok(())
     }
 
-    #[inline(always)]
+    #[inline]
     fn bytes_count(&self) -> usize {
         let base_size = if self.large_open { 40 } else { 36 };
         base_size + self.connection_path.bytes_count()
@@ -128,6 +128,7 @@ impl<P: Encode> Encode for ForwardCloseRequest<P> {
         self.connection_path.encode(buf, encoder)?;
         Ok(())
     }
+
     #[inline]
     fn encode_by_ref<A: Encoder>(
         &self,
@@ -138,7 +139,8 @@ impl<P: Encode> Encode for ForwardCloseRequest<P> {
         self.connection_path.encode_by_ref(buf, encoder)?;
         Ok(())
     }
-    #[inline(always)]
+
+    #[inline]
     fn bytes_count(&self) -> usize {
         12 + self.connection_path.bytes_count()
     }

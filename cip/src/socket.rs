@@ -35,8 +35,7 @@ pub enum SocketType {
 
 impl SocketType {
     /// CIP type id
-    #[inline(always)]
-    pub fn type_id(&self) -> u16 {
+    pub const fn type_id(&self) -> u16 {
         match self {
             Self::ToTarget => 0x8000,
             Self::ToOriginator => 0x8001,
@@ -60,7 +59,7 @@ impl SocketAddr {
 }
 
 impl Encode for SocketAddr {
-    #[inline(always)]
+    #[inline]
     fn encode_by_ref<A: Encoder>(
         &self,
         buf: &mut bytes::BytesMut,
@@ -73,7 +72,7 @@ impl Encode for SocketAddr {
         Ok(())
     }
 
-    #[inline(always)]
+    #[inline]
     fn bytes_count(&self) -> usize {
         16
     }

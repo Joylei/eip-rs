@@ -8,7 +8,7 @@ use crate::{codec::Encoding, CommonPacket, CommonPacketItem, Result};
 use bytes::{BufMut, BytesMut};
 
 impl Encoding for CommonPacket {
-    #[inline(always)]
+    #[inline]
     fn encode(self: CommonPacket, dst: &mut BytesMut) -> Result<()> {
         debug_assert!(self.len() > 0 && self.len() <= 4);
         dst.put_u16_le(self.len() as u16);
@@ -18,7 +18,7 @@ impl Encoding for CommonPacket {
         Ok(())
     }
 
-    #[inline(always)]
+    #[inline]
     fn bytes_count(&self) -> usize {
         let count: usize = self.iter().map(|v| v.bytes_count()).sum();
         count + 2
@@ -26,7 +26,7 @@ impl Encoding for CommonPacket {
 }
 
 impl Encoding for CommonPacketItem {
-    #[inline(always)]
+    #[inline]
     fn encode(self: CommonPacketItem, dst: &mut BytesMut) -> Result<()> {
         let bytes_count = self.bytes_count();
         dst.reserve(bytes_count);
@@ -37,7 +37,7 @@ impl Encoding for CommonPacketItem {
         Ok(())
     }
 
-    #[inline(always)]
+    #[inline]
     fn bytes_count(&self) -> usize {
         4 + self.data.len()
     }
@@ -68,7 +68,9 @@ mod test {
         };
         let data_item = CommonPacketItem {
             type_code: 0xB2,
-            data: Bytes::from_static(&[0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09]),
+            data: Bytes::from_static(&[
+                0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09,
+            ]),
         };
         let cpf = CommonPacket::from(vec![null_addr, data_item]);
         assert_eq!(cpf.bytes_count(), 2 + 4 + 2 + 4 + 9);

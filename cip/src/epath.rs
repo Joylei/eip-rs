@@ -54,10 +54,10 @@ impl EPath {
     }
 
     /// into inner
-    // #[inline]
-    // pub fn into_inner(self) -> SmallVec<Array> {
-    //     self.0
-    // }
+    #[inline]
+    pub fn into_inner(self) -> SmallVec<Array> {
+        self.0
+    }
 
     /// append class id
     #[inline]

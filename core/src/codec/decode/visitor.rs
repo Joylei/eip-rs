@@ -7,6 +7,7 @@ pub trait Visitor<'de> {
     type Value;
     fn visit<D: Decoder<'de>>(self, decoder: D) -> Result<Self::Value, D::Error>;
 
+    #[inline]
     fn map<F, R>(self, f: F) -> MapVisitor<'de, Self, F, R>
     where
         Self: Sized,
@@ -19,6 +20,7 @@ pub trait Visitor<'de> {
         }
     }
 
+    #[inline]
     fn and<A>(self, visitor: A) -> AndVisitor<'de, Self, A>
     where
         Self: Sized,
@@ -31,6 +33,7 @@ pub trait Visitor<'de> {
         }
     }
 
+    #[inline]
     fn or<A>(self, visitor: A) -> EitherVisitor<'de, Self, A>
     where
         Self: Sized,
@@ -51,7 +54,7 @@ pub fn any<'a, R>() -> AnyVisitor<'a, R> {
 }
 
 /// directly returns specified value
-#[inline(always)]
+#[inline]
 pub fn from_value<R>(v: R) -> FromValueVisitor<R> {
     FromValueVisitor(v)
 }

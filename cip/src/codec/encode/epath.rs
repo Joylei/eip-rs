@@ -220,7 +220,7 @@ impl Encode for EPath {
         Ok(())
     }
 
-    #[inline(always)]
+    #[inline]
     fn bytes_count(&self) -> usize {
         self.iter().map(|v| v.bytes_count()).sum()
     }

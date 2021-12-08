@@ -15,17 +15,17 @@ pub struct Status {
 }
 
 impl Status {
-    #[inline(always)]
+    #[inline]
     pub fn is_ok(&self) -> bool {
         self.general == 0
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn is_err(&self) -> bool {
         self.general != 0
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn is_routing_error(&self) -> bool {
         // EIP-CIP-V1-3.3  3.5.5.4
         match (self.general, self.extended) {
