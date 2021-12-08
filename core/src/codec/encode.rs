@@ -5,11 +5,11 @@
 // License: MIT
 
 mod impls;
+mod slice;
 
 use crate::Error;
 use bytes::BytesMut;
-#[doc(inline)]
-pub use impls::SliceContainer;
+pub use slice::SliceContainer;
 
 pub trait Encoder {
     type Error: Error;
@@ -48,6 +48,7 @@ pub trait Encoder {
 }
 
 pub trait Encode {
+    /// encode by moved values
     #[inline]
     fn encode<A: Encoder>(self, buf: &mut BytesMut, encoder: &mut A) -> Result<(), A::Error>
     where
@@ -56,11 +57,13 @@ pub trait Encode {
         self.encode_by_ref(buf, encoder)
     }
 
+    /// encode by references
     fn encode_by_ref<A: Encoder>(
         &self,
         buf: &mut BytesMut,
         encoder: &mut A,
     ) -> Result<(), A::Error>;
 
+    /// be careful to calculate the number of bytes
     fn bytes_count(&self) -> usize;
 }

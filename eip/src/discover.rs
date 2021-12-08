@@ -11,6 +11,7 @@ use crate::{
     StdResult,
 };
 use bytes::Bytes;
+use core::marker::PhantomData;
 use futures_util::{stream, SinkExt, Stream, StreamExt};
 use rseip_core::{
     cip::{CommonPacketItem, CommonPacketIter},
@@ -19,7 +20,6 @@ use rseip_core::{
 };
 use std::{
     io,
-    marker::PhantomData,
     net::{Ipv4Addr, SocketAddr, SocketAddrV4},
     time::Duration,
 };

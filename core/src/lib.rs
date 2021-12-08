@@ -35,10 +35,8 @@ pub mod tests {
         Error,
     };
     use bytes::{BufMut, Bytes, BytesMut};
-    use std::{
-        fmt::{self, Debug, Display},
-        io,
-    };
+    use core::fmt::{self, Debug, Display};
+    use std::io;
 
     pub trait EncodeExt: Encode {
         fn try_into_bytes(self) -> Result<Bytes, CodecError>

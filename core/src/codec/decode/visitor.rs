@@ -1,7 +1,12 @@
-use crate::Either;
+// rseip
+//
+// rseip - EIP&CIP in pure Rust.
+// Copyright: 2021, Joylei <leingliu@gmail.com>
+// License: MIT
 
 use super::*;
-use std::marker::PhantomData;
+use crate::Either;
+use core::marker::PhantomData;
 
 pub trait Visitor<'de> {
     type Value;
