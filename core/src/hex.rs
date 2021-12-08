@@ -4,9 +4,7 @@
 // Copyright: 2021, Joylei <leingliu@gmail.com>
 // License: MIT
 
-use core::fmt;
-use core::fmt::Debug;
-use std::fmt::LowerHex;
+use core::fmt::{self, Debug, LowerHex};
 
 /// print hex
 pub struct Hex<T> {

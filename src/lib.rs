@@ -64,6 +64,8 @@ MIT
 
 #![allow(clippy::match_like_matches_macro)]
 
+pub extern crate futures_util;
+
 /// adapters
 pub mod adapters;
 /// client
@@ -81,6 +83,19 @@ pub use rseip_core::{
     codec::{Decode, Encode},
     Either, String, StringExt,
 };
+
+/// reexport types for easy usage
+pub mod precludes {
+    pub use crate::{
+        cip::{epath::*, service::*},
+        client::*,
+    };
+    pub use rseip_core::{
+        codec::BytesHolder,
+        codec::{Decode, Encode},
+    };
+}
+
 #[cfg(test)]
 mod test {
     use std::future::Future;

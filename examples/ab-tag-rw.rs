@@ -5,16 +5,8 @@
 // License: MIT
 
 use anyhow::Result;
-use rseip::{
-    cip::{
-        epath::{EPath, PortSegment},
-        service::MessageService,
-    },
-    client::{
-        ab_eip::{PathParser, TagValue},
-        AbEipClient, AbService,
-    },
-};
+use rseip::client::ab_eip::*;
+use rseip::precludes::*;
 
 #[tokio::main]
 pub async fn main() -> Result<()> {

@@ -9,32 +9,28 @@ pub mod ab_eip;
 /// generic EIP
 pub mod eip;
 
-use crate::cip::{service::MessageService, MessageReply, MessageRequest};
-use crate::{
-    adapters::Service,
-    cip::{
-        connection::{ForwardCloseRequest, Options},
-        epath::EPath,
-        service::request::UnconnectedSend,
-    },
-    ClientError, Result,
-};
-pub use ab_eip::{AbEipClient, AbEipConnection, AbEipDriver, AbService};
+use crate::{adapters::Service, ClientError, Result};
+pub use ab_eip::{AbEipClient, AbEipConnection, AbEipDriver, AbService, AbTemplateService};
 use bytes::Bytes;
-use core::fmt;
+use core::{
+    fmt,
+    ops::{Deref, DerefMut},
+};
 pub use eip::*;
 use futures_util::future::BoxFuture;
-use rseip_cip::service::Heartbeat;
-use rseip_cip::MessageReplyInterface;
+/// reexport
+pub use rseip_cip::connection::OpenOptions;
+use rseip_cip::{
+    connection::ForwardCloseRequest,
+    service::Heartbeat,
+    service::{request::UnconnectedSend, MessageService},
+    *,
+};
 use rseip_core::{
     codec::{Decode, Encode},
     Either, Error,
 };
-use std::{
-    io,
-    ops::{Deref, DerefMut},
-    sync::atomic::AtomicU16,
-};
+use std::{io, sync::atomic::AtomicU16};
 
 /// driver for specified protocol
 pub trait Driver {
@@ -159,8 +155,8 @@ impl<B: Driver> MessageService for Client<B> {
 #[derive(Debug)]
 pub struct Connection<B: Driver> {
     addr: B::Endpoint,
-    origin_options: Options,
-    connected_options: Option<Options>,
+    origin_options: OpenOptions,
+    connected_options: Option<OpenOptions>,
     /// underline service
     service: Option<B::Service>,
     /// sequence number
@@ -170,7 +166,7 @@ pub struct Connection<B: Driver> {
 impl<B: Driver> Connection<B> {
     /// Create connection
     #[inline]
-    pub fn new(addr: B::Endpoint, options: Options) -> Self {
+    pub fn new(addr: B::Endpoint, options: OpenOptions) -> Self {
         Self {
             addr,
             origin_options: options,

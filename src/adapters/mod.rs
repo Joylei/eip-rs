@@ -8,7 +8,7 @@ mod eip;
 
 use crate::{
     cip::{
-        connection::{ForwardCloseReply, ForwardCloseRequest, ForwardOpenReply, Options},
+        connection::{ForwardCloseReply, ForwardCloseRequest, ForwardOpenReply, OpenOptions},
         service::request::UnconnectedSend,
         MessageRequest,
     },
@@ -59,7 +59,7 @@ pub trait Service {
         R: MessageReplyInterface + Decode<'de> + 'static;
 
     /// forward open
-    async fn forward_open<P>(&mut self, request: Options<P>) -> Result<ForwardOpenReply>
+    async fn forward_open<P>(&mut self, request: OpenOptions<P>) -> Result<ForwardOpenReply>
     where
         P: Encode;
 

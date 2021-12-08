@@ -6,10 +6,8 @@
 
 use anyhow::Result;
 use futures_util::{future, StreamExt, TryStreamExt};
-use rseip::{
-    cip::{epath::PortSegment, service::MessageService},
-    client::{ab_eip::TemplateService, AbEipClient, AbService},
-};
+use rseip::client::ab_eip::*;
+use rseip::precludes::*;
 
 #[tokio::main]
 pub async fn main() -> Result<()> {

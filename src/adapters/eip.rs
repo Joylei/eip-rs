@@ -96,7 +96,7 @@ where
 
     /// open CIP connection
     #[inline]
-    async fn forward_open<P>(&mut self, request: Options<P>) -> Result<ForwardOpenReply>
+    async fn forward_open<P>(&mut self, request: OpenOptions<P>) -> Result<ForwardOpenReply>
     where
         P: Encode,
     {

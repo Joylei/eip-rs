@@ -5,23 +5,16 @@
 // License: MIT
 
 use anyhow::Result;
+use rseip::precludes::*;
 use rseip::{
-    cip::{
-        connection::Options,
-        epath::EPath,
-        service::{CommonServices, MessageService},
-        MessageRequest,
-    },
-    client::{
-        ab_eip::{PathParser, TagValue, REPLY_MASK, SERVICE_READ_TAG},
-        AbEipConnection,
-    },
+    cip::{connection::OpenOptions, MessageReply, MessageRequest},
+    client::ab_eip::*,
 };
-use rseip_cip::MessageReply;
 
 #[tokio::main]
 pub async fn main() -> Result<()> {
-    let mut client = AbEipConnection::new_host_lookup("192.168.0.83", Options::default()).await?;
+    let mut client =
+        AbEipConnection::new_host_lookup("192.168.0.83", OpenOptions::default()).await?;
     let mr = client
         .multiple_service()
         .push(MessageRequest::new(

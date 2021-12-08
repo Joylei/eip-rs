@@ -20,7 +20,7 @@ Note: still under development. Any part of the code might change from time to ti
 - Read Tag Fragmented
 - Write Tag Fragmented
 - Read Modify Write Tag
-- Get Instance Attribute List
+- Get Instance Attribute List (list tag)
 - Read Template
 
 ## How to use
@@ -30,6 +30,8 @@ Add `rseip` to your cargo project's dependencies
 ```toml
 rseip={git="https://github.com/Joylei/eip-rs.git"}
 ```
+
+
 
 ## Example
 
@@ -48,14 +50,13 @@ pub async fn main() -> Result<()> {
     let mut client = AbEipConnection::new_host_lookup("192.168.0.83", Options::default()).await?;
     let tag = EPath::parse_tag("test_car1_x")?;
     println!("read tag...");
-    let value: TagValue = client.read_tag(tag.clone()).await?;
+    let value: TagValue<i32> = client.read_tag(tag.clone()).await?;
     println!("tag value: {:?}", value);
     client.write_tag(tag, value).await?;
     println!("write tag - done");
     client.close().await?;
     Ok(())
 }
-
 ```
 
 Please find more examples within [examples](https://github.com/Joylei/eip-rs/tree/main/examples).

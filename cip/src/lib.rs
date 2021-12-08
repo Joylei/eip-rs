@@ -22,6 +22,7 @@ mod status;
 
 use core::result::Result as StdResult;
 pub use cpf::*;
+pub use epath::EPath;
 pub use list_service::ListServiceItem;
 pub use message::*;
 pub use revision::Revision;

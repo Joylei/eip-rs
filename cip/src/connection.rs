@@ -284,7 +284,7 @@ pub struct ForwardCloseSuccess {
 
 /// CIP connection options, for Forward_Open service request
 #[derive(Debug, Clone)]
-pub struct Options<P = EPath> {
+pub struct OpenOptions<P = EPath> {
     /// originator to target connection id
     pub o_t_connection_id: u32,
     /// target to originator connection id
@@ -321,7 +321,7 @@ pub struct Options<P = EPath> {
     pub large_open: bool,
 }
 
-impl<P> Options<P> {
+impl<P> OpenOptions<P> {
     /// originator to target connection id
     #[inline]
     pub fn o_t_connection_id(mut self, val: u32) -> Self {
@@ -502,7 +502,7 @@ impl<P> Options<P> {
     }
 }
 
-impl Default for Options<EPath> {
+impl Default for OpenOptions<EPath> {
     #[inline]
     fn default() -> Self {
         // port 1, message router 0x02

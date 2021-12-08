@@ -50,7 +50,7 @@ impl<B: Driver<Endpoint = SocketAddrV4>> Client<B> {
 
 impl<B: Driver<Endpoint = SocketAddrV4>> Connection<B> {
     /// create connection from specified host, with default port if port not specified
-    pub async fn new_host_lookup(host: impl AsRef<str>, options: Options) -> io::Result<Self> {
+    pub async fn new_host_lookup(host: impl AsRef<str>, options: OpenOptions) -> io::Result<Self> {
         let addr = resolve_host(host).await?;
         Ok(Self::new(addr, options))
     }

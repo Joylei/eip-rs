@@ -8,14 +8,14 @@ mod epath;
 mod message;
 
 use crate::{
-    connection::{ConnectionParameters, ForwardCloseRequest, Options},
+    connection::{ConnectionParameters, ForwardCloseRequest, OpenOptions},
     service::request::UnconnectedSend,
     MessageRequest,
 };
 use bytes::{BufMut, BytesMut};
 use rseip_core::codec::{Encode, Encoder};
 
-impl<P: Encode> Options<P> {
+impl<P: Encode> OpenOptions<P> {
     #[inline]
     fn encode_common<A: Encoder>(
         &self,
@@ -73,7 +73,7 @@ impl<P: Encode> Options<P> {
     }
 }
 
-impl<P: Encode> Encode for Options<P> {
+impl<P: Encode> Encode for OpenOptions<P> {
     #[inline]
     fn encode<A: Encoder>(self, dst: &mut BytesMut, encoder: &mut A) -> Result<(), A::Error> {
         self.encode_common(dst, encoder)?;

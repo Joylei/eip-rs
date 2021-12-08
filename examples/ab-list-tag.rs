@@ -7,11 +7,8 @@
 //! list symbol instances
 
 use anyhow::Result;
-use futures::StreamExt;
-use rseip::{
-    cip::{epath::PortSegment, service::MessageService},
-    client::{AbEipClient, AbService},
-};
+use futures_util::StreamExt;
+use rseip::precludes::*;
 
 #[tokio::main]
 pub async fn main() -> Result<()> {

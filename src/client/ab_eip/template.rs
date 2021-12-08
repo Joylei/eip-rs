@@ -19,6 +19,11 @@ use crate::{
     ClientError, Result,
 };
 use bytes::{Buf, Bytes};
+use core::{
+    mem,
+    ops::{Deref, DerefMut},
+    result::Result as StdResult,
+};
 use decoder::{DefaultDefinitionDecoder, DefinitionDecoder};
 use rseip_cip::MessageReplyInterface;
 use rseip_core::{
@@ -26,15 +31,10 @@ use rseip_core::{
     Error, String, StringExt,
 };
 use smallvec::SmallVec;
-use std::{
-    collections::HashMap,
-    mem,
-    ops::{Deref, DerefMut},
-    result::Result as StdResult,
-};
+use std::collections::HashMap;
 
 #[async_trait::async_trait(?Send)]
-pub trait TemplateService {
+pub trait AbTemplateService {
     /// fetch template instance for specified instance id
     async fn find_template(&mut self, instance_id: u16) -> Result<Template>;
 
@@ -45,7 +45,7 @@ pub trait TemplateService {
 }
 
 #[async_trait::async_trait(?Send)]
-impl<T: MessageService<Error = ClientError>> TemplateService for T {
+impl<T: MessageService<Error = ClientError>> AbTemplateService for T {
     /// fetch template instance for specified instance id
     async fn find_template(&mut self, instance_id: u16) -> Result<Template> {
         let path = EPath::default()

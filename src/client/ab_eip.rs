@@ -19,7 +19,7 @@ pub use rseip_eip::EipContext;
 pub use service::*;
 use std::net::SocketAddrV4;
 pub use symbol::{GetInstanceAttributeList, SymbolInstance};
-pub use template::TemplateService;
+pub use template::AbTemplateService;
 use tokio::net::TcpStream;
 pub use value::*;
 

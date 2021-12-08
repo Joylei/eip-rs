@@ -5,17 +5,14 @@
 // License: MIT
 
 use anyhow::Result;
-use rseip::{
-    cip::{connection::Options, epath::EPath, service::MessageService},
-    client::{
-        ab_eip::{PathParser, TagValue},
-        AbEipConnection, AbService,
-    },
-};
+use rseip::cip::connection::OpenOptions;
+use rseip::client::ab_eip::*;
+use rseip::precludes::*;
 
 #[tokio::main]
 pub async fn main() -> Result<()> {
-    let mut client = AbEipConnection::new_host_lookup("192.168.0.83", Options::default()).await?;
+    let mut client =
+        AbEipConnection::new_host_lookup("192.168.0.83", OpenOptions::default()).await?;
     let tag = EPath::parse_tag("test_car1_x")?;
     println!("read tag...");
     let value: TagValue<i32> = client.read_tag(tag.clone()).await?;
