@@ -237,6 +237,7 @@ impl From<PortSegment> for EPath {
 mod test {
     use super::*;
     use crate::epath::EPATH_CONNECTION_MANAGER;
+    use rseip_core::tests::EncodeExt;
 
     #[test]
     fn test_epath_symbol() {
@@ -244,8 +245,7 @@ mod test {
 
         assert_eq!(epath.bytes_count(), 12);
 
-        let mut buf = BytesMut::new();
-        epath.encode(&mut buf).unwrap();
+        let buf = epath.try_into_bytes().unwrap();
 
         assert_eq!(
             &buf[..],
@@ -258,8 +258,7 @@ mod test {
         let epath = EPath::from_symbol("TotalCountt");
         assert_eq!(epath.bytes_count(), 14);
 
-        let mut buf = BytesMut::new();
-        epath.encode(&mut buf).unwrap();
+        let buf = epath.try_into_bytes().unwrap();
 
         assert_eq!(
             &buf[..],
@@ -273,8 +272,7 @@ mod test {
 
         assert_eq!(epath.bytes_count(), 4);
 
-        let mut buf = BytesMut::new();
-        epath.encode(&mut buf).unwrap();
+        let buf = epath.try_into_bytes().unwrap();
 
         assert_eq!(&buf[..], EPATH_CONNECTION_MANAGER);
     }
@@ -285,8 +283,7 @@ mod test {
 
         assert_eq!(epath.bytes_count(), 2);
 
-        let mut buf = BytesMut::new();
-        epath.encode(&mut buf).unwrap();
+        let buf = epath.try_into_bytes().unwrap();
 
         assert_eq!(&buf[..], &[01, 00]);
     }

@@ -53,6 +53,7 @@ mod test {
     use super::*;
     use crate::{epath::EPath, MessageRequest};
     use bytes::Bytes;
+    use rseip_core::tests::EncodeExt;
 
     #[test]
     fn test_encode_message_router_request() {

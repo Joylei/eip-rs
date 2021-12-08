@@ -13,10 +13,9 @@ use rseip::{
         MessageRequest,
     },
     client::{
-        ab_eip::{PathParser, TagValue, TagValueIter, REPLY_MASK, SERVICE_READ_TAG},
+        ab_eip::{PathParser, TagValue, REPLY_MASK, SERVICE_READ_TAG},
         AbEipConnection,
     },
-    ClientError,
 };
 use rseip_cip::MessageReply;
 

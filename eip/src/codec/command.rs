@@ -333,6 +333,7 @@ impl_data_encode!(ConnectedData, 22);
 #[cfg(test)]
 mod test {
     use super::*;
+    use rseip_core::tests::EncodeExt;
 
     #[test]
     fn test_list_identity_request() {
