@@ -75,9 +75,12 @@ pub use error::ClientError;
 pub use rseip_cip as cip;
 /// library result
 pub type Result<T> = core::result::Result<T, ClientError>;
-
 pub use core::result::Result as StdResult;
-
+pub use rseip_core::{
+    codec::BytesHolder,
+    codec::{Decode, Encode},
+    Either, String, StringExt,
+};
 #[cfg(test)]
 mod test {
     use std::future::Future;
