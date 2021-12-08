@@ -38,33 +38,33 @@ impl<'de, T: Decoder<'de>> Decoder<'de> for &mut T {
 }
 
 macro_rules! impl_primitive {
-    ($ty:ty, $m: tt) => {
+    ($ty:ty, $m:tt, $s:tt) => {
         impl<'de> Decode<'de> for $ty {
-            #[inline(always)]
+            #[inline]
             fn decode<D>(mut decoder: D) -> Result<Self, D::Error>
             where
                 D: Decoder<'de>,
             {
-                decoder.ensure_size(mem::size_of::<Self>())?;
+                decoder.ensure_size($s)?;
                 Ok(decoder.$m())
             }
         }
     };
 }
 
-impl_primitive!(bool, decode_bool);
-impl_primitive!(i8, decode_i8);
-impl_primitive!(u8, decode_u8);
-impl_primitive!(i16, decode_i16);
-impl_primitive!(u16, decode_u16);
-impl_primitive!(i32, decode_i32);
-impl_primitive!(u32, decode_u32);
-impl_primitive!(i64, decode_i64);
-impl_primitive!(u64, decode_u64);
-impl_primitive!(f32, decode_f32);
-impl_primitive!(f64, decode_f64);
-impl_primitive!(i128, decode_i128);
-impl_primitive!(u128, decode_u128);
+impl_primitive!(bool, decode_bool, 1);
+impl_primitive!(i8, decode_i8, 1);
+impl_primitive!(u8, decode_u8, 1);
+impl_primitive!(i16, decode_i16, 2);
+impl_primitive!(u16, decode_u16, 2);
+impl_primitive!(i32, decode_i32, 4);
+impl_primitive!(u32, decode_u32, 4);
+impl_primitive!(i64, decode_i64, 8);
+impl_primitive!(u64, decode_u64, 8);
+impl_primitive!(f32, decode_f32, 4);
+impl_primitive!(f64, decode_f64, 8);
+impl_primitive!(i128, decode_i128, 16);
+impl_primitive!(u128, decode_u128, 16);
 
 impl<'de> Decode<'de> for () {
     #[inline]
