@@ -4,6 +4,8 @@
 // Copyright: 2021, Joylei <leingliu@gmail.com>
 // License: MIT
 
+#![allow(non_snake_case)]
+
 use super::*;
 use core::marker::PhantomData;
 use core::mem;
@@ -101,29 +103,39 @@ where
     }
 }
 
-// impl<'de> Decode<'de> for Bytes {
-//     #[inline]
-//     fn decode<D>(mut decoder: D) -> Result<Self, D::Error>
-//     where
-//         D: Decoder<'de>,
-//     {
-//         let size = decoder.remaining();
-//         Ok(decoder.buf_mut().copy_to_bytes(size))
-//     }
-// }
-
-impl<'de, T0, T1> Decode<'de> for (T0, T1)
-where
-    T0: Decode<'de>,
-    T1: Decode<'de>,
-{
-    #[inline]
-    fn decode<D>(mut decoder: D) -> Result<Self, D::Error>
-    where
-        D: Decoder<'de>,
-    {
-        let v0 = decoder.decode_any()?;
-        let v1 = decoder.decode_any()?;
-        Ok((v0, v1))
+macro_rules! impl_tuple {
+    ($($n:tt $name:ident)+) => {
+        impl<'de, $($name,)+> Decode<'de> for ($($name,)+)
+        where
+            $($name: Decode<'de>,)+
+        {
+            #[inline]
+            fn decode<D>(mut decoder: D) -> Result<Self, D::Error>
+            where
+                D: Decoder<'de>,
+            {
+                $(
+                    let $name = decoder.decode_any()?;
+                )+
+                Ok(($($name,)+))
+            }
+        }
     }
 }
+
+impl_tuple!(0 T0);
+impl_tuple!(0 T0 1 T1);
+impl_tuple!(0 T0 1 T1 2 T2);
+impl_tuple!(0 T0 1 T1 2 T2 3 T3);
+impl_tuple!(0 T0 1 T1 2 T2 3 T3 4 T4);
+impl_tuple!(0 T0 1 T1 2 T2 3 T3 4 T4 5 T5);
+impl_tuple!(0 T0 1 T1 2 T2 3 T3 4 T4 5 T5 6 T6);
+impl_tuple!(0 T0 1 T1 2 T2 3 T3 4 T4 5 T5 6 T6 7 T7);
+impl_tuple!(0 T0 1 T1 2 T2 3 T3 4 T4 5 T5 6 T6 7 T7 8 T8);
+impl_tuple!(0 T0 1 T1 2 T2 3 T3 4 T4 5 T5 6 T6 7 T7 8 T8 9 T9);
+impl_tuple!(0 T0 1 T1 2 T2 3 T3 4 T4 5 T5 6 T6 7 T7 8 T8 9 T9 10 T10);
+impl_tuple!(0 T0 1 T1 2 T2 3 T3 4 T4 5 T5 6 T6 7 T7 8 T8 9 T9 10 T10 11 T11);
+impl_tuple!(0 T0 1 T1 2 T2 3 T3 4 T4 5 T5 6 T6 7 T7 8 T8 9 T9 10 T10 11 T11 12 T12);
+impl_tuple!(0 T0 1 T1 2 T2 3 T3 4 T4 5 T5 6 T6 7 T7 8 T8 9 T9 10 T10 11 T11 12 T12 13 T13);
+impl_tuple!(0 T0 1 T1 2 T2 3 T3 4 T4 5 T5 6 T6 7 T7 8 T8 9 T9 10 T10 11 T11 12 T12 13 T13 14 T14);
+impl_tuple!(0 T0 1 T1 2 T2 3 T3 4 T4 5 T5 6 T6 7 T7 8 T8 9 T9 10 T10 11 T11 12 T12 13 T13 14 T14 15 T15);

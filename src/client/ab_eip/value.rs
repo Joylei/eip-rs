@@ -182,7 +182,7 @@ pub struct TagValue<V> {
 }
 
 macro_rules! impl_atomic {
-    ($ty:ty, $size: expr) => {
+    ($ty:ty, $size: tt) => {
         impl<'de> Decode<'de> for TagValue<$ty> {
             #[inline]
             fn decode<D>(mut decoder: D) -> StdResult<Self, D::Error>

@@ -4,9 +4,11 @@
 // Copyright: 2021, Joylei <leingliu@gmail.com>
 // License: MIT
 
+#![allow(non_snake_case)]
+
 use super::*;
 use bytes::{BufMut, Bytes, BytesMut};
-use core::{marker::PhantomData, mem};
+use core::marker::PhantomData;
 use smallvec::SmallVec;
 
 impl<A: Encoder> Encoder for &mut A {
@@ -66,46 +68,44 @@ impl<A: Encoder> Encoder for &mut A {
 }
 
 macro_rules! impl_primitive {
-    ($ty: ident) => {
-        paste::paste! {
-            impl Encode for $ty {
-                #[inline]
-                fn encode<A: Encoder>(self, buf: &mut BytesMut, encoder: &mut A) -> Result<(), A::Error>
-                where
-                    Self: Sized,
-                {
-                    encoder.[<encode_ $ty>](self, buf)
-                }
+    ($ty:ident, $m:tt, $s:tt) => {
+        impl Encode for $ty {
+            #[inline]
+            fn encode<A: Encoder>(self, buf: &mut BytesMut, encoder: &mut A) -> Result<(), A::Error>
+            where
+                Self: Sized,
+            {
+                encoder.$m(self, buf)
+            }
 
-                #[inline]
-                fn encode_by_ref<A: Encoder>(
-                    &self,
-                    buf: &mut BytesMut,
-                    encoder: &mut A,
-                ) -> Result<(), A::Error> {
-                    encoder.[<encode_ $ty>](*self, buf)
-                }
+            #[inline]
+            fn encode_by_ref<A: Encoder>(
+                &self,
+                buf: &mut BytesMut,
+                encoder: &mut A,
+            ) -> Result<(), A::Error> {
+                encoder.$m(*self, buf)
+            }
 
-                #[inline(always)]
-                fn bytes_count(&self)->usize {
-                    mem::size_of::<$ty>()
-                }
+            #[inline(always)]
+            fn bytes_count(&self) -> usize {
+                $s
             }
         }
     };
 }
 
-impl_primitive!(bool);
-impl_primitive!(i8);
-impl_primitive!(u8);
-impl_primitive!(i16);
-impl_primitive!(u16);
-impl_primitive!(i32);
-impl_primitive!(u32);
-impl_primitive!(i64);
-impl_primitive!(u64);
-impl_primitive!(i128);
-impl_primitive!(u128);
+impl_primitive!(bool, encode_bool, 1);
+impl_primitive!(i8, encode_i8, 1);
+impl_primitive!(u8, encode_u8, 1);
+impl_primitive!(i16, encode_i16, 2);
+impl_primitive!(u16, encode_u16, 2);
+impl_primitive!(i32, encode_i32, 4);
+impl_primitive!(u32, encode_u32, 4);
+impl_primitive!(i64, encode_i64, 8);
+impl_primitive!(u64, encode_u64, 8);
+impl_primitive!(i128, encode_i128, 16);
+impl_primitive!(u128, encode_u128, 16);
 
 impl<T: Encode> Encode for &T {
     #[inline]
@@ -362,33 +362,63 @@ where
     }
 }
 
-impl<T0, T1> Encode for (T0, T1)
-where
-    T0: Encode,
-    T1: Encode,
-{
-    #[inline]
-    fn encode<A: Encoder>(self, buf: &mut BytesMut, encoder: &mut A) -> Result<(), A::Error>
-    where
-        Self: Sized,
-    {
-        self.0.encode(buf, encoder)?;
-        self.1.encode(buf, encoder)?;
-        Ok(())
-    }
+macro_rules! impl_tuple {
+    ($($n:tt $name:ident)+) => {
+        impl<$($name,)+> Encode for ($($name,)+)
+        where
+            $($name:Encode,)+
+        {
+            #[inline]
+            fn encode<A: Encoder>(self, buf: &mut BytesMut, encoder: &mut A) -> Result<(), A::Error>
+            where
+                Self: Sized,
+            {
+                $(
+                    self.$n.encode(buf, encoder)?;
+                )+
+                Ok(())
+            }
 
-    #[inline]
-    fn encode_by_ref<A: Encoder>(&self, buf: &mut BytesMut, encoder: &mut A) -> Result<(), A::Error>
-    where
-        Self: Sized,
-    {
-        self.0.encode_by_ref(buf, encoder)?;
-        self.1.encode_by_ref(buf, encoder)?;
-        Ok(())
-    }
+            #[inline]
+            fn encode_by_ref<A: Encoder>(
+                &self,
+                buf: &mut BytesMut,
+                encoder: &mut A,
+            ) -> Result<(), A::Error>
+            where
+                Self: Sized,
+            {
+                $(
+                    self.$n.encode_by_ref(buf, encoder)?;
+                )+
+                Ok(())
+            }
 
-    #[inline]
-    fn bytes_count(&self) -> usize {
-        self.0.bytes_count() + self.1.bytes_count()
-    }
+            #[inline]
+            fn bytes_count(&self) -> usize {
+                let mut count = 0;
+                $(
+                    count += self.$n.bytes_count();
+                )+
+                count
+            }
+        }
+    };
 }
+
+impl_tuple!(0 T0);
+impl_tuple!(0 T0 1 T1);
+impl_tuple!(0 T0 1 T1 2 T2);
+impl_tuple!(0 T0 1 T1 2 T2 3 T3);
+impl_tuple!(0 T0 1 T1 2 T2 3 T3 4 T4);
+impl_tuple!(0 T0 1 T1 2 T2 3 T3 4 T4 5 T5);
+impl_tuple!(0 T0 1 T1 2 T2 3 T3 4 T4 5 T5 6 T6);
+impl_tuple!(0 T0 1 T1 2 T2 3 T3 4 T4 5 T5 6 T6 7 T7);
+impl_tuple!(0 T0 1 T1 2 T2 3 T3 4 T4 5 T5 6 T6 7 T7 8 T8);
+impl_tuple!(0 T0 1 T1 2 T2 3 T3 4 T4 5 T5 6 T6 7 T7 8 T8 9 T9);
+impl_tuple!(0 T0 1 T1 2 T2 3 T3 4 T4 5 T5 6 T6 7 T7 8 T8 9 T9 10 T10);
+impl_tuple!(0 T0 1 T1 2 T2 3 T3 4 T4 5 T5 6 T6 7 T7 8 T8 9 T9 10 T10 11 T11);
+impl_tuple!(0 T0 1 T1 2 T2 3 T3 4 T4 5 T5 6 T6 7 T7 8 T8 9 T9 10 T10 11 T11 12 T12);
+impl_tuple!(0 T0 1 T1 2 T2 3 T3 4 T4 5 T5 6 T6 7 T7 8 T8 9 T9 10 T10 11 T11 12 T12 13 T13);
+impl_tuple!(0 T0 1 T1 2 T2 3 T3 4 T4 5 T5 6 T6 7 T7 8 T8 9 T9 10 T10 11 T11 12 T12 13 T13 14 T14);
+impl_tuple!(0 T0 1 T1 2 T2 3 T3 4 T4 5 T5 6 T6 7 T7 8 T8 9 T9 10 T10 11 T11 12 T12 13 T13 14 T14 15 T15);

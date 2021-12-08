@@ -293,7 +293,7 @@ impl<D: Encode> ConnectedData<D> {
 }
 
 macro_rules! impl_data_encode {
-    ($ty:ident,$cnt: expr) => {
+    ($ty:ident,$cnt:tt) => {
         impl<D: Encode> Encode for $ty<D> {
             #[inline]
             fn encode<A: codec::Encoder>(
