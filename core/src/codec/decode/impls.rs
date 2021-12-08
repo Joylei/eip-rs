@@ -8,7 +8,6 @@
 
 use super::*;
 use core::marker::PhantomData;
-use core::mem;
 
 impl<'de, T: Decoder<'de>> Decoder<'de> for &mut T {
     type Error = T::Error;

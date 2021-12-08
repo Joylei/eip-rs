@@ -104,6 +104,8 @@ impl_primitive!(i32, encode_i32, 4);
 impl_primitive!(u32, encode_u32, 4);
 impl_primitive!(i64, encode_i64, 8);
 impl_primitive!(u64, encode_u64, 8);
+impl_primitive!(f32, encode_f32, 4);
+impl_primitive!(f64, encode_f64, 8);
 impl_primitive!(i128, encode_i128, 16);
 impl_primitive!(u128, encode_u128, 16);
 
@@ -116,7 +118,7 @@ impl<T: Encode> Encode for &T {
         (**self).encode_by_ref(buf, encoder)
     }
 
-    #[inline(always)]
+    #[inline]
     fn bytes_count(&self) -> usize {
         (**self).bytes_count()
     }
@@ -183,7 +185,7 @@ impl<T: Encode> Encode for Option<T> {
         Ok(())
     }
 
-    #[inline(always)]
+    #[inline]
     fn bytes_count(&self) -> usize {
         self.as_ref().map(|v| v.bytes_count()).unwrap_or_default()
     }
@@ -291,7 +293,7 @@ impl Encode for Bytes {
         Ok(())
     }
 
-    #[inline(always)]
+    #[inline]
     fn bytes_count(&self) -> usize {
         self.len()
     }
@@ -308,7 +310,7 @@ impl Encode for &[u8] {
         Ok(())
     }
 
-    #[inline(always)]
+    #[inline]
     fn bytes_count(&self) -> usize {
         self.len()
     }
