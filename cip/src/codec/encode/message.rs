@@ -9,6 +9,7 @@ use bytes::BufMut;
 use rseip_core::codec::{Encode, Encoder};
 
 impl<P: Encode, D: Encode> Encode for MessageRequest<P, D> {
+    #[inline]
     fn encode<A: Encoder>(self, buf: &mut bytes::BytesMut, encoder: &mut A) -> Result<(), A::Error>
     where
         Self: Sized,
@@ -25,6 +26,7 @@ impl<P: Encode, D: Encode> Encode for MessageRequest<P, D> {
         Ok(())
     }
 
+    #[inline]
     fn encode_by_ref<A: Encoder>(
         &self,
         buf: &mut bytes::BytesMut,

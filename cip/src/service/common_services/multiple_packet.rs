@@ -170,6 +170,7 @@ where
     Array: smallvec::Array,
     Array::Item: Encode,
 {
+    #[inline]
     fn encode_common<A: Encoder>(
         &self,
         buf: &mut BytesMut,
@@ -194,6 +195,7 @@ where
     Array: smallvec::Array,
     Array::Item: Encode,
 {
+    #[inline]
     fn encode<A: Encoder>(self, buf: &mut BytesMut, encoder: &mut A) -> StdResult<(), A::Error>
     where
         Self: Sized,
@@ -205,6 +207,7 @@ where
         Ok(())
     }
 
+    #[inline]
     fn encode_by_ref<A: rseip_core::codec::Encoder>(
         &self,
         buf: &mut BytesMut,
@@ -217,6 +220,7 @@ where
         Ok(())
     }
 
+    #[inline]
     fn bytes_count(&self) -> usize {
         let start_offset = 2 + 2 * self.items.len();
         let bytes_count = self.items.iter().map(|v| v.bytes_count()).sum::<usize>();

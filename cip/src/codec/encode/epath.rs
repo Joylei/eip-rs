@@ -73,6 +73,7 @@ impl Segment {
         }
         Ok(())
     }
+
     #[inline]
     fn encode_instance<A: Encoder>(
         v: u16,
@@ -89,6 +90,7 @@ impl Segment {
         }
         Ok(())
     }
+
     #[inline]
     fn encode_attribute<A: Encoder>(
         v: u16,
@@ -105,6 +107,7 @@ impl Segment {
         }
         Ok(())
     }
+
     #[inline]
     fn encode_element<A: Encoder>(
         elem: u32,
@@ -129,6 +132,7 @@ impl Segment {
         }
         Ok(())
     }
+
     #[inline]
     fn encode_symbol<A: Encoder>(
         symbol: &[u8],
