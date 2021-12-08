@@ -7,6 +7,11 @@
 /*!
 # rseip
 
+[![crates.io](https://img.shields.io/crates/v/rseip.svg)](https://crates.io/crates/rseip)
+[![docs](https://docs.rs/rseip/badge.svg)](https://docs.rs/rseip)
+[![build](https://github.com/joylei/eip-rs/workflows/build/badge.svg?branch=main)](https://github.com/joylei/eip-rs/actions?query=workflow%3A%22build%22)
+[![license](https://img.shields.io/crates/l/rseip.svg)](https://github.com/joylei/eip-rs/blob/master/LICENSE)
+
 rseip - EIP&CIP client in pure Rust
 
 ## Features
