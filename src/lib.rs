@@ -9,8 +9,6 @@
 
 rseip - EIP&CIP in pure Rust
 
-Note: still under development. Any part of the code might change from time to time.
-
 ## Features
 
 - Pure Rust Library
