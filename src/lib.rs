@@ -45,7 +45,7 @@ Please find detailed guides and examples from below sections.
 
 ### Tag Read/Write for Allen-bradley CompactLogIx device
 
-```rust
+```rust,no_run
 use anyhow::Result;
 use rseip::client::ab_eip::*;
 use rseip::precludes::*;
@@ -78,32 +78,32 @@ rseip={git="https://github.com/Joylei/eip-rs.git"}
 ```
 
 Then, import modules of `rseip` to your project
-```rust
+```rust,ignore
 use rseip::client::ab_eip::*;
 use rseip::precludes::*;
 ```
 
 Then, create an unconnected client
-```rust
+```rust,ignore
 let mut client = AbEipClient::new_host_lookup("192.168.0.83")
     .await?
     .with_connection_path(PortSegment::default());
 ```
 
 or create a connection
-```rust
+```rust,ignore
 let mut client =
     AbEipConnection::new_host_lookup("192.168.0.83", OpenOptions::default()).await?;
 ```
 
 #### Read from a tag
-```rust
+```rust,ignore
 let tag = EPath::parse_tag("test_car1_x")?;
 println!("read tag...");
 let value: TagValue<i32> = client.read_tag(tag.clone()).await?;
 ```
 #### Write to a tag
-```rust
+```rust,ignore
 let tag = EPath::parse_tag("test_car1_x")?;
 let value = TagValue {
   tag_type: TagType::Dint,
@@ -120,24 +120,24 @@ As you may know, there are atomic types, structure types, and array type of tags
 #### Read
 
 To get a single value (atomic/structure), and you know the exact mapped type, do like this
-```rust
+```rust,ignore
 let value: TagValue<MyType> = client.read_tag(tag).await?;
 println!("{:?}",value);
 ```
 
 To get the tag type, and you do not care about the data part, do like this:
-```rust
+```rust,ignore
 let value: TagValue<()> = client.read_tag(tag).await?;
 println!("{:?}",value.tag_type);
 ```
 
 To get the raw bytes whatever the data part holds, do like this:
-```rust
+```rust,ignore
 let value: TagValue<Bytes> = client.read_tag(tag).await?;
 ```
 
 To iterate values, and you know the exact mapped type, do like this:
-```rust
+```rust,ignore
 let iter: TagValueTypedIter<MyType> = client.read_tag(tag).await?;
 println!("{:?}", iter.tag_type());
 while let Some(res) = iter.next(){
@@ -146,7 +146,7 @@ while let Some(res) = iter.next(){
 ```
 
 To iterate values, and you do not know the exact mapped type, do like this:
-```rust
+```rust,ignore
 let iter: TagValueIter = client.read_tag(tag).await?;
 println!("{:?}", iter.tag_type());
 let res = iter.next::<bool>().unwrap();
@@ -158,7 +158,7 @@ println!("{:?}", res);
 ```
 
 To read values into collections, do like this:
-```rust
+```rust,ignore
 let value: TagValue<Vec<MyType>> = client.read_tag(tag).await?;
 println!("{:?}",value);
 ```
@@ -168,7 +168,7 @@ println!("{:?}",value);
 You must provide the tag type before you write to a tag. Normally, you can retrieve it by reading the tag. For structure type, you cannot reply on or persist the tag type (or so called `structure handle`), it might change because it is a calculated value (CRC based).
 
 To write a single value (atomic/structure), do like this:
-```rust
+```rust,ignore
 let value = TagValue {
   tag_type: TagType::Dint,
   value: 10_i32,
@@ -177,7 +177,7 @@ client.write_tag(tag, value).await?;
 ```
 
 To write raw bytes, do this:
-```rust
+```rust,ignore
 let bytes:&[u8] = &[0,1,2,3];
 let value = TagValue {
   tag_type: TagType::Dint,
@@ -187,7 +187,7 @@ client.write_tag(tag, value).await?;
 ```
 
 To write collections, do like this:
-```rust
+```rust,ignore
 let items: Vec<MyType> = ...;
 let value = TagValue {
   tag_type: TagType::Dint,
@@ -203,7 +203,7 @@ For some reasons, `TagValue` does not work for any type that implements `Encode`
 But you can work without `TagValue`. You can define your own value holder, as long as it implements `Encode` and `Decode`.
 
 For simple cases, `Tuple` should be a good option.
-```rust
+```rust,ignore
 let (tag_type,value):(TagType,i32) = client.read_tag(tag).await?;
 client.write_tag(tag,(tag_type,value)).await?;
 ```
