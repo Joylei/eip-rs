@@ -6,6 +6,8 @@
 
 #![allow(non_snake_case)]
 
+use smallvec::SmallVec;
+
 use super::*;
 use core::marker::PhantomData;
 
@@ -119,6 +121,43 @@ where
             } else {
                 break;
             }
+        }
+        Ok(res)
+    }
+}
+
+impl<'de, T> Decode<'de> for Vec<T>
+where
+    T: Decode<'de>,
+{
+    #[inline]
+    fn decode<D>(mut decoder: D) -> Result<Self, D::Error>
+    where
+        D: Decoder<'de>,
+    {
+        let mut res = Vec::new();
+        while decoder.has_remaining() {
+            let v = T::decode(&mut decoder)?;
+            res.push(v);
+        }
+        Ok(res)
+    }
+}
+
+impl<'de, A> Decode<'de> for SmallVec<A>
+where
+    A: smallvec::Array,
+    A::Item: Decode<'de>,
+{
+    #[inline]
+    fn decode<D>(mut decoder: D) -> Result<Self, D::Error>
+    where
+        D: Decoder<'de>,
+    {
+        let mut res = Self::new();
+        while decoder.has_remaining() {
+            let v = A::Item::decode(&mut decoder)?;
+            res.push(v);
         }
         Ok(res)
     }
