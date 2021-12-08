@@ -2,7 +2,7 @@
 name = "rseip-cip"
 version = "0.1.0"
 edition = "2018"
-description = "rseip-cip: common industry protocol"
+description = "common industry protocol for rseip"
 license = "MIT"
 homepage = "https://github.com/Joylei/eip-rs"
 repository = "https://github.com/Joylei/eip-rs.git"

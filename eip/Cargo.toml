@@ -2,7 +2,7 @@
 name = "rseip-eip"
 version = "0.1.0"
 edition = "2018"
-description = "reseip-eip: encapsulation protocol"
+description = "encapsulation protocol for rseip"
 license = "MIT"
 homepage = "https://github.com/Joylei/eip-rs"
 repository = "https://github.com/Joylei/eip-rs.git"
