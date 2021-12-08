@@ -169,7 +169,7 @@ let value = TagValue {
 client.write_tag(tag, value).await?;
 ```
 
-To write raw bytes, do this:
+To write raw bytes, do like this:
 ```rust
 let bytes:&[u8] = &[0,1,2,3];
 let value = TagValue {
