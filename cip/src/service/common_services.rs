@@ -7,7 +7,8 @@
 mod multiple_packet;
 
 use super::*;
-use crate::{epath::EPath, error::cip_error_status, *};
+use crate::epath::EPath;
+use crate::*;
 pub use multiple_packet::MultipleServicePacket;
 use rseip_core::codec::{Decode, Encode, SliceContainer};
 
@@ -15,6 +16,7 @@ use rseip_core::codec::{Decode, Encode, SliceContainer};
 #[async_trait::async_trait(?Send)]
 pub trait CommonServices: MessageService {
     /// invoke the Get_Attribute_All service
+    #[inline]
     async fn get_attribute_all<'de, R>(&mut self, path: EPath) -> StdResult<R, Self::Error>
     where
         R: Decode<'de> + 'static,
@@ -25,13 +27,12 @@ pub trait CommonServices: MessageService {
             data: (),
         };
         let reply: MessageReply<R> = self.send(req).await?;
-        if !reply.status.is_ok() {
-            return Err(cip_error_status(reply.status));
-        }
+        reply.expect_service::<Self::Error>(0x01 + 0x80)?;
         Ok(reply.data)
     }
 
     /// invoke the Set_Attribute_All service
+    #[inline]
     async fn set_attribute_all<D: Encode>(
         &mut self,
         path: EPath,
@@ -43,13 +44,12 @@ pub trait CommonServices: MessageService {
             data: attrs,
         };
         let reply: MessageReply<()> = self.send(req).await?;
-        if !reply.status.is_ok() {
-            return Err(cip_error_status(reply.status));
-        }
+        reply.expect_service::<Self::Error>(0x02 + 0x80)?;
         Ok(())
     }
 
     /// invoke the Get_Attribute_List
+    #[inline]
     async fn get_attribute_list<'de, R>(
         &mut self,
         path: EPath,
@@ -69,14 +69,12 @@ pub trait CommonServices: MessageService {
             ),
         };
         let reply: MessageReply<R> = self.send(req).await?;
-        if !reply.status.is_ok() {
-            return Err(cip_error_status(reply.status));
-        }
-
+        reply.expect_service::<Self::Error>(0x03 + 0x80)?;
         Ok(reply.data)
     }
 
     /// invoke the Set_Attribute_List service
+    #[inline]
     async fn set_attribute_list<'de, D, R>(
         &mut self,
         path: EPath,
@@ -92,13 +90,12 @@ pub trait CommonServices: MessageService {
             data: attrs,
         };
         let reply: MessageReply<R> = self.send(req).await?;
-        if !reply.status.is_ok() {
-            return Err(cip_error_status(reply.status));
-        }
+        reply.expect_service::<Self::Error>(0x04 + 0x80)?;
         Ok(reply.data)
     }
 
     /// invoke the Reset service
+    #[inline]
     async fn reset(&mut self, path: EPath) -> StdResult<(), Self::Error> {
         let req = MessageRequest {
             service_code: 0x05,
@@ -106,13 +103,12 @@ pub trait CommonServices: MessageService {
             data: (),
         };
         let reply: MessageReply<()> = self.send(req).await?;
-        if !reply.status.is_ok() {
-            return Err(cip_error_status(reply.status));
-        }
+        reply.expect_service::<Self::Error>(0x05 + 0x80)?;
         Ok(())
     }
 
     /// invoke the Start service
+    #[inline]
     async fn start(&mut self, path: EPath) -> StdResult<(), Self::Error> {
         let req = MessageRequest {
             service_code: 0x06,
@@ -120,13 +116,12 @@ pub trait CommonServices: MessageService {
             data: (),
         };
         let reply: MessageReply<()> = self.send(req).await?;
-        if !reply.status.is_ok() {
-            return Err(cip_error_status(reply.status));
-        }
+        reply.expect_service::<Self::Error>(0x06 + 0x80)?;
         Ok(())
     }
 
     /// invoke the Stop service
+    #[inline]
     async fn stop(&mut self, path: EPath) -> StdResult<(), Self::Error> {
         let req = MessageRequest {
             service_code: 0x07,
@@ -134,13 +129,12 @@ pub trait CommonServices: MessageService {
             data: (),
         };
         let reply: MessageReply<()> = self.send(req).await?;
-        if !reply.status.is_ok() {
-            return Err(cip_error_status(reply.status));
-        }
+        reply.expect_service::<Self::Error>(0x07 + 0x80)?;
         Ok(())
     }
 
     /// invoke the Create service
+    #[inline]
     async fn create<'de, D, R>(&mut self, path: EPath, data: D) -> StdResult<R, Self::Error>
     where
         D: Encode,
@@ -152,13 +146,12 @@ pub trait CommonServices: MessageService {
             data,
         };
         let reply: MessageReply<R> = self.send(req).await?;
-        if !reply.status.is_ok() {
-            return Err(cip_error_status(reply.status));
-        }
+        reply.expect_service::<Self::Error>(0x08 + 0x80)?;
         Ok(reply.data)
     }
 
     /// invoke the Delete service
+    #[inline]
     async fn delete(&mut self, path: EPath) -> StdResult<(), Self::Error> {
         let req = MessageRequest {
             service_code: 0x09,
@@ -166,13 +159,12 @@ pub trait CommonServices: MessageService {
             data: (),
         };
         let reply: MessageReply<()> = self.send(req).await?;
-        if !reply.status.is_ok() {
-            return Err(cip_error_status(reply.status));
-        }
+        reply.expect_service::<Self::Error>(0x09 + 0x80)?;
         Ok(())
     }
 
     /// invoke the Apply_Attributes service
+    #[inline]
     async fn apply_attributes<'de, D, R>(
         &mut self,
         path: EPath,
@@ -188,10 +180,12 @@ pub trait CommonServices: MessageService {
             data,
         };
         let reply: MessageReply<R> = self.send(req).await?;
+        reply.expect_service::<Self::Error>(0x0D + 0x80)?;
         Ok(reply.data)
     }
 
     /// invoke the Get_Attribute_Single service
+    #[inline]
     async fn get_attribute_single<'de, R>(&mut self, path: EPath) -> StdResult<R, Self::Error>
     where
         R: Decode<'de> + 'static,
@@ -202,13 +196,12 @@ pub trait CommonServices: MessageService {
             data: (),
         };
         let reply: MessageReply<R> = self.send(req).await?;
-        if !reply.status.is_ok() {
-            return Err(cip_error_status(reply.status));
-        }
+        reply.expect_service::<Self::Error>(0x0E + 0x80)?;
         Ok(reply.data)
     }
 
     /// invoke the Set_Attribute_Single service
+    #[inline]
     async fn set_attribute_single<D: Encode>(
         &mut self,
         path: EPath,
@@ -220,13 +213,12 @@ pub trait CommonServices: MessageService {
             data,
         };
         let reply: MessageReply<()> = self.send(req).await?;
-        if !reply.status.is_ok() {
-            return Err(cip_error_status(reply.status));
-        }
+        reply.expect_service::<Self::Error>(0x10 + 0x80)?;
         Ok(())
     }
 
     /// invoke the Restore service
+    #[inline]
     async fn restore(&mut self, path: EPath) -> StdResult<(), Self::Error> {
         let req = MessageRequest {
             service_code: 0x15,
@@ -234,13 +226,12 @@ pub trait CommonServices: MessageService {
             data: (),
         };
         let reply: MessageReply<()> = self.send(req).await?;
-        if !reply.status.is_ok() {
-            return Err(cip_error_status(reply.status));
-        }
+        reply.expect_service::<Self::Error>(0x15 + 0x80)?;
         Ok(())
     }
 
     /// invoke the Save service
+    #[inline]
     async fn save(&mut self, path: EPath) -> StdResult<(), Self::Error> {
         let req = MessageRequest {
             service_code: 0x16,
@@ -248,13 +239,12 @@ pub trait CommonServices: MessageService {
             data: (),
         };
         let reply: MessageReply<()> = self.send(req).await?;
-        if !reply.status.is_ok() {
-            return Err(cip_error_status(reply.status));
-        }
+        reply.expect_service::<Self::Error>(0x16 + 0x80)?;
         Ok(())
     }
 
     /// invoke the Nop service
+    #[inline]
     async fn no_operation(&mut self, path: EPath) -> StdResult<(), Self::Error> {
         let req = MessageRequest {
             service_code: 0x17,
@@ -262,13 +252,12 @@ pub trait CommonServices: MessageService {
             data: (),
         };
         let reply: MessageReply<()> = self.send(req).await?;
-        if !reply.status.is_ok() {
-            return Err(cip_error_status(reply.status));
-        }
+        reply.expect_service::<Self::Error>(0x17 + 0x80)?;
         Ok(())
     }
 
     /// invoke the Get_Member service
+    #[inline]
     async fn get_member<'de, R: Decode<'de> + 'static>(
         &mut self,
         path: EPath,
@@ -279,13 +268,12 @@ pub trait CommonServices: MessageService {
             data: (),
         };
         let reply: MessageReply<R> = self.send(req).await?;
-        if !reply.status.is_ok() {
-            return Err(cip_error_status(reply.status));
-        }
+        reply.expect_service::<Self::Error>(0x18 + 0x80)?;
         Ok(reply.data)
     }
 
     /// invoke the Set_Member service
+    #[inline]
     async fn set_member<'de, D, R>(&mut self, path: EPath, data: D) -> StdResult<R, Self::Error>
     where
         D: Encode,
@@ -297,13 +285,12 @@ pub trait CommonServices: MessageService {
             data,
         };
         let reply: MessageReply<R> = self.send(req).await?;
-        if !reply.status.is_ok() {
-            return Err(cip_error_status(reply.status));
-        }
+        reply.expect_service::<Self::Error>(0x19 + 0x80)?;
         Ok(reply.data)
     }
 
     /// invoke the Insert_Member service
+    #[inline]
     async fn insert_member<'de, D, R>(&mut self, path: EPath, data: D) -> StdResult<R, Self::Error>
     where
         D: Encode,
@@ -315,13 +302,12 @@ pub trait CommonServices: MessageService {
             data,
         };
         let reply: MessageReply<R> = self.send(req).await?;
-        if !reply.status.is_ok() {
-            return Err(cip_error_status(reply.status));
-        }
+        reply.expect_service::<Self::Error>(0x1A + 0x80)?;
         Ok(reply.data)
     }
 
     /// invoke the Remove_Member service
+    #[inline]
     async fn remove_member(&mut self, path: EPath) -> StdResult<(), Self::Error> {
         let req = MessageRequest {
             service_code: 0x1B,
@@ -329,13 +315,12 @@ pub trait CommonServices: MessageService {
             data: (),
         };
         let reply: MessageReply<()> = self.send(req).await?;
-        if !reply.status.is_ok() {
-            return Err(cip_error_status(reply.status));
-        }
+        reply.expect_service::<Self::Error>(0x1B + 0x80)?;
         Ok(())
     }
 
     /// invoke the Group_Sync service
+    #[inline]
     async fn group_sync(&mut self, path: EPath) -> StdResult<(), Self::Error> {
         let req = MessageRequest {
             service_code: 0x1C,
@@ -343,9 +328,7 @@ pub trait CommonServices: MessageService {
             data: (),
         };
         let reply: MessageReply<()> = self.send(req).await?;
-        if !reply.status.is_ok() {
-            return Err(cip_error_status(reply.status));
-        }
+        reply.expect_service::<Self::Error>(0x0C + 0x80)?;
         Ok(())
     }
 

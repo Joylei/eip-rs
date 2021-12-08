@@ -6,14 +6,11 @@
 
 use super::symbol::GetInstanceAttributeList;
 use super::*;
-use crate::cip;
 use crate::client::ab_eip::interceptor::HasMoreInterceptor;
 use crate::StdResult;
 use byteorder::{ByteOrder, LittleEndian};
 use bytes::{BufMut, BytesMut};
-use cip::error::cip_error_status;
-use rseip_core::codec::BytesHolder;
-use rseip_core::codec::{Encode, Encoder};
+use rseip_core::codec::{BytesHolder, Encode, Encoder};
 
 /// AB related operations
 #[async_trait::async_trait(?Send)]
@@ -146,9 +143,6 @@ where
     let mr = MessageRequest::new(SERVICE_READ_TAG, req.tag, req.count);
     let resp: MessageReply<_> = client.send(mr).await?;
     resp.expect_service::<ClientError>(SERVICE_READ_TAG + REPLY_MASK)?;
-    if resp.status.is_err() {
-        return Err(cip_error_status(resp.status));
-    }
     Ok(resp.data)
 }
 
@@ -162,9 +156,6 @@ where
     let mr = MessageRequest::new(SERVICE_WRITE_TAG, tag, value);
     let resp: MessageReply<()> = client.send(mr).await?;
     resp.expect_service::<ClientError>(SERVICE_WRITE_TAG + REPLY_MASK)?;
-    if resp.status.is_err() {
-        return Err(cip_error_status(resp.status));
-    }
     Ok(())
 }
 
@@ -313,10 +304,6 @@ where
     );
     let resp: MessageReply<()> = client.send(mr_request).await?;
     resp.expect_service::<ClientError>(SERVICE_READ_MODIFY_WRITE_TAG + REPLY_MASK)?;
-    if resp.status.is_err() {
-        return Err(cip_error_status(resp.status));
-    }
-
     Ok(())
 }
 
