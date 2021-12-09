@@ -5,7 +5,7 @@
 // License: MIT
 
 use anyhow::Result;
-use rseip::precludes::*;
+use rseip::{cip::REPLY_MASK, precludes::*};
 use rseip::{
     cip::{connection::OpenOptions, MessageReply, MessageRequest},
     client::ab_eip::*,
