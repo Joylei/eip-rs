@@ -51,6 +51,7 @@ where
     }
 
     /// build and send requests
+    #[inline]
     pub async fn call(self) -> Result<ReplyIter<LittleEndianDecoder<T::Error>>, T::Error> {
         let Self { inner, items } = self;
         if items.is_empty() {
@@ -100,7 +101,6 @@ impl<'de, D> ReplyIter<D>
 where
     D: Decoder<'de>,
 {
-    #[inline]
     fn raise_err<T>(&mut self) -> Option<Result<T, D::Error>> {
         self.buf.take();
         Some(Err(cip_error("failed to decode message reply")))
@@ -115,6 +115,9 @@ where
         let count = if let Some(count) = self.count {
             count
         } else {
+            if let Err(e) = buf.ensure_size(2) {
+                return Some(Err(e));
+            }
             let count = buf.decode_u16();
             self.count = Some(count);
             if count == 0 {
