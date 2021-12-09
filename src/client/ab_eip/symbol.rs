@@ -317,19 +317,16 @@ async fn get_attribute_list<T: MessageService<Error = ClientError>>(
     ctx: &mut T,
     start_instance: u16,
 ) -> Result<(bool, Bytes)> {
-    let resp: HasMoreInterceptor<BytesHolder> = ctx
-        .send(MessageRequest::new(
-            0x55,
-            EPath::default()
-                .with_class(CLASS_SYMBOL)
-                .with_instance(start_instance),
-            Bytes::from_static(&[
-                0x02, 0x00, // number of attributes
-                0x01, 0x00, // attribute 1 - symbol name
-                0x02, 0x00, // attribute 2 - symbol type
-            ]),
-        ))
-        .await?;
+    let path = EPath::default()
+        .with_class(CLASS_SYMBOL)
+        .with_instance(start_instance);
+    let data: &[u8] = &[
+        0x02, 0x00, // number of attributes
+        0x01, 0x00, // attribute 1 - symbol name
+        0x02, 0x00, // attribute 2 - symbol type
+    ];
+    let resp: HasMoreInterceptor<BytesHolder> =
+        ctx.send(MessageRequest::new(0x55, path, data)).await?;
     resp.expect_service::<ClientError>(0x55 + REPLY_MASK)?;
     Ok((resp.0.status.has_more(), resp.0.data.into()))
 }
