@@ -60,11 +60,11 @@ where
         }
 
         const SERVICE_CODE: u8 = 0x0A;
-        let mr = MessageRequest {
-            service_code: SERVICE_CODE,
-            path: EPath::default().with_class(2).with_instance(1),
-            data: MultipleServicesEncoder { items },
-        };
+        let mr = MessageRequest::new(
+            SERVICE_CODE,
+            EPath::default().with_class(2).with_instance(1),
+            MultipleServicesEncoder { items },
+        );
         let reply: IgnoreStatusInterceptor<BytesHolder> = inner.send(mr).await?;
         reply.expect_service::<T::Error>(SERVICE_CODE + REPLY_MASK)?;
 
