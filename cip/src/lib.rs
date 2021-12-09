@@ -21,7 +21,6 @@ Common industry protocol for `rseip`, please look at [rseip project](https://git
 
 pub mod codec;
 pub mod connection;
-mod cpf;
 pub mod epath;
 pub mod error;
 pub mod identity;
@@ -33,7 +32,6 @@ pub mod socket;
 mod status;
 
 use core::result::Result as StdResult;
-pub use cpf::*;
 pub use epath::EPath;
 pub use list_service::ListServiceItem;
 pub use message::*;
