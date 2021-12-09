@@ -4,7 +4,7 @@
 // Copyright: 2021, Joylei <leingliu@gmail.com>
 // License: MIT
 
-use crate::{ClientError, StdResult};
+use crate::ClientError;
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 use core::marker::PhantomData;
 use rseip_core::{codec::*, Error};
@@ -104,7 +104,7 @@ impl Encode for TagType {
         &self,
         buf: &mut BytesMut,
         encoder: &mut A,
-    ) -> StdResult<(), A::Error> {
+    ) -> Result<(), A::Error> {
         match self {
             Self::Bool => {
                 encoder.encode_u16(0xC1, buf)?;
@@ -146,7 +146,7 @@ impl Encode for TagType {
 
 impl<'de> Decode<'de> for TagType {
     #[inline]
-    fn decode<D>(mut decoder: D) -> StdResult<Self, D::Error>
+    fn decode<D>(mut decoder: D) -> Result<Self, D::Error>
     where
         D: Decoder<'de>,
     {
@@ -185,7 +185,7 @@ macro_rules! impl_atomic {
     ($ty:ty, $size: tt) => {
         impl<'de> Decode<'de> for TagValue<$ty> {
             #[inline]
-            fn decode<D>(mut decoder: D) -> StdResult<Self, D::Error>
+            fn decode<D>(mut decoder: D) -> Result<Self, D::Error>
             where
                 D: Decoder<'de>,
             {
@@ -201,7 +201,7 @@ macro_rules! impl_atomic {
                 self,
                 buf: &mut BytesMut,
                 encoder: &mut A,
-            ) -> StdResult<(), A::Error> {
+            ) -> Result<(), A::Error> {
                 self.tag_type.encode(buf, encoder)?;
                 buf.put_slice(&[1, 0]);
                 self.value.encode(buf, encoder)?;
@@ -212,7 +212,7 @@ macro_rules! impl_atomic {
                 &self,
                 buf: &mut BytesMut,
                 encoder: &mut A,
-            ) -> StdResult<(), A::Error> {
+            ) -> Result<(), A::Error> {
                 self.tag_type.encode(buf, encoder)?;
                 buf.put_slice(&[1, 0]);
                 self.value.encode_by_ref(buf, encoder)?;
@@ -244,11 +244,7 @@ macro_rules! impl_seq {
             T: Encode,
         {
             #[inline]
-            fn encode<A: Encoder>(
-                self,
-                buf: &mut BytesMut,
-                encoder: &mut A,
-            ) -> StdResult<(), A::Error>
+            fn encode<A: Encoder>(self, buf: &mut BytesMut, encoder: &mut A) -> Result<(), A::Error>
             where
                 Self: Sized,
             {
@@ -263,7 +259,7 @@ macro_rules! impl_seq {
                 &self,
                 buf: &mut BytesMut,
                 encoder: &mut A,
-            ) -> StdResult<(), A::Error> {
+            ) -> Result<(), A::Error> {
                 self.tag_type.encode(buf, encoder)?;
                 encoder.encode_u16(self.value.len() as u16, buf)?;
                 self.value.encode_by_ref(buf, encoder)?;
@@ -285,7 +281,7 @@ where
     T: Encode,
 {
     #[inline]
-    fn encode<A: Encoder>(self, buf: &mut BytesMut, encoder: &mut A) -> StdResult<(), A::Error>
+    fn encode<A: Encoder>(self, buf: &mut BytesMut, encoder: &mut A) -> Result<(), A::Error>
     where
         Self: Sized,
     {
@@ -300,7 +296,7 @@ where
         &self,
         buf: &mut BytesMut,
         encoder: &mut A,
-    ) -> StdResult<(), A::Error> {
+    ) -> Result<(), A::Error> {
         self.tag_type.encode(buf, encoder)?;
         encoder.encode_u16(self.value.len() as u16, buf)?;
         self.value.encode_by_ref(buf, encoder)?;
@@ -322,7 +318,7 @@ where
         &self,
         buf: &mut BytesMut,
         encoder: &mut A,
-    ) -> StdResult<(), A::Error> {
+    ) -> Result<(), A::Error> {
         self.tag_type.encode(buf, encoder)?;
         encoder.encode_u16(self.value.len() as u16, buf)?;
         for item in self.value.iter() {
@@ -339,7 +335,7 @@ where
 
 impl<'de> Decode<'de> for TagValue<Bytes> {
     #[inline]
-    fn decode<D>(mut decoder: D) -> StdResult<Self, D::Error>
+    fn decode<D>(mut decoder: D) -> Result<Self, D::Error>
     where
         D: Decoder<'de>,
     {
@@ -357,7 +353,7 @@ where
     T: Decode<'de>,
 {
     #[inline]
-    fn decode<D>(mut decoder: D) -> StdResult<Self, D::Error>
+    fn decode<D>(mut decoder: D) -> Result<Self, D::Error>
     where
         D: Decoder<'de>,
     {
@@ -380,7 +376,7 @@ where
     T::Item: Decode<'de>,
 {
     #[inline]
-    fn decode<D>(mut decoder: D) -> StdResult<Self, D::Error>
+    fn decode<D>(mut decoder: D) -> Result<Self, D::Error>
     where
         D: Decoder<'de>,
     {
@@ -438,7 +434,7 @@ where
 
 impl<'de, T> Decode<'de> for TagValueTypedIter<T> {
     #[inline]
-    fn decode<D>(mut decoder: D) -> StdResult<Self, D::Error>
+    fn decode<D>(mut decoder: D) -> Result<Self, D::Error>
     where
         D: Decoder<'de>,
     {
@@ -489,7 +485,7 @@ impl TagValueIter {
 
 impl<'de> Decode<'de> for TagValueIter {
     #[inline]
-    fn decode<D>(mut decoder: D) -> StdResult<Self, D::Error>
+    fn decode<D>(mut decoder: D) -> Result<Self, D::Error>
     where
         D: Decoder<'de>,
     {

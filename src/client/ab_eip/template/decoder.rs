@@ -5,6 +5,9 @@
 // License: MIT
 
 use super::*;
+use core::mem;
+use rseip_core::StringExt;
+use smallvec::SmallVec;
 
 /// template definition decoder
 pub trait DefinitionDecoder {
@@ -16,10 +19,10 @@ pub trait DefinitionDecoder {
     fn member_count(&mut self, member_count: u16);
 
     /// partial decode
-    fn partial_decode(&mut self, buf: Bytes) -> StdResult<(), Self::Error>;
+    fn partial_decode(&mut self, buf: Bytes) -> Result<(), Self::Error>;
 
     /// finally decode
-    fn decode(&mut self) -> StdResult<Self::Item, Self::Error>;
+    fn decode(&mut self) -> Result<Self::Item, Self::Error>;
 }
 
 /// default template definition decoder
@@ -43,7 +46,7 @@ impl DefinitionDecoder for DefaultDefinitionDecoder {
         self.member_count = member_count;
     }
 
-    fn partial_decode(&mut self, mut buf: Bytes) -> StdResult<(), Self::Error> {
+    fn partial_decode(&mut self, mut buf: Bytes) -> Result<(), Self::Error> {
         if self.member_count < 2 {
             return Err(Error::custom(
                 "template definition - need to initialize `member_count`",
@@ -78,7 +81,7 @@ impl DefinitionDecoder for DefaultDefinitionDecoder {
     }
 
     /// finally decode, return the target object and reset inner state of the decoder
-    fn decode(&mut self) -> StdResult<Self::Item, Self::Error> {
+    fn decode(&mut self) -> Result<Self::Item, Self::Error> {
         if self.member_count < 2 {
             return Err(Error::custom(
                 "template definition - need to initialize `member_count`",

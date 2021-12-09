@@ -115,7 +115,7 @@ where
 
 impl<'de> Decode<'de> for ForwardOpenReply {
     #[inline]
-    fn decode<D>(mut decoder: D) -> StdResult<Self, D::Error>
+    fn decode<D>(mut decoder: D) -> Result<Self, D::Error>
     where
         D: Decoder<'de>,
     {
@@ -133,7 +133,7 @@ impl<'de> Decode<'de> for ForwardOpenReply {
 
 impl<'de> Decode<'de> for ForwardCloseReply {
     #[inline]
-    fn decode<D>(mut decoder: D) -> StdResult<Self, D::Error>
+    fn decode<D>(mut decoder: D) -> Result<Self, D::Error>
     where
         D: Decoder<'de>,
     {

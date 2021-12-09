@@ -174,7 +174,7 @@ where
         &self,
         buf: &mut BytesMut,
         _encoder: &mut A,
-    ) -> StdResult<(), A::Error>
+    ) -> Result<(), A::Error>
     where
         Self: Sized,
     {
@@ -195,7 +195,7 @@ where
     Array::Item: Encode,
 {
     #[inline]
-    fn encode<A: Encoder>(self, buf: &mut BytesMut, encoder: &mut A) -> StdResult<(), A::Error>
+    fn encode<A: Encoder>(self, buf: &mut BytesMut, encoder: &mut A) -> Result<(), A::Error>
     where
         Self: Sized,
     {
@@ -211,7 +211,7 @@ where
         &self,
         buf: &mut BytesMut,
         encoder: &mut A,
-    ) -> StdResult<(), A::Error> {
+    ) -> Result<(), A::Error> {
         self.encode_common(buf, encoder)?;
         for item in self.items.iter() {
             item.encode_by_ref(buf, encoder)?;

@@ -16,27 +16,22 @@ use crate::{
         service::{CommonServices, MessageService},
         MessageRequest,
     },
-    ClientError, Result,
+    ClientError,
 };
 use bytes::{Buf, Bytes};
-use core::{
-    mem,
-    ops::{Deref, DerefMut},
-    result::Result as StdResult,
-};
+use core::ops::{Deref, DerefMut};
 use decoder::{DefaultDefinitionDecoder, DefinitionDecoder};
 use rseip_cip::MessageReplyInterface;
 use rseip_core::{
     codec::{BytesHolder, Decode, Decoder},
-    Error, String, StringExt,
+    Error, String,
 };
-use smallvec::SmallVec;
 use std::collections::HashMap;
 
 #[async_trait::async_trait(?Send)]
 pub trait AbTemplateService {
     /// fetch template instance for specified instance id
-    async fn find_template(&mut self, instance_id: u16) -> Result<Template>;
+    async fn find_template(&mut self, instance_id: u16) -> Result<Template, ClientError>;
 
     /// read template definition
     fn read_template<'a>(&'a mut self, template: &Template) -> TemplateRead<'a, Self>
@@ -47,7 +42,7 @@ pub trait AbTemplateService {
 #[async_trait::async_trait(?Send)]
 impl<T: MessageService<Error = ClientError>> AbTemplateService for T {
     /// fetch template instance for specified instance id
-    async fn find_template(&mut self, instance_id: u16) -> Result<Template> {
+    async fn find_template(&mut self, instance_id: u16) -> Result<Template, ClientError> {
         let path = EPath::default()
             .with_class(CLASS_TEMPLATE)
             .with_instance(instance_id);
@@ -155,7 +150,7 @@ where
     D: DefinitionDecoder,
     D::Error: Into<ClientError>,
 {
-    pub async fn call(mut self) -> Result<D::Item> {
+    pub async fn call(mut self) -> Result<D::Item, ClientError> {
         if self.member_count < 2 {
             return Err(Error::custom(
                 "read template - need to initialize `member_count`",
@@ -214,7 +209,7 @@ async fn read_template<T>(
     instance_id: u16,
     offset: u32,
     bytes_read: u16,
-) -> Result<(bool, Bytes)>
+) -> Result<(bool, Bytes), ClientError>
 where
     T: MessageService<Error = ClientError>,
 {
@@ -257,7 +252,7 @@ impl DerefMut for TemplateDefinition {
 }
 
 /// template member definition
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct MemberInfo {
     /// member name
     pub name: String,
@@ -291,7 +286,7 @@ pub struct Template {
 }
 
 impl<'de> Decode<'de> for Template {
-    fn decode<D>(mut decoder: D) -> StdResult<Self, D::Error>
+    fn decode<D>(mut decoder: D) -> Result<Self, D::Error>
     where
         D: Decoder<'de>,
     {
@@ -321,7 +316,7 @@ impl<'de> Decode<'de> for Template {
     }
 }
 
-fn decode_attr<'de, D, R>(buf: &mut D, attr_id: u16) -> StdResult<R, D::Error>
+fn decode_attr<'de, D, R>(buf: &mut D, attr_id: u16) -> Result<R, D::Error>
 where
     D: Decoder<'de>,
     R: Decode<'de>,

@@ -4,7 +4,6 @@
 // Copyright: 2021, Joylei <leingliu@gmail.com>
 // License: MIT
 
-use crate::StdResult;
 use core::fmt;
 
 /// message reply status
@@ -40,7 +39,7 @@ impl Status {
     }
 
     #[inline]
-    pub fn into_result(self) -> StdResult<(), Status> {
+    pub fn into_result(self) -> Result<(), Status> {
         if self.general == 0 {
             Ok(())
         } else {

@@ -8,7 +8,6 @@ use crate::{
     codec::ClientCodec,
     command::ListIdentity,
     consts::{EIP_COMMAND_LIST_IDENTITY, EIP_DEFAULT_PORT},
-    StdResult,
 };
 use bytes::Bytes;
 use core::marker::PhantomData;
@@ -149,7 +148,7 @@ where
 }
 
 #[inline]
-fn decode_identity<'de, I, E>(data: Bytes) -> StdResult<Option<I>, E>
+fn decode_identity<'de, I, E>(data: Bytes) -> Result<Option<I>, E>
 where
     I: Decode<'de> + 'static,
     E: Error + 'static,

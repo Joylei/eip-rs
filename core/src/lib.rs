@@ -30,7 +30,6 @@ pub mod hex;
 pub mod iter;
 mod string;
 
-pub use core::result::Result as StdResult;
 pub use either::Either;
 pub use error::{Error, StdError};
 pub use string::*;

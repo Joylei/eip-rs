@@ -17,7 +17,6 @@ mod error;
 mod framed;
 
 pub use context::EipContext;
-pub(crate) use core::result::Result as StdResult;
 pub use discover::EipDiscovery;
 pub use encapsulation::{EncapsulationHeader, EncapsulationPacket};
 pub use rseip_core::{

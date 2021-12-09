@@ -96,7 +96,7 @@ impl SymbolTypeBuilder {
     }
 }
 
-#[derive(Clone, Copy, Hash, PartialEq, Eq)]
+#[derive(Clone, Copy, Hash, PartialEq, Eq, Default)]
 pub struct SymbolType(pub(crate) u16);
 
 impl SymbolType {

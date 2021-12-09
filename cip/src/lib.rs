@@ -31,7 +31,6 @@ pub mod service;
 pub mod socket;
 mod status;
 
-use core::result::Result as StdResult;
 pub use epath::EPath;
 pub use list_service::ListServiceItem;
 pub use message::*;
