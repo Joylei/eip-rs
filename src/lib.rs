@@ -208,7 +208,7 @@ But you can work without `TagValue`. You can define your own value holder, as lo
 For simple cases, `Tuple` should be a good option.
 ```rust,ignore
 let (tag_type,value):(TagType,i32) = client.read_tag(tag).await?;
-client.write_tag(tag,(tag_type,value)).await?;
+client.write_tag(tag,(tag_type, 1_u16, value)).await?;
 ```
 
 ## License
