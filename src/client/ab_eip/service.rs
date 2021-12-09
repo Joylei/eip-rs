@@ -287,7 +287,7 @@ where
 
         #[inline]
         fn bytes_count(&self) -> usize {
-            2 + N
+            2 + N * 2
         }
     }
 
