@@ -1,6 +1,6 @@
 [package]
 name = "rseip-core"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2018"
 description = "core module for rseip"
 license = "MIT"
