@@ -27,7 +27,7 @@ pub trait CommonServices: MessageService {
             data: (),
         };
         let reply: MessageReply<R> = self.send(req).await?;
-        reply.expect_service::<Self::Error>(0x01 + 0x80)?;
+        reply.expect_service::<Self::Error>(0x01 + REPLY_MASK)?;
         Ok(reply.data)
     }
 
@@ -44,7 +44,7 @@ pub trait CommonServices: MessageService {
             data: attrs,
         };
         let reply: MessageReply<()> = self.send(req).await?;
-        reply.expect_service::<Self::Error>(0x02 + 0x80)?;
+        reply.expect_service::<Self::Error>(0x02 + REPLY_MASK)?;
         Ok(())
     }
 
@@ -69,7 +69,7 @@ pub trait CommonServices: MessageService {
             ),
         };
         let reply: MessageReply<R> = self.send(req).await?;
-        reply.expect_service::<Self::Error>(0x03 + 0x80)?;
+        reply.expect_service::<Self::Error>(0x03 + REPLY_MASK)?;
         Ok(reply.data)
     }
 
@@ -90,7 +90,7 @@ pub trait CommonServices: MessageService {
             data: attrs,
         };
         let reply: MessageReply<R> = self.send(req).await?;
-        reply.expect_service::<Self::Error>(0x04 + 0x80)?;
+        reply.expect_service::<Self::Error>(0x04 + REPLY_MASK)?;
         Ok(reply.data)
     }
 
@@ -103,7 +103,7 @@ pub trait CommonServices: MessageService {
             data: (),
         };
         let reply: MessageReply<()> = self.send(req).await?;
-        reply.expect_service::<Self::Error>(0x05 + 0x80)?;
+        reply.expect_service::<Self::Error>(0x05 + REPLY_MASK)?;
         Ok(())
     }
 
@@ -116,7 +116,7 @@ pub trait CommonServices: MessageService {
             data: (),
         };
         let reply: MessageReply<()> = self.send(req).await?;
-        reply.expect_service::<Self::Error>(0x06 + 0x80)?;
+        reply.expect_service::<Self::Error>(0x06 + REPLY_MASK)?;
         Ok(())
     }
 
@@ -129,7 +129,7 @@ pub trait CommonServices: MessageService {
             data: (),
         };
         let reply: MessageReply<()> = self.send(req).await?;
-        reply.expect_service::<Self::Error>(0x07 + 0x80)?;
+        reply.expect_service::<Self::Error>(0x07 + REPLY_MASK)?;
         Ok(())
     }
 
@@ -146,7 +146,7 @@ pub trait CommonServices: MessageService {
             data,
         };
         let reply: MessageReply<R> = self.send(req).await?;
-        reply.expect_service::<Self::Error>(0x08 + 0x80)?;
+        reply.expect_service::<Self::Error>(0x08 + REPLY_MASK)?;
         Ok(reply.data)
     }
 
@@ -159,7 +159,7 @@ pub trait CommonServices: MessageService {
             data: (),
         };
         let reply: MessageReply<()> = self.send(req).await?;
-        reply.expect_service::<Self::Error>(0x09 + 0x80)?;
+        reply.expect_service::<Self::Error>(0x09 + REPLY_MASK)?;
         Ok(())
     }
 
@@ -180,7 +180,7 @@ pub trait CommonServices: MessageService {
             data,
         };
         let reply: MessageReply<R> = self.send(req).await?;
-        reply.expect_service::<Self::Error>(0x0D + 0x80)?;
+        reply.expect_service::<Self::Error>(0x0D + REPLY_MASK)?;
         Ok(reply.data)
     }
 
@@ -196,7 +196,7 @@ pub trait CommonServices: MessageService {
             data: (),
         };
         let reply: MessageReply<R> = self.send(req).await?;
-        reply.expect_service::<Self::Error>(0x0E + 0x80)?;
+        reply.expect_service::<Self::Error>(0x0E + REPLY_MASK)?;
         Ok(reply.data)
     }
 
@@ -213,7 +213,7 @@ pub trait CommonServices: MessageService {
             data,
         };
         let reply: MessageReply<()> = self.send(req).await?;
-        reply.expect_service::<Self::Error>(0x10 + 0x80)?;
+        reply.expect_service::<Self::Error>(0x10 + REPLY_MASK)?;
         Ok(())
     }
 
@@ -226,7 +226,7 @@ pub trait CommonServices: MessageService {
             data: (),
         };
         let reply: MessageReply<()> = self.send(req).await?;
-        reply.expect_service::<Self::Error>(0x15 + 0x80)?;
+        reply.expect_service::<Self::Error>(0x15 + REPLY_MASK)?;
         Ok(())
     }
 
@@ -239,7 +239,7 @@ pub trait CommonServices: MessageService {
             data: (),
         };
         let reply: MessageReply<()> = self.send(req).await?;
-        reply.expect_service::<Self::Error>(0x16 + 0x80)?;
+        reply.expect_service::<Self::Error>(0x16 + REPLY_MASK)?;
         Ok(())
     }
 
@@ -252,7 +252,7 @@ pub trait CommonServices: MessageService {
             data: (),
         };
         let reply: MessageReply<()> = self.send(req).await?;
-        reply.expect_service::<Self::Error>(0x17 + 0x80)?;
+        reply.expect_service::<Self::Error>(0x17 + REPLY_MASK)?;
         Ok(())
     }
 
@@ -268,7 +268,7 @@ pub trait CommonServices: MessageService {
             data: (),
         };
         let reply: MessageReply<R> = self.send(req).await?;
-        reply.expect_service::<Self::Error>(0x18 + 0x80)?;
+        reply.expect_service::<Self::Error>(0x18 + REPLY_MASK)?;
         Ok(reply.data)
     }
 
@@ -285,7 +285,7 @@ pub trait CommonServices: MessageService {
             data,
         };
         let reply: MessageReply<R> = self.send(req).await?;
-        reply.expect_service::<Self::Error>(0x19 + 0x80)?;
+        reply.expect_service::<Self::Error>(0x19 + REPLY_MASK)?;
         Ok(reply.data)
     }
 
@@ -302,7 +302,7 @@ pub trait CommonServices: MessageService {
             data,
         };
         let reply: MessageReply<R> = self.send(req).await?;
-        reply.expect_service::<Self::Error>(0x1A + 0x80)?;
+        reply.expect_service::<Self::Error>(0x1A + REPLY_MASK)?;
         Ok(reply.data)
     }
 
@@ -315,7 +315,7 @@ pub trait CommonServices: MessageService {
             data: (),
         };
         let reply: MessageReply<()> = self.send(req).await?;
-        reply.expect_service::<Self::Error>(0x1B + 0x80)?;
+        reply.expect_service::<Self::Error>(0x1B + REPLY_MASK)?;
         Ok(())
     }
 
@@ -328,7 +328,7 @@ pub trait CommonServices: MessageService {
             data: (),
         };
         let reply: MessageReply<()> = self.send(req).await?;
-        reply.expect_service::<Self::Error>(0x0C + 0x80)?;
+        reply.expect_service::<Self::Error>(0x0C + REPLY_MASK)?;
         Ok(())
     }
 

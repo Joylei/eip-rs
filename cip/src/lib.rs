@@ -38,3 +38,5 @@ pub use message::*;
 pub use revision::Revision;
 pub use rseip_core::cip::{CommonPacket, CommonPacketItem};
 pub use status::Status;
+
+pub const REPLY_MASK: u8 = 0x80;

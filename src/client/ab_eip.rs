@@ -33,8 +33,6 @@ pub const SERVICE_WRITE_TAG_FRAGMENTED: u8 = 0x53;
 pub const SERVICE_READ_MODIFY_WRITE_TAG: u8 = 0x4E;
 pub const SERVICE_TEMPLATE_READ: u8 = 0x4C;
 
-pub const REPLY_MASK: u8 = 0x80;
-
 pub type EipDiscovery = rseip_eip::EipDiscovery<ClientError>;
 
 /// AB EIP Client
