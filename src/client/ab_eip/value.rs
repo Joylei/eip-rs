@@ -338,6 +338,7 @@ where
 }
 
 impl<'de> Decode<'de> for TagValue<Bytes> {
+    #[inline]
     fn decode<D>(mut decoder: D) -> StdResult<Self, D::Error>
     where
         D: Decoder<'de>,
@@ -355,6 +356,7 @@ impl<'de, T> Decode<'de> for TagValue<Vec<T>>
 where
     T: Decode<'de>,
 {
+    #[inline]
     fn decode<D>(mut decoder: D) -> StdResult<Self, D::Error>
     where
         D: Decoder<'de>,
@@ -377,6 +379,7 @@ where
     T: smallvec::Array,
     T::Item: Decode<'de>,
 {
+    #[inline]
     fn decode<D>(mut decoder: D) -> StdResult<Self, D::Error>
     where
         D: Decoder<'de>,
@@ -423,6 +426,7 @@ where
     T: Decode<'de>,
 {
     type Item = Result<T, ClientError>;
+    #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         if self.decoder.has_remaining() {
             Some(self.decoder.decode_any())
@@ -433,6 +437,7 @@ where
 }
 
 impl<'de, T> Decode<'de> for TagValueTypedIter<T> {
+    #[inline]
     fn decode<D>(mut decoder: D) -> StdResult<Self, D::Error>
     where
         D: Decoder<'de>,
@@ -469,6 +474,7 @@ impl TagValueIter {
 }
 
 impl TagValueIter {
+    #[inline]
     pub fn next<'de, T>(&mut self) -> Option<Result<T, ClientError>>
     where
         T: Decode<'de>,
@@ -482,6 +488,7 @@ impl TagValueIter {
 }
 
 impl<'de> Decode<'de> for TagValueIter {
+    #[inline]
     fn decode<D>(mut decoder: D) -> StdResult<Self, D::Error>
     where
         D: Decoder<'de>,
