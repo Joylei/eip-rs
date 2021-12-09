@@ -5,10 +5,10 @@
 // License: MIT
 
 use anyhow::Result;
-use rseip::{cip::REPLY_MASK, precludes::*};
 use rseip::{
-    cip::{connection::OpenOptions, MessageReply, MessageRequest},
+    cip::{connection::OpenOptions, MessageReply, MessageRequest, REPLY_MASK},
     client::ab_eip::*,
+    precludes::*,
 };
 
 #[tokio::main]
