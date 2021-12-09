@@ -201,7 +201,7 @@ client.write_tag(tag, value).await?;
 
 ### Moreover
 
-For some reasons, `TagValue` does not work for any type that implements `Encode` or `Decode`.
+For some reasons, `TagValue` does not work for all type that implements `Encode` or `Decode`.
 
 But you can work without `TagValue`. You can define your own value holder, as long as it implements `Encode` and `Decode`.
 
