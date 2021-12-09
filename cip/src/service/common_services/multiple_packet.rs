@@ -4,6 +4,7 @@
 // Copyright: 2021, Joylei <leingliu@gmail.com>
 // License: MIT
 
+use crate::codec::decode::message_reply::decode_service_and_status;
 use crate::service::*;
 use crate::*;
 use crate::{epath::EPath, error::cip_error};
@@ -58,21 +59,16 @@ where
             return Ok(ReplyIter::new(None));
         }
 
-        let req = MessageRequest {
-            service_code: 0x0A,
+        const SERVICE_CODE: u8 = 0x0A;
+        let mr = MessageRequest {
+            service_code: SERVICE_CODE,
             path: EPath::default().with_class(2).with_instance(1),
             data: MultipleServicesEncoder { items },
         };
-        let reply: MessageReply<BytesHolder> = inner.send(req).await?;
+        let reply: IgnoreStatusInterceptor<BytesHolder> = inner.send(mr).await?;
+        reply.expect_service::<T::Error>(SERVICE_CODE + REPLY_MASK)?;
 
-        if reply.reply_service != 0x8A {
-            return Err(cip_error(format_args!(
-                "unexpected reply service for multiple service packet: {:#0x}",
-                reply.reply_service
-            )));
-        }
-
-        let res = ReplyIter::new(Some(LittleEndianDecoder::new(reply.data.into())));
+        let res = ReplyIter::new(Some(LittleEndianDecoder::new(reply.into_value().into())));
         Ok(res)
     }
 }
@@ -228,5 +224,43 @@ where
         let start_offset = 2 + 2 * self.items.len();
         let bytes_count = self.items.iter().map(|v| v.bytes_count()).sum::<usize>();
         start_offset + bytes_count
+    }
+}
+
+#[derive(Debug)]
+struct IgnoreStatusInterceptor<T>(pub MessageReply<T>);
+
+impl<T> MessageReplyInterface for IgnoreStatusInterceptor<T> {
+    type Value = T;
+
+    fn reply_service(&self) -> u8 {
+        self.0.reply_service
+    }
+
+    fn status(&self) -> &Status {
+        &self.0.status
+    }
+
+    fn value(&self) -> &Self::Value {
+        &self.0.data
+    }
+
+    fn into_value(self) -> Self::Value {
+        self.0.data
+    }
+}
+
+impl<'de, T> Decode<'de> for IgnoreStatusInterceptor<T>
+where
+    T: Decode<'de>,
+{
+    #[inline]
+    fn decode<D>(mut decoder: D) -> Result<Self, D::Error>
+    where
+        D: Decoder<'de>,
+    {
+        let (reply_service, status) = decode_service_and_status(&mut decoder)?;
+        let data = decoder.decode_any()?;
+        Ok(Self(MessageReply::new(reply_service, status, data)))
     }
 }
