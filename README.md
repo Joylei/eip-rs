@@ -30,7 +30,7 @@ EIP&CIP client in pure Rust, for generic CIP and AB PLC
 Add `rseip` to your cargo project's dependencies
 
 ```toml
-rseip={git="https://github.com/Joylei/eip-rs.git"}
+rseip="0.1"
 ```
 
 Please find detailed guides and examples from below sections.
