@@ -320,7 +320,7 @@ impl<const N: usize> ReadModifyWriteRequest<N> {
         Self {
             tag: Default::default(),
             or_mask: [0; N],
-            and_mask: [0xF; N],
+            and_mask: [0xFF; N],
         }
     }
 
@@ -329,22 +329,24 @@ impl<const N: usize> ReadModifyWriteRequest<N> {
         self
     }
 
-    /// 1 mask sets bit to 1
+    /// Array of OR modify masks; 1 mask sets bit to 1
     pub fn or_mask(mut self, mask: impl Into<[u8; N]>) -> Self {
         self.or_mask = mask.into();
         self
     }
 
+    /// Array of OR modify masks; 1 mask sets bit to 1
     pub fn or_mask_mut(&mut self) -> &mut [u8] {
         &mut self.or_mask
     }
 
-    /// 0 mask resets bit to 0
+    /// Array of AND modify masks; 0 mask resets bit to 0
     pub fn and_mask(mut self, mask: impl Into<[u8; N]>) -> Self {
         self.and_mask = mask.into();
         self
     }
 
+    /// Array of AND modify masks; 0 mask resets bit to 0
     pub fn and_mask_mut(&mut self) -> &mut [u8] {
         &mut self.and_mask
     }
