@@ -155,9 +155,9 @@ let res = iter.next::<MyType>().unwrap();
 println!("{:?}", res);
 ```
 
-想要读取数据到集合，可以这样操作:
+想要读取数组的多个元素，可以这样操作:
 ```rust
-let value: TagValue<Vec<MyType>> = client.read_tag(tag).await?;
+let value: TagValue<Vec<MyType>> = client.read_tag((tag,5_u16)).await?;
 println!("{:?}",value);
 ```
 
@@ -186,7 +186,7 @@ client.write_tag(tag, value).await?;
 也支持写入`bytes::Bytes`。
 
 
-想要写入多个数据元素，可以这样操作：
+想要向数组写入多个数据元素，可以这样操作：
 ```rust
 let items: Vec<MyType> = ...;
 let value = TagValue {

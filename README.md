@@ -154,9 +154,9 @@ let res = iter.next::<MyType>().unwrap();
 println!("{:?}", res);
 ```
 
-To read values into collections, do like this:
+To read more than 1 elements of an `Array`, do like this:
 ```rust
-let value: TagValue<Vec<MyType>> = client.read_tag(tag).await?;
+let value: TagValue<Vec<MyType>> = client.read_tag((tag,5_u16)).await?;
 println!("{:?}",value);
 ```
 
@@ -183,7 +183,7 @@ let value = TagValue {
 client.write_tag(tag, value).await?;
 ```
 
-To write collections, do like this:
+To write multiple values to an array, do like this:
 ```rust
 let items: Vec<MyType> = ...;
 let value = TagValue {

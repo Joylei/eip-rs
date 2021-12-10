@@ -6,8 +6,7 @@
 
 use super::symbol::GetInstanceAttributeList;
 use super::*;
-use crate::client::ab_eip::interceptor::HasMoreInterceptor;
-use crate::StdResult;
+use crate::{client::ab_eip::interceptor::HasMoreInterceptor, StdResult};
 use byteorder::{ByteOrder, LittleEndian};
 use bytes::{BufMut, BytesMut};
 use rseip_core::codec::{BytesHolder, Encode, Encoder};
@@ -17,6 +16,31 @@ use rseip_core::codec::{BytesHolder, Encode, Encoder};
 pub trait AbService {
     /// Read Tag Service,
     /// CIP Data Table Read
+    ///
+    /// ## get a single value
+    /// ```rust,ignore
+    /// let value: TagValue<MyType> = client.read_tag(tag).await?;
+    /// println!("{:?}",value);
+    /// ```
+    /// ## get more than 1 elements of an array
+    /// ```rust,ignore
+    /// let value: TagValue<Vec<MyType>> = client.read_tag((tag,5_u16)).await?;
+    /// println!("{:?}",value);
+    /// ```
+    /// ## iterator values
+    /// ```rust,ignore
+    /// let iter: TagValueTypedIter<MyType> = client.read_tag(tag).await?;
+    /// println!("{:?}", iter.tag_type());
+    /// while let Some(res) = iter.next(){
+    ///   println!("{:?}", res);
+    /// }
+    /// ```
+    /// also look at [`TagValueIter`]
+    ///
+    /// ## read with tuple
+    /// ```rust,ignore
+    /// let (tag_type,value):(TagType, i32) = client.read_tag(tag).await?;
+    /// ```
     async fn read_tag<'de, P, R>(&mut self, req: P) -> Result<R>
     where
         P: Into<TagRequest>,
@@ -24,6 +48,25 @@ pub trait AbService {
 
     /// Write Tag Service,
     /// CIP Data Table Write
+    ///
+    /// ## write a single value
+    /// ```rust,ignore
+    /// let value = TagValue {
+    ///    tag_type: TagType::Dint,
+    ///    value: 10_i32,
+    ///  };
+    /// client.write_tag(tag, value).await?;
+    /// ```
+    ///
+    /// ## write multiple values to an array
+    /// ```rust,ignore
+    /// let items: Vec<MyType> = ...;
+    /// let value = TagValue {
+    ///   tag_type: TagType::Dint,
+    ///   value: items,
+    /// };
+    /// client.write_tag(tag, value).await?;
+    /// ```
     async fn write_tag<D>(&mut self, tag: EPath, value: D) -> Result<()>
     where
         D: Encode;
@@ -50,6 +93,18 @@ pub trait AbService {
         req: ReadModifyWriteRequest<N>,
     ) -> Result<()>;
 
+    /// list tags
+    ///
+    /// ```rust,ignore
+    /// use futures_util::StreamExt;
+    ///
+    /// let stream = client.list_tag().call();
+    /// stream
+    /// .for_each(|item| async move {
+    ///     println!("{:?}", item);
+    /// })
+    /// .await;
+    /// ```
     fn list_tag(&mut self) -> GetInstanceAttributeList<Self>
     where
         Self: Sized;
@@ -116,6 +171,18 @@ macro_rules! impl_service {
                 Ok(())
             }
 
+            /// list tags
+            ///
+            /// ```rust,ignore
+            /// use futures_util::StreamExt;
+            ///
+            /// let stream = client.list_tag().call();
+            /// stream
+            /// .for_each(|item| async move {
+            ///     println!("{:?}", item);
+            /// })
+            /// .await;
+            /// ```
             #[inline]
             fn list_tag(&mut self) -> GetInstanceAttributeList<Self>
             where
