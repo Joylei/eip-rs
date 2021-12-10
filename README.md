@@ -71,7 +71,7 @@ Please find more examples within [examples](https://github.com/Joylei/eip-rs/tre
 Add `rseip` to your cargo project's dependencies
 
 ```toml
-rseip={git="https://github.com/Joylei/eip-rs.git"}
+rseip="0.1"
 ```
 
 Then, import modules of `rseip` to your project
