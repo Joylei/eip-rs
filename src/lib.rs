@@ -1,6 +1,6 @@
 // rseip
 //
-// rseip - EIP&CIP in pure Rust.
+// rseip - Ethernet/IP (CIP) in pure Rust.
 // Copyright: 2021, Joylei <leingliu@gmail.com>
 // License: MIT
 
@@ -12,7 +12,7 @@
 [![build](https://github.com/joylei/eip-rs/workflows/build/badge.svg?branch=main)](https://github.com/joylei/eip-rs/actions?query=workflow%3A%22build%22)
 [![license](https://img.shields.io/crates/l/rseip.svg)](https://github.com/joylei/eip-rs/blob/master/LICENSE)
 
-EIP&CIP client in pure Rust, for generic CIP and AB PLC
+Ethernet/IP (CIP) client in pure Rust, for generic CIP and AB PLC
 
 ## Features
 
