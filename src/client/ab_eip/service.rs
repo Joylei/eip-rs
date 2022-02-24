@@ -73,12 +73,10 @@ pub trait AbService {
 
     /// Read Tag Fragmented Service, enables client applications to read a tag
     /// with data that does not fit into a single packet (approximately 500 bytes)
-    async fn read_tag_fragmented<F, R>(
+    async fn read_tag_fragmented(
         &mut self,
-        req: ReadFragmentedRequest<F, R>,
-    ) -> Result<(bool, R)>
-    where
-        F: Fn(u16, Bytes) -> Result<R>;
+        req: ReadFragmentedRequest,
+    ) -> Result<(bool, TagValue<Bytes>)>;
 
     /// Write Tag Fragmented Service, enables client applications to write to a tag
     /// in the controller whose data will not fit into a single packet (approximately 500 bytes)
@@ -139,13 +137,10 @@ macro_rules! impl_service {
 
             /// Read Tag Fragmented Service
             #[inline]
-            async fn read_tag_fragmented<F, R>(
+            async fn read_tag_fragmented(
                 &mut self,
-                req: ReadFragmentedRequest<F, R>,
-            ) -> Result<(bool, R)>
-            where
-                F: Fn(u16, Bytes) -> Result<R>,
-            {
+                req: ReadFragmentedRequest,
+            ) -> Result<(bool, TagValue<Bytes>)> {
                 let res = ab_read_tag_fragmented(self, req).await?;
                 Ok(res)
             }
@@ -227,31 +222,22 @@ where
 }
 
 /// Read Tag Fragmented Service
-async fn ab_read_tag_fragmented<C, F, R>(
+async fn ab_read_tag_fragmented<C>(
     client: &mut C,
-    req: ReadFragmentedRequest<F, R>,
-) -> Result<(bool, R)>
+    req: ReadFragmentedRequest,
+) -> Result<(bool, TagValue<Bytes>)>
 where
     C: MessageService<Error = ClientError>,
-    F: Fn(u16, Bytes) -> Result<R>,
 {
-    debug_assert!(req.total > req.offset);
-    let ReadFragmentedRequest {
-        tag,
-        total,
-        offset,
-        decoder,
-    } = req;
+    debug_assert!(req.count >= 1);
+    let ReadFragmentedRequest { tag, count, offset } = req;
 
-    let mr = MessageRequest::new(SERVICE_READ_TAG_FRAGMENTED, tag, [total, offset, 0]);
-    let resp: HasMoreInterceptor<BytesHolder> = client.send(mr).await?;
+    let mr = MessageRequest::new(SERVICE_READ_TAG_FRAGMENTED, tag, [count, offset, 0]);
+    let resp: HasMoreInterceptor<TagValue<Bytes>> = client.send(mr).await?;
     resp.0
         .expect_service::<ClientError>(SERVICE_READ_TAG_FRAGMENTED + REPLY_MASK)?;
-    let data: Bytes = resp.0.data.into();
-    assert!(data.len() >= 4);
-    let tag_type = LittleEndian::read_u16(&data[0..2]);
-    let data = (decoder)(tag_type, data.slice(2..))?;
-    Ok((resp.0.status.has_more(), data))
+
+    Ok((resp.0.status.has_more(), resp.0.data))
 }
 
 /// Write Tag Fragmented Service, enables client applications to write to a tag
@@ -264,11 +250,11 @@ where
     C: MessageService<Error = ClientError>,
     D: Encode,
 {
-    debug_assert!(req.total > req.offset);
+    debug_assert!(req.count >= 1);
 
     struct DataHolder<D> {
-        tag_type: u16,
-        total: u16,
+        tag_type: TagType,
+        count: u16,
         offset: u16,
         data: D,
     }
@@ -279,8 +265,8 @@ where
         where
             Self: Sized,
         {
-            buf.put_u16_le(self.tag_type);
-            buf.put_u16_le(self.total);
+            self.tag_type.encode(buf, encoder)?;
+            buf.put_u16_le(self.count);
             buf.put_u16_le(self.offset);
             buf.put_u16_le(0);
             self.data.encode(buf, encoder)?;
@@ -292,8 +278,8 @@ where
             buf: &mut BytesMut,
             encoder: &mut A,
         ) -> StdResult<(), A::Error> {
-            buf.put_u16_le(self.tag_type);
-            buf.put_u16_le(self.total);
+            self.tag_type.encode_by_ref(buf, encoder)?;
+            buf.put_u16_le(self.count);
             buf.put_u16_le(self.offset);
             buf.put_u16_le(0);
             self.data.encode_by_ref(buf, encoder)?;
@@ -301,14 +287,14 @@ where
         }
         #[inline]
         fn bytes_count(&self) -> usize {
-            8 + self.data.bytes_count()
+            self.tag_type.bytes_count() + 6 + self.data.bytes_count()
         }
     }
 
     let WriteFragmentedRequest {
         tag,
         tag_type,
-        total,
+        count,
         offset,
         data,
     } = req;
@@ -317,7 +303,7 @@ where
         tag,
         DataHolder {
             tag_type,
-            total,
+            count,
             offset,
             data,
         },
@@ -427,18 +413,18 @@ impl<const N: usize> Default for ReadModifyWriteRequest<N> {
 
 pub struct WriteFragmentedRequest<D> {
     tag: EPath,
-    tag_type: u16,
-    total: u16,
+    tag_type: TagType,
+    count: u16,
     offset: u16,
     data: D,
 }
 
 impl<D> WriteFragmentedRequest<D> {
-    pub fn new(total: u16, data: D) -> Self {
+    pub fn new(data: D) -> Self {
         Self {
             tag: Default::default(),
-            tag_type: 0,
-            total,
+            tag_type: TagType::Dint,
+            count: 1,
             offset: 0,
             data,
         }
@@ -449,13 +435,14 @@ impl<D> WriteFragmentedRequest<D> {
         self
     }
 
-    pub fn tag_type(mut self, val: u16) -> Self {
+    pub fn tag_type(mut self, val: TagType) -> Self {
         self.tag_type = val;
         self
     }
 
-    pub fn total(mut self, val: u16) -> Self {
-        self.total = val;
+    /// number of elements
+    pub fn count(mut self, val: u16) -> Self {
+        self.count = val;
         self
     }
 
@@ -470,26 +457,18 @@ impl<D> WriteFragmentedRequest<D> {
     }
 }
 
-pub struct ReadFragmentedRequest<F, R>
-where
-    F: Fn(u16, Bytes) -> Result<R>,
-{
+pub struct ReadFragmentedRequest {
     tag: EPath,
-    total: u16,
+    count: u16,
     offset: u16,
-    decoder: F,
 }
 
-impl<F, R> ReadFragmentedRequest<F, R>
-where
-    F: Fn(u16, Bytes) -> Result<R>,
-{
-    pub fn new(total: u16, f: F) -> Self {
+impl ReadFragmentedRequest {
+    pub fn new() -> Self {
         Self {
             tag: Default::default(),
-            total,
+            count: 1,
             offset: 0,
-            decoder: f,
         }
     }
 
@@ -498,18 +477,15 @@ where
         self
     }
 
-    pub fn total(mut self, val: u16) -> Self {
-        self.total = val;
+    /// number of elements to read. default 1
+    pub fn count(mut self, val: u16) -> Self {
+        self.count = val;
         self
     }
 
+    /// bytes offset, default 0
     pub fn offset(mut self, val: u16) -> Self {
         self.offset = val;
-        self
-    }
-
-    pub fn decoder(mut self, f: F) -> Self {
-        self.decoder = f;
         self
     }
 }
