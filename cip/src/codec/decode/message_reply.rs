@@ -27,12 +27,11 @@ where
     decoder.buf_mut().advance(1); // buf[1]
     let general_status = decoder.decode_u8(); //buf[2]
     let extended_status_size = decoder.decode_u8(); // buf[3]
-    decoder.ensure_size(extended_status_size as usize)?;
+    decoder.ensure_size((extended_status_size * 2) as usize)?;
     let extended_status = match extended_status_size {
         0 => None,
-        1 => Some(decoder.decode_u8() as u16),
-        2 => Some(decoder.decode_u16()),
-        v => return Err(Error::invalid_value("one of 0,1,2", v)),
+        1 => Some(decoder.decode_u16()),
+        v => return Err(Error::invalid_value("one of 0,1", v)),
     };
     let status = Status {
         general: general_status,
