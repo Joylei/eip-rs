@@ -1,7 +1,7 @@
 [package]
 name = "rseip-eip"
-version = "0.1.1"
-edition = "2018"
+version = "0.1.2"
+edition = "2021"
 description = "encapsulation protocol for rseip"
 license = "MIT"
 homepage = "https://github.com/Joylei/eip-rs"
@@ -13,14 +13,16 @@ authors = ["joylei <leingliu@gmail.com>"]
 resolver = "2"
 
 [dependencies]
-rseip-core={path = "../core", default-features = false, features =  ["cip"], version = "0.1"}
+rseip-core = { path = "../core", default-features = false, features = [
+    "cip",
+], version = "0.1" }
 bytes = "1"
-byteorder="1"
-log="0.4"
+byteorder = "1"
+log = "0.4"
 tokio = { version = "1", features = ["net", "macros", "io-util", "rt", "time"] }
 tokio-util = { version = "0.6", features = ["codec", "net"] }
-futures-util={version = "0.3", features = ["sink"]}
-smallvec="1"
+futures-util = { version = "0.3", features = ["sink"] }
+smallvec = "1"
 
 [features]
 default = ["inlinable-string", "error-explain"]

@@ -1,7 +1,7 @@
 [package]
 name = "rseip-core"
-version = "0.1.1"
-edition = "2018"
+version = "0.1.2"
+edition = "2021"
 description = "core module for rseip"
 license = "MIT"
 homepage = "https://github.com/Joylei/eip-rs"
@@ -13,12 +13,12 @@ authors = ["joylei <leingliu@gmail.com>"]
 resolver = "2"
 
 [dependencies]
-inlinable_string={version = "^0.1.14", optional = true}
-bytes={version = "1", optional = true}
-byteorder={version = "1", optional = true}
-smallvec="1"
+inlinable_string = { version = "^0.1.14", optional = true }
+bytes = { version = "1", optional = true }
+byteorder = { version = "1", optional = true }
+smallvec = "1"
 
 [features]
 default = ["feat-inlinable-string", "cip"]
-feat-inlinable-string= ["inlinable_string"]
+feat-inlinable-string = ["inlinable_string"]
 cip = ["bytes", "byteorder"]
