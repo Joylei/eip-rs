@@ -168,7 +168,7 @@ println!("{:?}",value);
 
 #### Write
 
-You must provide the tag type before you write to a tag. Normally, you can retrieve it by reading the tag. For structure type, you cannot reply on or persist the tag type (or so called `structure handle`), it might change because it is a calculated value (CRC based).
+You must provide the tag type before you write to a tag. Normally, you can retrieve it by reading the tag. For structure type, you cannot reply on or persist the tag type (so called `structure handle`), it might change because it is a calculated value (CRC based).
 
 To write a single value (atomic/structure), do like this:
 ```rust,ignore
