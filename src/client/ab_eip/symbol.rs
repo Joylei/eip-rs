@@ -278,14 +278,16 @@ impl<'a, T: MessageService<Error = ClientError>> GetInstanceAttributeList<'a, T>
                                         )));
                                     }
                                     Err(e) => {
+                                        dbg!(&e);
                                         //state = State::End;
                                         return Err(e);
                                     }
                                 }
                             } else if has_more && all {
+                                //dbg!(has_more, "new request");
                                 state = State::Request {
                                     ctx,
-                                    start_instance,
+                                    start_instance: start_instance + 1,
                                 };
                             } else {
                                 state = State::End;
