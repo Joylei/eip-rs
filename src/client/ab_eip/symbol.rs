@@ -278,7 +278,7 @@ impl<'a, T: MessageService<Error = ClientError>> GetInstanceAttributeList<'a, T>
                                         )));
                                     }
                                     Err(e) => {
-                                        dbg!(&e);
+                                        //dbg!(&e);
                                         //state = State::End;
                                         return Err(e);
                                     }
