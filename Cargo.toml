@@ -13,6 +13,9 @@ categories = ["asynchronous", "hardware-support"]
 authors = ["joylei <leingliu@gmail.com>"]
 resolver = "2"
 
+[badges]
+maintenance = { status = "passively-maintained" }
+
 [package.metadata.docs.rs]
 all-features = true
 
