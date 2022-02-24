@@ -7,9 +7,8 @@
 use super::symbol::GetInstanceAttributeList;
 use super::*;
 use crate::{client::ab_eip::interceptor::HasMoreInterceptor, StdResult};
-use byteorder::{ByteOrder, LittleEndian};
 use bytes::{BufMut, BytesMut};
-use rseip_core::codec::{BytesHolder, Encode, Encoder};
+use rseip_core::codec::{Encode, Encoder};
 
 /// AB related operations
 #[async_trait::async_trait(?Send)]
@@ -477,7 +476,7 @@ impl ReadFragmentedRequest {
         self
     }
 
-    /// number of elements to read. default 1
+    /// number of elements, default 1
     pub fn count(mut self, val: u16) -> Self {
         self.count = val;
         self
@@ -487,6 +486,12 @@ impl ReadFragmentedRequest {
     pub fn offset(mut self, val: u16) -> Self {
         self.offset = val;
         self
+    }
+}
+
+impl Default for ReadFragmentedRequest {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
