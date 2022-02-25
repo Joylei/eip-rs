@@ -32,7 +32,7 @@ Ethernet/IP (CIP) client in pure Rust, for generic CIP and AB PLC
 Add `rseip` to your cargo project's dependencies
 
 ```toml
-rseip="0.1"
+rseip="0.2"
 ```
 
 Please find detailed guides and examples from below sections.
@@ -71,7 +71,7 @@ Please find more examples within [examples](https://github.com/Joylei/eip-rs/tre
 Add `rseip` to your cargo project's dependencies
 
 ```toml
-rseip="0.1"
+rseip="0.2"
 ```
 
 Then, import modules of `rseip` to your project
