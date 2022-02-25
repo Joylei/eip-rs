@@ -99,7 +99,7 @@ fn parse_symbol_and_optional_numbers(
     allow_colon: bool,
 ) -> Result<(), PathError> {
     let sym = parse_symbol(buf, allow_colon)?;
-    res.push(Segment::Symbol(sym));
+    res.push(Segment::Symbol(sym.into()));
     if let Some(&b'[') = buf.first() {
         *buf = &buf[1..];
         parse_numbers(buf, res)?;
@@ -145,13 +145,13 @@ fn parse_number(buf: &mut &[u8]) -> Result<u32, PathError> {
         .ok_or(PathError::NumberParseError)?;
 
     // safety: all digits
-    let text = unsafe { String::from_utf8_unchecked(digits_buf.to_vec()) };
+    let text = unsafe { core::str::from_utf8_unchecked(digits_buf) };
     let num = text.parse().map_err(|_| PathError::NumberParseError)?;
     Ok(num)
 }
 
 #[inline]
-fn parse_symbol(buf: &mut &[u8], allow_colon: bool) -> Result<String, PathError> {
+fn parse_symbol<'a>(buf: &'a mut &[u8], allow_colon: bool) -> Result<&'a str, PathError> {
     const MAX_LEN: usize = 40; // see 1756-pm020_-en-p.pdf  page 12
 
     //check first byte
@@ -185,21 +185,18 @@ fn parse_symbol(buf: &mut &[u8], allow_colon: bool) -> Result<String, PathError>
     )?;
 
     // safety: all ASCII
-    let name = unsafe { String::from_utf8_unchecked(name_buf.to_vec()) };
+    let name = unsafe { core::str::from_utf8_unchecked(name_buf) };
     Ok(name)
 }
 
 // === chars ====
 
 /// check program prefix ignore case
+#[inline]
 fn has_program(buf: &[u8]) -> bool {
-    const GAP: u8 = b'a' - b'A';
-    const PROGRAM: &[u8] = &[b'p', b'r', b'o', b'g', b'r', b'a', b'm', b':'];
     if buf.len() >= 8 {
-        (&buf[0..8])
-            .iter()
-            .zip(PROGRAM.iter())
-            .all(|(a, b)| a == b || *a == (*b - GAP))
+        let temp = unsafe { core::str::from_utf8_unchecked(&buf[..8]) };
+        temp.eq_ignore_ascii_case("program:")
     } else {
         false
     }
