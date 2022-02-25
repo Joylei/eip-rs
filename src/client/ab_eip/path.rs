@@ -1,6 +1,6 @@
 use crate::cip::epath::{EPath, Segment};
 use core::fmt;
-use rseip_core::{String, StringExt};
+use core::str;
 
 pub enum PathError {
     Empty,
@@ -145,7 +145,7 @@ fn parse_number(buf: &mut &[u8]) -> Result<u32, PathError> {
         .ok_or(PathError::NumberParseError)?;
 
     // safety: all digits
-    let text = unsafe { core::str::from_utf8_unchecked(digits_buf) };
+    let text = unsafe { str::from_utf8_unchecked(digits_buf) };
     let num = text.parse().map_err(|_| PathError::NumberParseError)?;
     Ok(num)
 }
@@ -185,7 +185,7 @@ fn parse_symbol<'a>(buf: &'a mut &[u8], allow_colon: bool) -> Result<&'a str, Pa
     )?;
 
     // safety: all ASCII
-    let name = unsafe { core::str::from_utf8_unchecked(name_buf) };
+    let name = unsafe { str::from_utf8_unchecked(name_buf) };
     Ok(name)
 }
 
@@ -195,7 +195,7 @@ fn parse_symbol<'a>(buf: &'a mut &[u8], allow_colon: bool) -> Result<&'a str, Pa
 #[inline]
 fn has_program(buf: &[u8]) -> bool {
     if buf.len() >= 8 {
-        let temp = unsafe { core::str::from_utf8_unchecked(&buf[..8]) };
+        let temp = unsafe { str::from_utf8_unchecked(&buf[..8]) };
         temp.eq_ignore_ascii_case("program:")
     } else {
         false
