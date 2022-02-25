@@ -32,7 +32,7 @@ bytes = "1"
 byteorder = "1"
 log = "0.4"
 tokio = { version = "1", features = ["net", "io-util"] }
-tokio-util = { version = "0.6", features = ["codec"] }
+tokio-util = { version = "0.7", features = ["codec"] }
 futures-util = { version = "0.3", features = ["sink"] }
 async-trait = "0.1"
 smallvec = "1"
