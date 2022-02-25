@@ -36,8 +36,6 @@ pub async fn main() -> Result<()> {
     let udt: BigUdt = decoder.decode_any()?;
     println!("tag type: {:?}", tag_type);
     println!("tag value: {:?}", udt);
-    //client.write_tag(tag, value).await?;
-    //println!("write tag - done");
 
     client.close().await?;
     Ok(())
