@@ -10,6 +10,7 @@ use smallvec::SmallVec;
 
 use super::*;
 use core::marker::PhantomData;
+use std::mem;
 
 impl<'de, T: Decoder<'de>> Decoder<'de> for &mut T {
     type Error = T::Error;
@@ -106,23 +107,25 @@ where
 
 impl<'de, T, const N: usize> Decode<'de> for [T; N]
 where
-    T: Decode<'de>,
-    Self: Default,
+    T: Decode<'de> + Default,
 {
     #[inline]
     fn decode<D>(mut decoder: D) -> Result<Self, D::Error>
     where
         D: Decoder<'de>,
     {
-        let mut res: [T; N] = Default::default();
-        for item in res.iter_mut() {
-            if decoder.has_remaining() {
-                T::decode_in_place(&mut decoder, item)?;
-            } else {
-                break;
+        let mut buffer = mem::MaybeUninit::<[T; N]>::uninit();
+        {
+            let buffer = unsafe { &mut *buffer.as_mut_ptr() };
+            for item in buffer.iter_mut() {
+                if decoder.has_remaining() {
+                    T::decode_in_place(&mut decoder, item)?;
+                } else {
+                    *item = Default::default();
+                }
             }
         }
-        Ok(res)
+        Ok(unsafe { buffer.assume_init() })
     }
 }
 
