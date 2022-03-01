@@ -319,6 +319,7 @@ async fn get_attribute_list<T: MessageService<Error = ClientError>>(
     ctx: &mut T,
     start_instance: u16,
 ) -> Result<(bool, Bytes)> {
+    const SERVICE_GET_INSTANCE_ATTRIBUTE_LIST: u8 = 0x55;
     let path = EPath::default()
         .with_class(CLASS_SYMBOL)
         .with_instance(start_instance);
@@ -327,9 +328,14 @@ async fn get_attribute_list<T: MessageService<Error = ClientError>>(
         0x01, 0x00, // attribute 1 - symbol name
         0x02, 0x00, // attribute 2 - symbol type
     ];
-    let resp: HasMoreInterceptor<BytesHolder> =
-        ctx.send(MessageRequest::new(0x55, path, data)).await?;
-    resp.expect_service::<ClientError>(0x55 + REPLY_MASK)?;
+    let resp: HasMoreInterceptor<BytesHolder> = ctx
+        .send(MessageRequest::new(
+            SERVICE_GET_INSTANCE_ATTRIBUTE_LIST,
+            path,
+            data,
+        ))
+        .await?;
+    resp.expect_service::<ClientError>(SERVICE_GET_INSTANCE_ATTRIBUTE_LIST + REPLY_MASK)?;
     Ok((resp.0.status.has_more(), resp.0.data.into()))
 }
 

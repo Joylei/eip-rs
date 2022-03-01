@@ -182,10 +182,11 @@ where
                     remaining as u16
                 }
             };
-
+            //dbg!(bytes_read);
             let (has_more, data) =
                 read_template(self.inner, self.instance_id, offset, bytes_read).await?;
-            debug_assert!(!data.is_empty() && data.len() == bytes_read as usize);
+            debug_assert!(!data.is_empty() && data.len() <= bytes_read as usize);
+            //dbg!(data.len());
             if offset == 0 {
                 offset = data.len() as u32 + 1;
             } else {
