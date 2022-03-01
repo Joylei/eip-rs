@@ -44,7 +44,7 @@ pub trait CommonServices: MessageService {
         R: Decode<'de> + 'static,
     {
         let attrs_len = attrs.len();
-        assert!(attrs_len <= u16::MAX as usize);
+        debug_assert!(attrs_len <= u16::MAX as usize);
         send_and_extract(
             self,
             0x03,

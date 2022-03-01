@@ -18,7 +18,7 @@ impl<P: Encode, D: Encode> Encode for MessageRequest<P, D> {
         buf.put_u8(self.service_code);
 
         let path_len = self.path.bytes_count();
-        assert!(path_len <= u8::MAX as usize && path_len % 2 == 0);
+        debug_assert!(path_len <= u8::MAX as usize && path_len % 2 == 0);
         buf.put_u8((path_len / 2) as u8);
 
         self.path.encode(buf, encoder)?;
@@ -36,7 +36,7 @@ impl<P: Encode, D: Encode> Encode for MessageRequest<P, D> {
         buf.put_u8(self.service_code);
 
         let path_len = self.path.bytes_count();
-        assert!(path_len <= u8::MAX as usize && path_len % 2 == 0);
+        debug_assert!(path_len <= u8::MAX as usize && path_len % 2 == 0);
         buf.put_u8((path_len / 2) as u8);
 
         self.path.encode_by_ref(buf, encoder)?;
