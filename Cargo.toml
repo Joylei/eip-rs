@@ -42,6 +42,11 @@ env_logger = "0.9"
 futures = "0.3"
 tokio = { version = "1", features = ["full"] }
 anyhow = "1"
+criterion = { version = "0.3", features = [
+    "async_futures",
+    "async_tokio",
+    "cargo_bench_support",
+] }
 
 [features]
 default = ["inlinable-string", "error-explain"]
@@ -59,6 +64,11 @@ codegen-units = 1
 [profile.bench]
 lto = 'thin'
 codegen-units = 1
+debug = 1
 
 [profile.test]
 debug = 1
+
+[[bench]]
+name = "bench_read"
+harness = false
