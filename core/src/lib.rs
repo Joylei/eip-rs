@@ -36,6 +36,7 @@ pub use string::*;
 
 /// only for testing, not public visible
 #[doc(hidden)]
+#[cfg(feature = "cip")]
 pub mod tests {
     use crate::{
         codec::{Encode, Encoder},
