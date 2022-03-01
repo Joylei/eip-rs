@@ -7,6 +7,7 @@
 #![allow(non_snake_case)]
 
 use super::*;
+use alloc::{rc::Rc, sync::Arc};
 use bytes::{BufMut, Bytes, BytesMut};
 use core::marker::PhantomData;
 use smallvec::SmallVec;
@@ -380,6 +381,40 @@ macro_rules! impl_tuple {
         }
     };
 }
+
+//  -- Arc --
+impl<T: Encode> Encode for Arc<T> {
+    #[inline]
+    fn encode_by_ref<A: Encoder>(
+        &self,
+        buf: &mut BytesMut,
+        encoder: &mut A,
+    ) -> Result<(), A::Error> {
+        T::encode_by_ref(self, buf, encoder)
+    }
+    #[inline]
+    fn bytes_count(&self) -> usize {
+        T::bytes_count(self)
+    }
+}
+
+//  -- Rc --
+impl<T: Encode> Encode for Rc<T> {
+    #[inline]
+    fn encode_by_ref<A: Encoder>(
+        &self,
+        buf: &mut BytesMut,
+        encoder: &mut A,
+    ) -> Result<(), A::Error> {
+        T::encode_by_ref(self, buf, encoder)
+    }
+    #[inline]
+    fn bytes_count(&self) -> usize {
+        T::bytes_count(self)
+    }
+}
+
+// -- tuples --
 
 impl_tuple!(0 T0);
 impl_tuple!(0 T0 1 T1);
