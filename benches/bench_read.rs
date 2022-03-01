@@ -8,7 +8,7 @@ use rseip::precludes::*;
 
 fn bench_read(c: &mut Criterion) {
     c.bench_function("async read", |b| {
-        let rt = tokio::runtime::Builder::new_current_thread()
+        let rt = tokio::runtime::Builder::new_multi_thread()
             .enable_all()
             .build()
             .unwrap();
