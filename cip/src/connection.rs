@@ -323,77 +323,66 @@ pub struct OpenOptions<P = EPath> {
 
 impl<P> OpenOptions<P> {
     /// originator to target connection id
-    #[inline]
     pub fn o_t_connection_id(mut self, val: u32) -> Self {
         self.o_t_connection_id = val;
         self
     }
 
     /// target to originator connection id
-    #[inline]
     pub fn t_o_connection_id(mut self, val: u32) -> Self {
         self.t_o_connection_id = val;
         self
     }
 
     /// priority & tick time
-    #[inline]
     pub fn priority_tick_time(mut self, val: u8) -> Self {
         self.priority_tick_time = val & 0xF; // only tick time part, ignore high byte
         self
     }
 
     /// timeout ticks
-    #[inline]
     pub fn timeout_ticks(mut self, val: u8) -> Self {
         self.timeout_ticks = val;
         self
     }
 
     /// originator connection serial number
-    #[inline]
     pub fn connection_serial_number(mut self, val: u16) -> Self {
         self.connection_serial_number = val;
         self
     }
 
     /// originator vendor id
-    #[inline]
     pub fn originator_vendor_id(mut self, val: u16) -> Self {
         self.vendor_id = val;
         self
     }
 
     /// originator serial number
-    #[inline]
     pub fn originator_serial_number(mut self, val: u32) -> Self {
         self.originator_serial_number = val;
         self
     }
 
     /// originator to target RPI
-    #[inline]
     pub fn o_t_rpi(mut self, val: u32) -> Self {
         self.o_t_rpi = val;
         self
     }
 
     /// target to originator RPI
-    #[inline]
     pub fn t_o_rpi(mut self, val: u32) -> Self {
         self.t_o_rpi = val;
         self
     }
 
     /// timeout multiplier
-    #[inline]
     pub fn timeout_multiplier(mut self, val: u8) -> Self {
         self.timeout_multiplier = val;
         self
     }
 
     /// connection size
-    #[inline]
     pub fn connection_size(mut self, val: u16) -> Self {
         self.o_t_params.connection_size = val;
         self.t_o_params.connection_size = val;
@@ -401,98 +390,84 @@ impl<P> OpenOptions<P> {
     }
 
     /// connection path
-    #[inline]
     pub fn connection_path(mut self, path: P) -> Self {
         self.connection_path = path;
         self
     }
 
     /// originator to target connection priority
-    #[inline]
     pub fn o_t_priority(mut self, val: Priority) -> Self {
         self.o_t_params.priority = val;
         self
     }
 
     /// target to originator priority
-    #[inline]
     pub fn t_o_priority(mut self, val: Priority) -> Self {
         self.t_o_params.priority = val;
         self
     }
 
     /// originator to target fixed or variable length for message frame
-    #[inline]
     pub fn o_t_variable_length(mut self, val: VariableLength) -> Self {
         self.o_t_params.variable_length = val;
         self
     }
 
     /// target to originator fixed or variable length for message frame
-    #[inline]
     pub fn t_o_variable_length(mut self, val: VariableLength) -> Self {
         self.t_o_params.variable_length = val;
         self
     }
 
     /// target to originator connection type
-    #[inline]
     pub fn t_o_connection_type(mut self, val: ConnectionType) -> Self {
         self.t_o_params.connection_type = val;
         self
     }
 
     /// originator to target connection type
-    #[inline]
     pub fn o_t_connection_type(mut self, val: ConnectionType) -> Self {
         self.o_t_params.connection_type = val;
         self
     }
 
     /// originator to target redundant owner
-    #[inline]
     pub fn o_t_redundant_owner(mut self, val: bool) -> Self {
         self.o_t_params.redundant_owner = val;
         self
     }
 
     /// target to originator redundant owner
-    #[inline]
     pub fn t_o_redundant_owner(mut self, val: bool) -> Self {
         self.t_o_params.redundant_owner = val;
         self
     }
 
     /// transport direction
-    #[inline]
     pub fn transport_direction(mut self, val: Direction) -> Self {
         self.transport_direction = val;
         self
     }
 
     /// transport class
-    #[inline]
     pub fn transport_class(mut self, val: TransportClass) -> Self {
         self.transport_class = val;
         self
     }
 
     /// transport trigger
-    #[inline]
     pub fn transport_trigger(mut self, val: TriggerType) -> Self {
         self.transport_trigger = val;
         self
     }
 
     /// is large forward open
-    #[inline]
     pub fn large_open(mut self, val: bool) -> Self {
         self.large_open = val;
         self
     }
 
     /// get transport class trigger
-    #[inline]
     pub(crate) fn transport_class_trigger(&self) -> u8 {
         let dir = self.transport_direction as u8;
         let trigger = self.transport_trigger as u8;
@@ -503,7 +478,6 @@ impl<P> OpenOptions<P> {
 }
 
 impl Default for OpenOptions<EPath> {
-    #[inline]
     fn default() -> Self {
         // port 1, message router 0x02
         let connection_path = EPath::from(vec![

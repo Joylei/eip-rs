@@ -61,18 +61,22 @@ impl<D> MessageReply<D> {
 impl<D> MessageReplyInterface for MessageReply<D> {
     type Value = D;
 
+    #[inline]
     fn reply_service(&self) -> u8 {
         self.reply_service
     }
 
+    #[inline]
     fn status(&self) -> &Status {
         &self.status
     }
 
+    #[inline]
     fn value(&self) -> &Self::Value {
         &self.data
     }
 
+    #[inline]
     fn into_value(self) -> Self::Value {
         self.data
     }

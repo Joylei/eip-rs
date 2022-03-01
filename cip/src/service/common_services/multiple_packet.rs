@@ -15,7 +15,7 @@ use smallvec::SmallVec;
 /// build and send multiple service packet
 pub struct MultipleServicePacket<'a, T, P, D> {
     inner: &'a mut T,
-    items: SmallVec<[MessageRequest<P, D>; 8]>,
+    items: SmallVec<[MessageRequest<P, D>; 4]>,
 }
 
 impl<'a, T, P, D> MultipleServicePacket<'a, T, P, D> {

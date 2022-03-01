@@ -72,7 +72,7 @@ impl Encode for SocketAddr {
         Ok(())
     }
 
-    #[inline]
+    #[inline(always)]
     fn bytes_count(&self) -> usize {
         16
     }

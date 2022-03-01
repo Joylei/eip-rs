@@ -231,7 +231,6 @@ impl Encode for EPath {
 }
 
 impl From<PortSegment> for EPath {
-    #[inline]
     fn from(port: PortSegment) -> Self {
         Self::from(vec![Segment::Port(port)])
     }

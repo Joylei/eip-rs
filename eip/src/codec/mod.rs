@@ -38,11 +38,7 @@ impl<E: Error> codec::Encoder for ClientCodec<E> {
 
     #[inline(always)]
     fn encode_bool(&mut self, item: bool, buf: &mut BytesMut) -> Result<(), Self::Error> {
-        if item {
-            buf.put_u8(255);
-        } else {
-            buf.put_u8(0);
-        }
+        buf.put_u8(if item { 255 } else { 0 });
         Ok(())
     }
 

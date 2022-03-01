@@ -54,7 +54,6 @@ impl EPath {
     }
 
     /// into inner
-    #[inline]
     pub fn into_inner(self) -> SmallVec<Array> {
         self.0
     }
@@ -158,7 +157,6 @@ impl DerefMut for EPath {
 }
 
 impl From<Vec<Segment>> for EPath {
-    #[inline]
     fn from(src: Vec<Segment>) -> Self {
         Self(SmallVec::from_vec(src))
     }
@@ -174,7 +172,6 @@ pub struct PortSegment {
 }
 
 impl Default for PortSegment {
-    #[inline]
     fn default() -> Self {
         Self {
             port: 1,                        // Backplane

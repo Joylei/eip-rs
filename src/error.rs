@@ -58,7 +58,6 @@ impl Error for ClientError {
 }
 
 impl From<io::Error> for ClientError {
-    #[inline]
     fn from(e: io::Error) -> Self {
         Self::Io { kind: "io", err: e }
     }

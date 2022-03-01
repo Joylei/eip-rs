@@ -23,7 +23,7 @@ pub trait Decoder<'de> {
     fn buf_mut(&mut self) -> &mut Self::Buf;
 
     /// check remaining buffer size
-    #[inline]
+    #[inline(always)]
     fn ensure_size(&self, expected: usize) -> Result<(), Self::Error> {
         let actual_len = self.buf().remaining();
         if actual_len < expected {
@@ -121,12 +121,12 @@ pub trait Decoder<'de> {
         self.buf_mut().get_u128_le()
     }
 
-    #[inline]
+    #[inline(always)]
     fn remaining(&mut self) -> usize {
         self.buf().remaining()
     }
 
-    #[inline]
+    #[inline(always)]
     fn has_remaining(&mut self) -> bool {
         self.buf().has_remaining()
     }
