@@ -40,5 +40,5 @@ pub(crate) fn eip_error_code<E: Error>(err_code: u16) -> E {
 
 #[cfg(not(feature = "error-explain"))]
 pub(crate) fn eip_error_code<E: Error>(err_code: u16) -> E {
-    Self::custom(build_error!(err_code))
+    E::custom(build_error!(err_code))
 }

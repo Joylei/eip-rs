@@ -14,11 +14,11 @@ resolver = "2"
 
 [dependencies]
 inlinable_string = { version = "^0.1.14", optional = true }
-bytes = { version = "1", optional = true }
+bytes = "1"
 byteorder = { version = "1", optional = true }
 smallvec = "1"
 
 [features]
 default = ["feat-inlinable-string", "cip"]
 feat-inlinable-string = ["inlinable_string"]
-cip = ["bytes", "byteorder"]
+cip = ["byteorder"]
