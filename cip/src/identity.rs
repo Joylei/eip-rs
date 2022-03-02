@@ -5,11 +5,11 @@
 // License: MIT
 
 use super::{socket::SocketAddr, Revision};
-use rseip_core::String;
+use std::borrow::Cow;
 
 /// Identity Object
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct IdentityObject {
+pub struct IdentityObject<'a> {
     /// encapsulation protocol version supported
     pub protocol_version: u16,
     /// socket addr
@@ -28,7 +28,7 @@ pub struct IdentityObject {
     pub serial_number: u32,
     //pub product_name_len: u8,
     /// short string
-    pub product_name: String,
+    pub product_name: Cow<'a, str>,
     /// current state of device
     pub state: u8,
 }

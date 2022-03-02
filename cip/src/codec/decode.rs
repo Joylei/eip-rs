@@ -5,13 +5,14 @@
 // License: MIT
 
 pub mod message_reply;
-
 use crate::*;
 use crate::{identity::IdentityObject, socket::SocketAddr};
 use bytes::Buf;
+use core::{slice, str};
 use rseip_core::codec::{Decode, Decoder};
+use std::borrow::Cow;
 
-impl<'de> Decode<'de> for IdentityObject {
+impl<'de> Decode<'de> for IdentityObject<'de> {
     fn decode<D>(mut decoder: D) -> Result<Self, D::Error>
     where
         D: rseip_core::codec::Decoder<'de>,
@@ -38,7 +39,12 @@ impl<'de> Decode<'de> for IdentityObject {
                 let name_len = decoder.decode_u8();
                 decoder.ensure_size(name_len as usize + 1)?;
                 let data = decoder.buf_mut().copy_to_bytes(name_len as usize);
-                String::from_utf8_lossy(&data).into_owned().into()
+                unsafe {
+                    let buf = data.as_ptr();
+                    let buf = slice::from_raw_parts(buf, name_len as usize);
+                    let name = str::from_utf8_unchecked(buf);
+                    Cow::from(name)
+                }
             },
             state: decoder.decode_u8(),
         };
@@ -47,7 +53,7 @@ impl<'de> Decode<'de> for IdentityObject {
     }
 }
 
-impl<'de> Decode<'de> for ListServiceItem {
+impl<'de> Decode<'de> for ListServiceItem<'de> {
     fn decode<D>(mut decoder: D) -> Result<Self, D::Error>
     where
         D: Decoder<'de>,
@@ -58,12 +64,27 @@ impl<'de> Decode<'de> for ListServiceItem {
             protocol_version: decoder.decode_u16(),
             capability: decoder.decode_u16(),
             name: {
-                decoder.ensure_size(16)?;
-                let data = decoder.buf_mut().copy_to_bytes(16);
-                String::from_utf8_lossy(&data).into_owned()
+                const STR_LEN: usize = 16;
+                decoder.ensure_size(STR_LEN)?;
+                let data = decoder.buf_mut().copy_to_bytes(STR_LEN);
+                unsafe {
+                    let buf = data.as_ptr();
+                    let buf = slice::from_raw_parts(buf, STR_LEN);
+                    let name = str::from_utf8_unchecked(buf);
+                    Cow::from(name)
+                }
             },
         };
 
         Ok(item)
     }
 }
+
+// fn decode_c_str<'de>(data: Bytes) -> &'de str {
+//     unsafe {
+//         let buf = data.as_ptr();
+//         let len = libc::strlen(buf as *const i8);
+//         let buf = slice::from_raw_parts(buf, len);
+//         str::from_utf8_unchecked(buf)
+//     }
+// }

@@ -7,18 +7,20 @@
 // type code = 0x100
 // encoded bytes count: 24
 
+use std::borrow::Cow;
+
 /// only one service for ListServices
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
-pub struct ListServiceItem {
+pub struct ListServiceItem<'a> {
     /// version shall be 1
     pub protocol_version: u16,
     pub capability: u16,
     /// name of service, NULL-terminated ASCII string;
-    /// name = "Communications"
-    pub name: String,
+    /// it's Communications for CIP
+    pub name: Cow<'a, str>,
 }
 
-impl ListServiceItem {
+impl ListServiceItem<'_> {
     /// supports CIP Encapsulation via TCP
     #[inline(always)]
     pub fn capability_tcp(&self) -> bool {
