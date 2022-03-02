@@ -4,6 +4,8 @@
 // Copyright: 2021, Joylei <leingliu@gmail.com>
 // License: MIT
 
+#![allow(unused)]
+
 use anyhow::Result;
 use bytes::{BufMut, BytesMut};
 use rseip::precludes::*;
@@ -46,14 +48,6 @@ const DEFAULT_STRING_CAPACITY: usize = 82;
 #[derive(Debug, Default)]
 struct AbString {
     data: String,
-}
-
-impl AbString {
-    fn new() -> Self {
-        Self {
-            data: String::new(),
-        }
-    }
 }
 
 impl Encode for AbString {
