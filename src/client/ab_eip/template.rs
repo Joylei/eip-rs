@@ -4,8 +4,6 @@
 // Copyright: 2021, Joylei <leingliu@gmail.com>
 // License: MIT
 
-mod decoder;
-
 use super::{
     interceptor::HasMoreInterceptor, symbol::SymbolType, HasMore, CLASS_TEMPLATE, REPLY_MASK,
     SERVICE_TEMPLATE_READ,
@@ -18,14 +16,17 @@ use crate::{
     },
     ClientError,
 };
-use bytes::{Buf, Bytes};
-use core::ops::{Deref, DerefMut};
-use decoder::{DefaultDefinitionDecoder, DefinitionDecoder};
+use bytes::{Buf, BufMut, Bytes, BytesMut};
+use core::{
+    ops::{Deref, DerefMut},
+    str,
+};
 use rseip_cip::MessageReplyInterface;
 use rseip_core::{
     codec::{BytesHolder, Decode, Decoder},
-    Error, String,
+    Error,
 };
+use smallvec::SmallVec;
 use std::collections::HashMap;
 
 #[async_trait::async_trait(?Send)]
@@ -56,150 +57,114 @@ impl<T: MessageService<Error = ClientError>> AbTemplateService for T {
     where
         Self: Sized,
     {
-        let mut decoder: DefaultDefinitionDecoder = Default::default();
-        decoder.member_count(template.member_count);
         TemplateRead {
             inner: self,
             instance_id: template.instance_id,
-            object_size: template.object_size * 4,
+            object_size: template.object_size,
             member_count: template.member_count,
-            offset: 0,
-            read_size: 500,
-            decoder,
+            buf: Default::default(),
         }
     }
 }
 
-pub struct TemplateRead<'a, T, D = DefaultDefinitionDecoder> {
+pub struct TemplateRead<'a, T> {
     inner: &'a mut T,
     instance_id: u16,
     object_size: u32,
     member_count: u16,
-    offset: u32,
-    read_size: u16,
-    decoder: D,
+    buf: BytesMut,
 }
 
-impl<'a, T, D: Default> TemplateRead<'a, T, D> {
+impl<'a, T> TemplateRead<'a, T> {
     pub fn new(inner: &'a mut T) -> Self {
         Self {
             inner,
             instance_id: 0,
             object_size: 0,
             member_count: 0,
-            offset: 0,
-            read_size: 0,
-            decoder: Default::default(),
+            buf: Default::default(),
         }
     }
 }
 
-impl<'a, T, D: DefinitionDecoder> TemplateRead<'a, T, D> {
-    /// set template instance id
+impl<'a, T> TemplateRead<'a, T> {
+    /// template instance id
     pub fn instance_id(mut self, instance_id: u16) -> Self {
         self.instance_id = instance_id;
         self
     }
 
-    /// number of bytes of the object
+    /// template object definition size
     pub fn object_size(mut self, object_size: u32) -> Self {
         self.object_size = object_size;
         self
     }
 
-    /// number of member of the object
+    /// number of members
     pub fn member_count(mut self, member_count: u16) -> Self {
         self.member_count = member_count;
-        self.decoder.member_count(member_count);
         self
-    }
-
-    /// offset to send request
-    pub fn offset(mut self, offset: u32) -> Self {
-        self.offset = offset;
-        self
-    }
-
-    /// number of bytes to read in a single request, as all the data may not fit in a single reply
-    pub fn read_size(mut self, read_size: u16) -> Self {
-        self.read_size = read_size;
-        self
-    }
-
-    pub fn decoder<R: DefinitionDecoder>(self, mut decoder: R) -> TemplateRead<'a, T, R> {
-        decoder.member_count(self.member_count);
-        TemplateRead {
-            inner: self.inner,
-            instance_id: self.instance_id,
-            object_size: self.object_size,
-            member_count: self.member_count,
-            offset: self.offset,
-            read_size: self.read_size,
-            decoder,
-        }
-    }
-
-    pub fn decoder_mut(&mut self) -> &mut D {
-        &mut self.decoder
     }
 }
 
-impl<'a, T, D> TemplateRead<'a, T, D>
+impl<'a, T> TemplateRead<'a, T>
 where
     T: MessageService<Error = ClientError>,
-    D: DefinitionDecoder,
-    D::Error: Into<ClientError>,
 {
-    pub async fn call(mut self) -> Result<D::Item, ClientError> {
-        if self.member_count < 2 {
+    pub async fn call<'de>(&'de mut self) -> Result<TemplateDefinition<'de>, ClientError> {
+        const HEADER_SIZE: u32 = 23;
+        if self.member_count == 0 {
             return Err(Error::custom(
                 "read template - need to initialize `member_count`",
             ));
         }
-        if self.object_size < 23 {
-            return Err(Error::custom(
-                "read template - need to initialize `object_size`",
-            ));
-        }
 
-        // Note: self.object_size = template.object_size * 4;
-        // 23 bytes will not be included in the reply data.
-        let total_bytes = self.object_size - 23;
-        let mut offset = self.offset;
-        while offset < total_bytes {
-            // determine bytes to read
-            let bytes_read = {
-                // the initial offset should be 0;
-                // after first fetch, offset = bytes received + 1
-                let remaining = if offset == 0 {
-                    total_bytes
-                } else {
-                    total_bytes - offset + 1
-                };
-                if remaining > self.read_size as u32 {
-                    self.read_size
-                } else {
-                    remaining as u16
-                }
-            };
-            //dbg!(bytes_read);
-            let (has_more, data) =
-                read_template(self.inner, self.instance_id, offset, bytes_read).await?;
-            debug_assert!(!data.is_empty() && data.len() <= bytes_read as usize);
-            //dbg!(data.len());
-            if offset == 0 {
-                offset = data.len() as u32 + 1;
-            } else {
-                offset += data.len() as u32;
+        let total_bytes = {
+            let object_size = self.object_size * 4;
+            if object_size <= HEADER_SIZE {
+                return Err(Error::custom(
+                    "read template - need to initialize `object_size`",
+                ));
             }
+            // header(23 bytes) will not be included in the reply data.
+            let total_bytes = object_size - HEADER_SIZE;
+            // calc padding
+            let v = total_bytes % 4;
+            if v == 0 {
+                total_bytes
+            } else {
+                total_bytes - v + 4
+            }
+        };
 
-            // partially decode
-            self.decoder.partial_decode(data).map_err(|e| e.into())?;
+        self.buf.clear();
+
+        // the initial offset should be 0;
+        // after first fetch, offset = bytes received + 1
+        let mut buf_len = 0;
+        while buf_len < total_bytes {
+            let (offset, remaining) = if buf_len == 0 {
+                (0, total_bytes)
+            } else {
+                (buf_len, total_bytes - buf_len)
+            };
+            //dbg!(total_bytes, offset);
+            let (has_more, data) = read_template(
+                self.inner,
+                self.instance_id,
+                offset as u32,
+                remaining as u16,
+            )
+            .await?;
+            debug_assert!(!data.is_empty() && data.len() as u32 <= remaining);
+            self.buf.put_slice(&data[..]);
+            //dbg!(data.len(), self.buf.len());
             if !has_more {
                 // extract object
-                let res = self.decoder.decode().map_err(|e| e.into())?;
+                let res = decode_definition(&mut self.buf, self.member_count)?;
                 return Ok(res);
             }
+            buf_len = self.buf.len() as u32;
         }
         Err(Error::custom("read template - offset out of range"))
     }
@@ -226,27 +191,27 @@ where
 
 /// template definition
 #[derive(Debug, Default)]
-pub struct TemplateDefinition {
+pub struct TemplateDefinition<'a> {
     /// template name
-    pub(crate) name: String,
+    pub(crate) name: &'a str,
     /// template members
-    pub(crate) members: HashMap<String, MemberInfo>,
+    pub(crate) members: HashMap<&'a str, MemberInfo<'a>>,
 }
 
-impl TemplateDefinition {
+impl TemplateDefinition<'_> {
     pub fn name(&self) -> &str {
         &self.name
     }
 }
 
-impl Deref for TemplateDefinition {
-    type Target = HashMap<String, MemberInfo>;
+impl<'a> Deref for TemplateDefinition<'a> {
+    type Target = HashMap<&'a str, MemberInfo<'a>>;
     fn deref(&self) -> &Self::Target {
         &self.members
     }
 }
 
-impl DerefMut for TemplateDefinition {
+impl<'a> DerefMut for TemplateDefinition<'a> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.members
     }
@@ -254,9 +219,9 @@ impl DerefMut for TemplateDefinition {
 
 /// template member definition
 #[derive(Debug, Clone, Default)]
-pub struct MemberInfo {
+pub struct MemberInfo<'de> {
     /// member name
-    pub name: String,
+    pub name: &'de str,
 
     /// array_size = 0 if atomic type;
     ///
@@ -285,6 +250,8 @@ pub struct Template {
     /// template structure size, number of bytes of structure data to transfer in Read/Write Tag service
     pub struct_size: u32,
 }
+
+// -- decode --
 
 impl<'de> Decode<'de> for Template {
     fn decode<D>(mut decoder: D) -> Result<Self, D::Error>
@@ -337,4 +304,44 @@ where
         )));
     }
     buf.decode_any()
+}
+
+fn decode_definition<'de>(
+    buf: &'de mut BytesMut,
+    member_count: u16,
+) -> Result<TemplateDefinition<'de>, ClientError> {
+    let mut members: SmallVec<[MemberInfo<'_>; 8]> = SmallVec::with_capacity(member_count as usize);
+    for _ in 0..member_count {
+        let item = MemberInfo {
+            name: Default::default(),
+            array_size: buf.get_u16_le(),
+            type_info: SymbolType(buf.get_u16_le()),
+            offset: buf.get_u32_le(),
+        };
+        members.push(item);
+    }
+    let mut strings = (&buf[..]).split(|v| *v == 0).map(decode_name);
+    let mut get_name = || {
+        strings.next().ok_or_else(|| {
+            ClientError::custom("read template - unexpected eof while decoding names")
+        })
+    };
+    let name = get_name()?;
+    for index in 0..member_count {
+        let name = get_name()?;
+        members[index as usize].name = name;
+    }
+    Ok(TemplateDefinition {
+        name,
+        members: members.drain(..).map(|item| (item.name, item)).collect(),
+    })
+}
+
+/// name might contains `;`,  truncate to get the name
+#[inline]
+fn decode_name(buf: &[u8]) -> &str {
+    // split by semi-colon
+    let mut parts = buf.split(|v| *v == 0x3B);
+    let name_buf = parts.next().unwrap();
+    unsafe { str::from_utf8_unchecked(name_buf) }
 }
