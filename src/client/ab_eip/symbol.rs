@@ -10,23 +10,24 @@ use crate::{
     ClientError, Result,
 };
 use bytes::{Buf, Bytes};
-use core::{convert::TryFrom, fmt};
+use core::{convert::TryFrom, fmt, slice, str};
 use futures_util::{stream, Stream};
 use rseip_cip::MessageReplyInterface;
 use rseip_core::{codec::BytesHolder, hex::AsHex, Error};
+use std::borrow::Cow;
 
 /// symbol instance
 #[derive(Clone, Hash, PartialEq, Eq)]
-pub struct SymbolInstance {
+pub struct SymbolInstance<'a> {
     /// instance id
     pub id: u16,
     /// symbol name
-    pub name: String,
+    pub name: Cow<'a, str>,
     /// symbol data type
     pub symbol_type: SymbolType,
 }
 
-impl fmt::Debug for SymbolInstance {
+impl fmt::Debug for SymbolInstance<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("SymbolInstance")
             .field("id", &self.id.as_hex())
@@ -36,7 +37,7 @@ impl fmt::Debug for SymbolInstance {
     }
 }
 
-impl SymbolInstance {
+impl SymbolInstance<'_> {
     /// symbol name that contains `:`
     #[inline]
     pub fn is_module_defined(&self) -> bool {
@@ -228,7 +229,7 @@ impl<'a, T> GetInstanceAttributeList<'a, T> {
 }
 
 impl<'a, T: MessageService<Error = ClientError>> GetInstanceAttributeList<'a, T> {
-    pub fn call(self) -> impl Stream<Item = Result<SymbolInstance>> + 'a {
+    pub fn call(self) -> impl Stream<Item = Result<SymbolInstance<'a>>> {
         let all = self.all;
         stream::try_unfold(
             State::Request {
@@ -339,7 +340,7 @@ async fn get_attribute_list<T: MessageService<Error = ClientError>>(
     Ok((resp.0.status.has_more(), resp.0.data.into()))
 }
 
-impl TryFrom<&mut Bytes> for SymbolInstance {
+impl TryFrom<&mut Bytes> for SymbolInstance<'_> {
     type Error = ClientError;
 
     fn try_from(buf: &mut Bytes) -> Result<Self> {
@@ -353,9 +354,12 @@ impl TryFrom<&mut Bytes> for SymbolInstance {
         if buf.remaining() < name_len + 2 {
             return Err(Error::invalid_length(buf.remaining(), name_len + 2));
         }
-        let name = {
+        let name = unsafe {
             let name_buf = buf.split_to(name_len);
-            String::from_utf8_lossy(&name_buf).into_owned()
+            let buf = name_buf.as_ptr();
+            let buf = slice::from_raw_parts(buf, name_len as usize);
+            let name = str::from_utf8_unchecked(buf);
+            Cow::from(name)
         };
         let symbol_type = buf.get_u16_le();
         Ok(SymbolInstance {
