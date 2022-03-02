@@ -200,7 +200,7 @@ pub struct TemplateDefinition<'a> {
 
 impl TemplateDefinition<'_> {
     pub fn name(&self) -> &str {
-        &self.name
+        self.name
     }
 }
 
