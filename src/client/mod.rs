@@ -201,10 +201,10 @@ impl<B: Driver> Connection<B> {
             let v = self
                 .seq_id
                 .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-            if v == 0 {
-                continue;
+            // NOTE: sequence_number cannot be 0
+            if v > 0 {
+                return v;
             }
-            return v;
         }
     }
 
