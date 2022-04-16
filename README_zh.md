@@ -72,7 +72,7 @@ pub async fn main() -> Result<()> {
 添加 `rseip` 到 `cargo` 项目的依赖
 
 ```toml
-rseip="0.1"
+rseip="0.3"
 ```
 
 然后，导入 `rseip` 的模块到项目中
