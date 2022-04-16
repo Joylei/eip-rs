@@ -17,7 +17,7 @@ where
     T: AsyncRead + AsyncWrite + Unpin + Send + Sync,
 {
     /// context is open?
-    fn is_open(&mut self) -> bool {
+    fn is_open(&self) -> bool {
         self.session_handle().is_some()
     }
 

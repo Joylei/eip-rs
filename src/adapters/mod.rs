@@ -22,7 +22,7 @@ use rseip_core::codec::{Decode, Encode};
 #[async_trait::async_trait]
 pub trait Service: Send + Sync {
     /// context is open?
-    fn is_open(&mut self) -> bool;
+    fn is_open(&self) -> bool;
 
     /// open context, eg register session for EIP
     async fn open(&mut self) -> Result<()>;
