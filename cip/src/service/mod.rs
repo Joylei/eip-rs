@@ -36,8 +36,8 @@ pub async fn send_and_extract<'de, S, P, D, R>(
 ) -> Result<R, S::Error>
 where
     S: MessageService + ?Sized,
-    P: Encode,
-    D: Encode,
+    P: Encode + Send + Sync,
+    D: Encode + Send + Sync,
     R: Decode<'de> + 'static,
 {
     let mr = MessageRequest {

@@ -12,7 +12,7 @@ pub use multiple_packet::MultipleServicePacket;
 use rseip_core::codec::{Decode, Encode, SliceContainer};
 
 /// common services
-#[async_trait::async_trait(?Send)]
+#[async_trait::async_trait]
 pub trait CommonServices: MessageService {
     /// invoke the Get_Attribute_All service
     #[inline]
@@ -25,7 +25,7 @@ pub trait CommonServices: MessageService {
 
     /// invoke the Set_Attribute_All service
     #[inline]
-    async fn set_attribute_all<D: Encode>(
+    async fn set_attribute_all<D: Encode + Send + Sync>(
         &mut self,
         path: EPath,
         attrs: D,
@@ -65,7 +65,7 @@ pub trait CommonServices: MessageService {
         attrs: D,
     ) -> Result<R, Self::Error>
     where
-        D: Encode,
+        D: Encode + Send + Sync,
         R: Decode<'de> + 'static,
     {
         send_and_extract(self, 0x04, path, attrs).await
@@ -93,7 +93,7 @@ pub trait CommonServices: MessageService {
     #[inline]
     async fn create<'de, D, R>(&mut self, path: EPath, data: D) -> Result<R, Self::Error>
     where
-        D: Encode,
+        D: Encode + Send + Sync,
         R: Decode<'de> + 'static,
     {
         send_and_extract(self, 0x08, path, data).await
@@ -109,7 +109,7 @@ pub trait CommonServices: MessageService {
     #[inline]
     async fn apply_attributes<'de, D, R>(&mut self, path: EPath, data: D) -> Result<R, Self::Error>
     where
-        D: Encode,
+        D: Encode + Send + Sync,
         R: Decode<'de> + 'static,
     {
         send_and_extract(self, 0x0D, path, data).await
@@ -126,7 +126,7 @@ pub trait CommonServices: MessageService {
 
     /// invoke the Set_Attribute_Single service
     #[inline]
-    async fn set_attribute_single<D: Encode>(
+    async fn set_attribute_single<D: Encode + Send + Sync>(
         &mut self,
         path: EPath,
         data: D,
@@ -165,7 +165,7 @@ pub trait CommonServices: MessageService {
     #[inline]
     async fn set_member<'de, D, R>(&mut self, path: EPath, data: D) -> Result<R, Self::Error>
     where
-        D: Encode,
+        D: Encode + Send + Sync,
         R: Decode<'de> + 'static,
     {
         send_and_extract(self, 0x19, path, data).await
@@ -175,7 +175,7 @@ pub trait CommonServices: MessageService {
     #[inline]
     async fn insert_member<'de, D, R>(&mut self, path: EPath, data: D) -> Result<R, Self::Error>
     where
-        D: Encode,
+        D: Encode + Send + Sync,
         R: Decode<'de> + 'static,
     {
         send_and_extract(self, 0x1A, path, data).await
@@ -205,5 +205,5 @@ pub trait CommonServices: MessageService {
     }
 }
 
-#[async_trait::async_trait(?Send)]
+#[async_trait::async_trait]
 impl<T: MessageService> CommonServices for T {}

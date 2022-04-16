@@ -29,7 +29,7 @@ use rseip_core::{
 use smallvec::SmallVec;
 use std::collections::HashMap;
 
-#[async_trait::async_trait(?Send)]
+#[async_trait::async_trait]
 pub trait AbTemplateService {
     /// fetch template instance for specified instance id
     async fn find_template(&mut self, instance_id: u16) -> Result<Template, ClientError>;
@@ -40,7 +40,7 @@ pub trait AbTemplateService {
         Self: Sized;
 }
 
-#[async_trait::async_trait(?Send)]
+#[async_trait::async_trait]
 impl<T: MessageService<Error = ClientError>> AbTemplateService for T {
     /// fetch template instance for specified instance id
     async fn find_template(&mut self, instance_id: u16) -> Result<Template, ClientError> {

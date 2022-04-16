@@ -6,8 +6,8 @@
 
 use rseip_core::Error;
 
-#[async_trait::async_trait(?Send)]
-pub trait Heartbeat {
+#[async_trait::async_trait]
+pub trait Heartbeat: Send + Sync {
     type Error: Error;
     /// send Heartbeat message to keep underline transport alive
     async fn heartbeat(&mut self) -> Result<(), Self::Error>;

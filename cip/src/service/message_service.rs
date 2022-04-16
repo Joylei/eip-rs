@@ -10,14 +10,14 @@ use rseip_core::{
     Error,
 };
 
-#[async_trait::async_trait(?Send)]
-pub trait MessageService {
+#[async_trait::async_trait]
+pub trait MessageService: Send + Sync {
     type Error: Error;
     /// send message request
     async fn send<'de, P, D, R>(&mut self, mr: MessageRequest<P, D>) -> Result<R, Self::Error>
     where
-        P: Encode,
-        D: Encode,
+        P: Encode + Send + Sync,
+        D: Encode + Send + Sync,
         R: MessageReplyInterface + Decode<'de> + 'static;
 
     /// close underline transport
@@ -27,14 +27,14 @@ pub trait MessageService {
     fn closed(&self) -> bool;
 }
 
-#[async_trait::async_trait(?Send)]
+#[async_trait::async_trait]
 impl<T: MessageService + Sized> MessageService for &mut T {
     type Error = T::Error;
     #[inline]
     async fn send<'de, P, D, R>(&mut self, mr: MessageRequest<P, D>) -> Result<R, Self::Error>
     where
-        P: Encode,
-        D: Encode,
+        P: Encode + Send + Sync,
+        D: Encode + Send + Sync,
         R: MessageReplyInterface + Decode<'de> + 'static,
     {
         (**self).send(mr).await

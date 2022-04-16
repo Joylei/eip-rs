@@ -28,8 +28,7 @@ impl Driver for EipDriver {
     type Endpoint = SocketAddrV4;
     type Service = EipContext<TcpStream, ClientError>;
 
-    fn build_service(addr: &Self::Endpoint) -> BoxFuture<Result<Self::Service>> {
-        let addr = *addr;
+    fn build_service(addr: Self::Endpoint) -> BoxFuture<'static, Result<Self::Service>> {
         let fut = async move {
             let socket = TcpSocket::new_v4()?;
             let stream = socket.connect(addr.into()).await?;

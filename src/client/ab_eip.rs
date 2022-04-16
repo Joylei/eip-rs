@@ -49,7 +49,7 @@ impl Driver for AbEipDriver {
     type Service = EipContext<TcpStream, ClientError>;
 
     #[inline]
-    fn build_service(addr: &Self::Endpoint) -> BoxFuture<Result<Self::Service>> {
+    fn build_service(addr: Self::Endpoint) -> BoxFuture<'static, Result<Self::Service>> {
         EipDriver::build_service(addr)
     }
 }

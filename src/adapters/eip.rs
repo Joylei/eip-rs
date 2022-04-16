@@ -11,10 +11,10 @@ use rseip_core::codec::{Decode, Encode};
 use rseip_eip::EipContext;
 use tokio::io::{AsyncRead, AsyncWrite};
 
-#[async_trait::async_trait(?Send)]
+#[async_trait::async_trait]
 impl<T> Service for EipContext<T, ClientError>
 where
-    T: AsyncRead + AsyncWrite + Unpin,
+    T: AsyncRead + AsyncWrite + Unpin + Send + Sync,
 {
     /// context is open?
     fn is_open(&mut self) -> bool {
@@ -51,9 +51,9 @@ where
         request: UnconnectedSend<CP, MessageRequest<P, D>>,
     ) -> Result<R>
     where
-        CP: Encode,
-        P: Encode,
-        D: Encode,
+        CP: Encode + Send + Sync,
+        P: Encode + Send + Sync,
+        D: Encode + Send + Sync,
         R: MessageReplyInterface + Decode<'de> + 'static,
     {
         let service_code = request.data.service_code;
@@ -79,8 +79,8 @@ where
         request: MessageRequest<P, D>,
     ) -> Result<R>
     where
-        P: Encode,
-        D: Encode,
+        P: Encode + Send + Sync,
+        D: Encode + Send + Sync,
         R: MessageReplyInterface + Decode<'de> + 'static,
     {
         let service_code = request.service_code;
@@ -98,7 +98,7 @@ where
     #[inline]
     async fn forward_open<P>(&mut self, request: OpenOptions<P>) -> Result<ForwardOpenReply>
     where
-        P: Encode,
+        P: Encode + Send + Sync,
     {
         let req: MessageRequest<&[u8], _> = MessageRequest {
             service_code: SERVICE_FORWARD_OPEN,
@@ -118,7 +118,7 @@ where
         request: ForwardCloseRequest<P>,
     ) -> Result<ForwardCloseReply>
     where
-        P: Encode,
+        P: Encode + Send + Sync,
     {
         let req: MessageRequest<&[u8], _> = MessageRequest {
             service_code: SERVICE_FORWARD_CLOSE,

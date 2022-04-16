@@ -30,8 +30,8 @@ impl<'a, T, P, D> MultipleServicePacket<'a, T, P, D> {
 impl<'a, T, P, D> MultipleServicePacket<'a, T, P, D>
 where
     T: MessageService,
-    P: Encode,
-    D: Encode,
+    P: Encode + Send + Sync,
+    D: Encode + Send + Sync,
 {
     /// append service request
     pub fn push(mut self, mr: MessageRequest<P, D>) -> Self {
@@ -40,11 +40,7 @@ where
     }
 
     /// append all service requests
-    pub fn push_all(mut self, items: impl Iterator<Item = MessageRequest<P, D>>) -> Self
-    where
-        P: Encode + 'static,
-        D: Encode + 'static,
-    {
+    pub fn push_all(mut self, items: impl Iterator<Item = MessageRequest<P, D>>) -> Self {
         for mr in items {
             self.items.push(mr);
         }

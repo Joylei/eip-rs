@@ -33,15 +33,15 @@ use rseip_core::{
 use std::{io, sync::atomic::AtomicU16};
 
 /// driver for specified protocol
-pub trait Driver {
+pub trait Driver: Send + Sync {
     /// endpoint, eg: IP address for EIP
-    type Endpoint: fmt::Debug;
+    type Endpoint: fmt::Debug + Clone + Send + Sync;
 
     /// driver specific service for CIP
-    type Service: Service + fmt::Debug;
+    type Service: Service + fmt::Debug + Send + Sync;
 
     /// create service
-    fn build_service(addr: &Self::Endpoint) -> BoxFuture<Result<Self::Service>>;
+    fn build_service(addr: Self::Endpoint) -> BoxFuture<'static, Result<Self::Service>>;
 }
 
 /// explicit messaging client
@@ -88,7 +88,7 @@ impl<B: Driver> Client<B> {
     #[inline]
     async fn ensure_service(&mut self) -> Result<()> {
         if self.service.is_none() {
-            let service = B::build_service(&self.addr).await?;
+            let service = B::build_service(self.addr.clone()).await?;
             self.service = Some(service);
         }
         match self.service {
@@ -101,7 +101,7 @@ impl<B: Driver> Client<B> {
     }
 }
 
-#[async_trait::async_trait(?Send)]
+#[async_trait::async_trait]
 impl<B: Driver> Heartbeat for Client<B> {
     type Error = ClientError;
     /// send Heartbeat message to keep underline transport alive
@@ -115,7 +115,7 @@ impl<B: Driver> Heartbeat for Client<B> {
 }
 
 /// message  request handler
-#[async_trait::async_trait(?Send)]
+#[async_trait::async_trait]
 impl<B: Driver> MessageService for Client<B> {
     type Error = ClientError;
 
@@ -123,8 +123,8 @@ impl<B: Driver> MessageService for Client<B> {
     #[inline]
     async fn send<'de, P, D, R>(&mut self, mr: MessageRequest<P, D>) -> Result<R>
     where
-        P: Encode,
-        D: Encode,
+        P: Encode + Send + Sync,
+        D: Encode + Send + Sync,
         R: MessageReplyInterface + Decode<'de> + 'static,
     {
         // create service if not created
@@ -219,7 +219,7 @@ impl<B: Driver> Connection<B> {
     #[inline]
     async fn ensure_service(&mut self) -> Result<()> {
         if self.service.is_none() {
-            let service = B::build_service(&self.addr).await?;
+            let service = B::build_service(self.addr.clone()).await?;
             self.service = Some(service);
         }
         match self.service {
@@ -276,7 +276,7 @@ impl<B: Driver> Connection<B> {
     }
 }
 
-#[async_trait::async_trait(?Send)]
+#[async_trait::async_trait]
 impl<B: Driver> Heartbeat for Connection<B> {
     type Error = ClientError;
 
@@ -291,15 +291,15 @@ impl<B: Driver> Heartbeat for Connection<B> {
     }
 }
 
-#[async_trait::async_trait(?Send)]
+#[async_trait::async_trait]
 impl<B: Driver> MessageService for Connection<B> {
     type Error = ClientError;
     /// connected send
     #[inline]
     async fn send<'de, P, D, R>(&mut self, mr: MessageRequest<P, D>) -> Result<R>
     where
-        P: Encode,
-        D: Encode,
+        P: Encode + Send + Sync,
+        D: Encode + Send + Sync,
         R: MessageReplyInterface + Decode<'de> + 'static,
     {
         // create connection if not connected
@@ -343,7 +343,7 @@ impl<B: Driver> DerefMut for MaybeConnected<B> {
     }
 }
 
-#[async_trait::async_trait(?Send)]
+#[async_trait::async_trait]
 impl<B: Driver> Heartbeat for MaybeConnected<B> {
     type Error = ClientError;
     /// send Heartbeat message to keep underline connection/transport alive
@@ -356,15 +356,15 @@ impl<B: Driver> Heartbeat for MaybeConnected<B> {
     }
 }
 
-#[async_trait::async_trait(?Send)]
+#[async_trait::async_trait]
 impl<B: Driver> MessageService for MaybeConnected<B> {
     type Error = ClientError;
     /// send message request
     #[inline]
     async fn send<'de, P, D, R>(&mut self, mr: MessageRequest<P, D>) -> Result<R>
     where
-        P: Encode,
-        D: Encode,
+        P: Encode + Send + Sync,
+        D: Encode + Send + Sync,
         R: MessageReplyInterface + Decode<'de> + 'static,
     {
         match self.0 {

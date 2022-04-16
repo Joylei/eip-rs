@@ -11,8 +11,8 @@ use bytes::{BufMut, BytesMut};
 use rseip_core::codec::{Encode, Encoder};
 
 /// AB related operations
-#[async_trait::async_trait(?Send)]
-pub trait AbService {
+#[async_trait::async_trait]
+pub trait AbService: Send + Sync {
     /// Read Tag Service,
     /// CIP Data Table Read
     ///
@@ -42,7 +42,7 @@ pub trait AbService {
     /// ```
     async fn read_tag<'de, P, R>(&mut self, req: P) -> Result<R>
     where
-        P: Into<TagRequest>,
+        P: Into<TagRequest> + Send + Sync,
         R: Decode<'de> + 'static;
 
     /// Write Tag Service,
@@ -68,7 +68,7 @@ pub trait AbService {
     /// ```
     async fn write_tag<D>(&mut self, tag: EPath, value: D) -> Result<()>
     where
-        D: Encode;
+        D: Encode + Send + Sync;
 
     /// Read Tag Fragmented Service, enables client applications to read a tag
     /// with data that does not fit into a single packet (approximately 500 bytes)
@@ -79,7 +79,7 @@ pub trait AbService {
 
     /// Write Tag Fragmented Service, enables client applications to write to a tag
     /// in the controller whose data will not fit into a single packet (approximately 500 bytes)
-    async fn write_tag_fragmented<D: Encode>(
+    async fn write_tag_fragmented<D: Encode + Send + Sync>(
         &mut self,
         req: WriteFragmentedRequest<D>,
     ) -> Result<bool>;
@@ -109,14 +109,14 @@ pub trait AbService {
 
 macro_rules! impl_service {
     ($t:ty) => {
-        #[async_trait::async_trait(?Send)]
+        #[async_trait::async_trait]
         impl AbService for $t {
             /// Read Tag Service,
             /// CIP Data Table Read
             #[inline]
             async fn read_tag<'de, P, R>(&mut self, req: P) -> Result<R>
             where
-                P: Into<TagRequest>,
+                P: Into<TagRequest> + Send + Sync,
                 R: Decode<'de> + 'static,
             {
                 let res = ab_read_tag(self, req).await?;
@@ -128,7 +128,7 @@ macro_rules! impl_service {
             #[inline]
             async fn write_tag<D>(&mut self, tag: EPath, value: D) -> Result<()>
             where
-                D: Encode,
+                D: Encode + Send + Sync,
             {
                 ab_write_tag(self, tag, value).await?;
                 Ok(())
@@ -147,7 +147,7 @@ macro_rules! impl_service {
             /// Write Tag Fragmented Service, enables client applications to write to a tag
             /// in the controller whose data will not fit into a single packet (approximately 500 bytes)
             #[inline]
-            async fn write_tag_fragmented<D: Encode>(
+            async fn write_tag_fragmented<D: Encode + Send + Sync>(
                 &mut self,
                 req: WriteFragmentedRequest<D>,
             ) -> Result<bool> {
@@ -197,7 +197,7 @@ impl_service!(MaybeConnected<AbEipDriver>);
 async fn ab_read_tag<'de, C, P, R>(client: &mut C, req: P) -> Result<R>
 where
     C: MessageService<Error = ClientError>,
-    P: Into<TagRequest>,
+    P: Into<TagRequest> + Send + Sync,
     R: Decode<'de> + 'static,
 {
     let req: TagRequest = req.into();
@@ -212,7 +212,7 @@ where
 async fn ab_write_tag<C, D>(client: &mut C, tag: EPath, value: D) -> Result<()>
 where
     C: MessageService<Error = ClientError>,
-    D: Encode,
+    D: Encode + Send + Sync,
 {
     let mr = MessageRequest::new(SERVICE_WRITE_TAG, tag, value);
     let resp: MessageReply<()> = client.send(mr).await?;
@@ -247,7 +247,7 @@ async fn ab_write_tag_fragmented<C, D>(
 ) -> Result<bool>
 where
     C: MessageService<Error = ClientError>,
-    D: Encode,
+    D: Encode + Send + Sync,
 {
     debug_assert!(req.count >= 1);
 

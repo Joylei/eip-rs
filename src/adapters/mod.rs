@@ -19,8 +19,8 @@ use rseip_core::codec::{Decode, Encode};
 
 /// abstraction for basic CIP services;
 /// different transport protocols derive this trait, eg EIP, DF1
-#[async_trait::async_trait(?Send)]
-pub trait Service {
+#[async_trait::async_trait]
+pub trait Service: Send + Sync {
     /// context is open?
     fn is_open(&mut self) -> bool;
 
@@ -41,9 +41,9 @@ pub trait Service {
         request: UnconnectedSend<CP, MessageRequest<P, D>>,
     ) -> Result<R>
     where
-        CP: Encode,
-        P: Encode,
-        D: Encode,
+        CP: Encode + Send + Sync,
+        P: Encode + Send + Sync,
+        D: Encode + Send + Sync,
         R: MessageReplyInterface + Decode<'de> + 'static;
 
     /// connected send
@@ -54,14 +54,14 @@ pub trait Service {
         request: MessageRequest<P, D>,
     ) -> Result<R>
     where
-        P: Encode,
-        D: Encode,
+        P: Encode + Send + Sync,
+        D: Encode + Send + Sync,
         R: MessageReplyInterface + Decode<'de> + 'static;
 
     /// forward open
     async fn forward_open<P>(&mut self, request: OpenOptions<P>) -> Result<ForwardOpenReply>
     where
-        P: Encode;
+        P: Encode + Send + Sync;
 
     /// forward close
     async fn forward_close<P>(
@@ -69,5 +69,5 @@ pub trait Service {
         request: ForwardCloseRequest<P>,
     ) -> Result<ForwardCloseReply>
     where
-        P: Encode;
+        P: Encode + Send + Sync;
 }
