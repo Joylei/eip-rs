@@ -29,6 +29,9 @@ use rseip_core::{
 use smallvec::SmallVec;
 use std::collections::HashMap;
 
+/// template definition header size
+const HEADER_SIZE: u32 = 23;
+
 #[async_trait::async_trait]
 pub trait AbTemplateService {
     /// fetch template instance for specified instance id
@@ -105,6 +108,24 @@ impl<'a, T> TemplateRead<'a, T> {
         self.member_count = member_count;
         self
     }
+
+    fn total_bytes(&self) -> Result<u32, ClientError> {
+        let object_size = self.object_size * 4;
+        if object_size <= HEADER_SIZE {
+            return Err(Error::custom(
+                "read template - need to initialize `object_size`",
+            ));
+        }
+        // header(23 bytes) will not be included in the reply data.
+        let total_bytes = object_size - HEADER_SIZE;
+        // calc padding
+        let v = total_bytes % 4;
+        Ok(if v == 0 {
+            total_bytes
+        } else {
+            total_bytes - v + 4
+        })
+    }
 }
 
 impl<'a, T> TemplateRead<'a, T>
@@ -112,32 +133,13 @@ where
     T: MessageService<Error = ClientError>,
 {
     pub async fn call<'de>(&'de mut self) -> Result<TemplateDefinition<'de>, ClientError> {
-        const HEADER_SIZE: u32 = 23;
         if self.member_count == 0 {
             return Err(Error::custom(
                 "read template - need to initialize `member_count`",
             ));
         }
-
-        let total_bytes = {
-            let object_size = self.object_size * 4;
-            if object_size <= HEADER_SIZE {
-                return Err(Error::custom(
-                    "read template - need to initialize `object_size`",
-                ));
-            }
-            // header(23 bytes) will not be included in the reply data.
-            let total_bytes = object_size - HEADER_SIZE;
-            // calc padding
-            let v = total_bytes % 4;
-            if v == 0 {
-                total_bytes
-            } else {
-                total_bytes - v + 4
-            }
-        };
-
         self.buf.clear();
+        let total_bytes = self.total_bytes()?;
 
         // the initial offset should be 0;
         // after first fetch, offset = bytes received + 1
