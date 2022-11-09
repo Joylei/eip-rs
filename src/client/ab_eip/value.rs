@@ -236,6 +236,8 @@ impl_atomic!(i32, 4);
 impl_atomic!(u32, 4);
 impl_atomic!(i64, 8);
 impl_atomic!(u64, 8);
+impl_atomic!(f32, 4);
+impl_atomic!(f64, 8);
 
 macro_rules! impl_seq {
     ($ty:tt) => {
