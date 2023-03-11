@@ -140,6 +140,9 @@ where
     /// send command: RegisterSession
     #[inline]
     pub async fn register_session(&mut self) -> Result<u32, E> {
+        if self.has_session() {
+            return Err(E::custom("already has a session"));
+        }
         let pkt = self.send_and_reply(command::RegisterSession).await?;
         let session_handle = pkt.hdr.session_handle;
         let reply_data = pkt.data;
