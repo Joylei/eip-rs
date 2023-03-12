@@ -357,7 +357,7 @@ impl TryFrom<&mut Bytes> for SymbolInstance<'_> {
         let name = unsafe {
             let name_buf = buf.split_to(name_len);
             let buf = name_buf.as_ptr();
-            let buf = slice::from_raw_parts(buf, name_len as usize);
+            let buf = slice::from_raw_parts(buf, name_len);
             let name = str::from_utf8_unchecked(buf);
             Cow::from(name)
         };

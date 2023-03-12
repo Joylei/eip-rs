@@ -128,7 +128,7 @@ impl Encode for TagType {
                 encoder.encode_u16(0xC5, buf)?;
             }
             Self::Structure(handle) => {
-                encoder.encode(&[0xA0, 0x02], buf)?;
+                encoder.encode([0xA0, 0x02], buf)?;
                 encoder.encode_u16(*handle, buf)?;
             }
         }

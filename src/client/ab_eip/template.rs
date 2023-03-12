@@ -151,13 +151,8 @@ where
                 (buf_len, total_bytes - buf_len)
             };
             //dbg!(total_bytes, offset);
-            let (has_more, data) = read_template(
-                self.inner,
-                self.instance_id,
-                offset as u32,
-                remaining as u16,
-            )
-            .await?;
+            let (has_more, data) =
+                read_template(self.inner, self.instance_id, offset, remaining as u16).await?;
             debug_assert!(!data.is_empty() && data.len() as u32 <= remaining);
             self.buf.put_slice(&data[..]);
             //dbg!(data.len(), self.buf.len());
@@ -308,10 +303,10 @@ where
     buf.decode_any()
 }
 
-fn decode_definition<'de>(
-    buf: &'de mut BytesMut,
+fn decode_definition(
+    buf: &mut BytesMut,
     member_count: u16,
-) -> Result<TemplateDefinition<'de>, ClientError> {
+) -> Result<TemplateDefinition<'_>, ClientError> {
     let mut members: SmallVec<[MemberInfo<'_>; 8]> = SmallVec::with_capacity(member_count as usize);
     for _ in 0..member_count {
         let item = MemberInfo {
@@ -322,7 +317,7 @@ fn decode_definition<'de>(
         };
         members.push(item);
     }
-    let mut strings = (&buf[..]).split(|v| *v == 0).map(decode_name);
+    let mut strings = buf[..].split(|v| *v == 0).map(decode_name);
     let mut get_name = || {
         strings.next().ok_or_else(|| {
             ClientError::custom("read template - unexpected eof while decoding names")
