@@ -38,7 +38,7 @@ smallvec = "1"
 
 
 [dev-dependencies]
-env_logger = "0.9"
+env_logger = "0.10"
 futures = "0.3"
 tokio = { version = "1", default-features = false, features = [
     "rt-multi-thread",
@@ -47,7 +47,7 @@ tokio = { version = "1", default-features = false, features = [
     "macros",
 ] }
 anyhow = "1"
-criterion = { version = "0.3", features = [
+criterion = { version = "0.4", features = [
     "async_futures",
     "async_tokio",
     "cargo_bench_support",

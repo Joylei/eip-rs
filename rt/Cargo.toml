@@ -14,8 +14,14 @@ resolver = "2"
 
 [dependencies]
 pin-project-lite = "0.2"
-futures-util = { version = "0.3", features = ["sink"] }
-tokio = { version = "1", features = ["net", "io-util"], optional = true }
+futures-util = { version = "0.3", default-features = false, features = [
+    "io",
+    "std",
+] }
+tokio = { version = "1", default-features = false, features = [
+    "net",
+    "io-util",
+], optional = true }
 
 [features]
 default = ["rt-tokio"]

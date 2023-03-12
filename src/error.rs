@@ -49,7 +49,7 @@ impl Error for ClientError {
         self
     }
 
-    fn custom<T: core::fmt::Display>(msg: T) -> Self {
+    fn custom<T: fmt::Display>(msg: T) -> Self {
         Self::Custom {
             kind: "custom",
             msg: msg.to_string().into(),
