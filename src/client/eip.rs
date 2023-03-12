@@ -4,11 +4,10 @@
 // Copyright: 2021, Joylei <leingliu@gmail.com>
 // License: MIT
 
-use crate::rt::{Runtime, TokioRuntime, TokioTcpStream};
-
 use super::*;
 use futures_util::future::BoxFuture;
 pub use rseip_eip::{consts::*, EipContext};
+use rseip_rt::{CurrentRuntime, Runtime};
 use std::{borrow::Cow, net::SocketAddrV4};
 
 //pub type EipDiscovery = super::EipDiscovery<ClientError>;
@@ -24,11 +23,11 @@ pub struct EipDriver;
 
 impl Driver for EipDriver {
     type Endpoint = SocketAddrV4;
-    type Service = EipContext<TokioTcpStream, ClientError>;
+    type Service = EipContext<<CurrentRuntime as Runtime>::Transport, ClientError>;
 
     fn build_service(addr: Self::Endpoint) -> BoxFuture<'static, Result<Self::Service>> {
         let fut = async move {
-            let stream = TokioTcpStream::connect(addr).await?;
+            let stream = <CurrentRuntime as Runtime>::Transport::connect(addr).await?;
             let service = EipContext::new(stream);
             Ok(service)
         };
@@ -64,5 +63,5 @@ async fn resolve_host(host: impl AsRef<str>) -> io::Result<SocketAddrV4> {
             host.into()
         }
     };
-    TokioRuntime::lookup_host(host.to_string()).await
+    CurrentRuntime::lookup_host(host.to_string()).await
 }

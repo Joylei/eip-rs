@@ -1,13 +1,47 @@
+// rseip
+//
+// rseip - Ethernet/IP (CIP) in pure Rust.
+// Copyright: 2022, Joylei <leingliu@gmail.com>
+// License: MIT
+
+/*!
+# rseip-rt
+rt module for `rseip`, please look at [rseip project](https://github.com/Joylei/eip-rs) for more information.
+
+## License
+
+MIT
+*/
+
 use futures_util::future::BoxFuture;
-use std::{io, net::SocketAddrV4};
+use std::{
+    io,
+    net::{SocketAddr, SocketAddrV4, UdpSocket as StdUdpSocket},
+    task::{Context, Poll},
+};
+
+pub trait AsyncUdpSocket: Unpin + Send + 'static {
+    fn from_std(socket: StdUdpSocket) -> io::Result<Self>
+    where
+        Self: Sized;
+    fn poll_read(
+        &mut self,
+        cx: &mut Context,
+        buf: &mut [u8],
+    ) -> Poll<io::Result<(usize, SocketAddr)>>;
+
+    fn poll_write(&mut self, cx: &mut Context, buf: &[u8], to: SocketAddr) -> Poll<io::Result<()>>;
+}
 
 pub trait Runtime {
     type Transport;
     fn lookup_host(host: String) -> BoxFuture<'static, io::Result<SocketAddrV4>>;
 }
 
-pub use rt_tokio::{TokioRuntime, TokioTcpStream};
+#[cfg(feature = "rt-tokio")]
+pub use rt_tokio::TokioRuntime as CurrentRuntime;
 
+#[cfg(feature = "rt-tokio")]
 mod rt_tokio {
     use super::Runtime;
     use futures_util::{future::BoxFuture, ready, AsyncRead, AsyncWrite};

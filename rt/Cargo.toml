@@ -1,0 +1,22 @@
+[package]
+name = "rseip-rt"
+version = "0.1.0"
+edition = "2021"
+description = "encapsulation protocol for rseip"
+license = "MIT"
+homepage = "https://github.com/Joylei/eip-rs"
+repository = "https://github.com/Joylei/eip-rs.git"
+documentation = "https://docs.rs/crate/rseip-rt/"
+keywords = ["ethernet", "codec", "industry", "eip", "cip"]
+categories = ["asynchronous", "hardware-support"]
+authors = ["joylei <leingliu@gmail.com>"]
+resolver = "2"
+
+[dependencies]
+pin-project-lite = "0.2"
+futures-util = { version = "0.3", features = ["sink"] }
+tokio = { version = "1", features = ["net", "io-util"], optional = true }
+
+[features]
+default = ["rt-tokio"]
+rt-tokio = ["tokio/net", "tokio/io-util"]
