@@ -36,6 +36,7 @@ tokio-util = { version = "0.7", features = ["codec"] }
 futures-util = { version = "0.3", features = ["sink"] }
 async-trait = "0.1"
 smallvec = "1"
+pin-project-lite = "0.2"
 
 [dev-dependencies]
 env_logger = "0.9"

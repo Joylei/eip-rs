@@ -6,15 +6,15 @@
 
 use super::EncapsulationPacket;
 use crate::consts::EIP_COMMAND_NOP;
+use asynchronous_codec::{self as codec, Decoder, Encoder};
 use bytes::Bytes;
+use futures_util::{AsyncRead, AsyncWrite};
 use futures_util::{Sink, Stream};
 use std::{
     io,
     pin::Pin,
     task::{Context, Poll},
 };
-use tokio::io::{AsyncRead, AsyncWrite};
-use tokio_util::codec::{self, Decoder, Encoder};
 
 /// special Framed for EIP,
 /// will ignore NOP from received packets
@@ -25,12 +25,21 @@ pub(crate) struct Framed<T, U> {
 impl<T, U> Framed<T, U>
 where
     T: AsyncRead + AsyncWrite,
+    U: Encoder + Decoder,
 {
     #[inline]
     pub fn new(inner: T, codec: U) -> Self {
         Self {
             inner: codec::Framed::new(inner, codec),
         }
+    }
+    #[allow(unused)]
+    pub fn codec(&self) -> &U {
+        self.inner.codec()
+    }
+    #[allow(unused)]
+    pub fn codec_mut(&mut self) -> &mut U {
+        self.inner.codec_mut()
     }
 }
 
@@ -60,7 +69,7 @@ where
 impl<T, I, U> Sink<I> for Framed<T, U>
 where
     T: AsyncWrite + Unpin,
-    U: Encoder<I>,
+    U: Encoder<Item = I>,
     U::Error: From<io::Error>,
 {
     type Error = U::Error;

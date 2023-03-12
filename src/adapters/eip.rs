@@ -6,10 +6,10 @@
 
 use super::*;
 use crate::{cip::epath::EPATH_CONNECTION_MANAGER, cip::service::*, ClientError, Result};
+use futures_util::{AsyncRead, AsyncWrite};
 use rseip_cip::codec::decode::message_reply;
 use rseip_core::codec::{Decode, Encode};
 use rseip_eip::EipContext;
-use tokio::io::{AsyncRead, AsyncWrite};
 
 #[async_trait::async_trait]
 impl<T> Service for EipContext<T, ClientError>

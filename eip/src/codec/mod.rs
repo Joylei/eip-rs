@@ -4,13 +4,14 @@
 // Copyright: 2021, Joylei <leingliu@gmail.com>
 // License: MIT
 
-mod command;
+//mod command;
 
 use crate::{
     consts::*,
     error::{eip_error, eip_error_code},
     EncapsulationHeader, EncapsulationPacket,
 };
+use asynchronous_codec::{Decoder, Encoder};
 use byteorder::{ByteOrder, LittleEndian};
 use bytes::{BufMut, Bytes, BytesMut};
 use core::marker::PhantomData;
@@ -18,7 +19,6 @@ use rseip_core::{
     codec::{self, Decode, Encode, LittleEndianDecoder},
     Error,
 };
-use tokio_util::codec::{Decoder, Encoder};
 
 #[derive(Debug, PartialEq)]
 pub struct ClientCodec<E> {
@@ -115,16 +115,16 @@ impl<E: Error> codec::Encoder for ClientCodec<E> {
     }
 }
 
-impl<I, E> Encoder<EncapsulationPacket<I>> for ClientCodec<E>
+impl<E> Encoder for ClientCodec<E>
 where
-    I: codec::Encode + Sized,
     E: Error,
 {
+    type Item = EncapsulationPacket<Bytes>;
     type Error = E;
     #[inline]
     fn encode(
         &mut self,
-        item: EncapsulationPacket<I>,
+        item: EncapsulationPacket<Bytes>,
         buf: &mut BytesMut,
     ) -> Result<(), Self::Error> {
         item.encode(buf, self)

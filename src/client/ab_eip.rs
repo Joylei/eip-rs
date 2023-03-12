@@ -12,6 +12,7 @@ pub mod template;
 pub mod value;
 
 use super::*;
+use crate::rt::TokioTcpStream;
 use futures_util::future::BoxFuture;
 pub use path::{PathError, PathParser};
 use rseip_cip::Status;
@@ -20,7 +21,6 @@ pub use service::*;
 use std::net::SocketAddrV4;
 pub use symbol::{GetInstanceAttributeList, SymbolInstance};
 pub use template::AbTemplateService;
-use tokio::net::TcpStream;
 pub use value::*;
 
 pub const CLASS_SYMBOL: u16 = 0x6B;
@@ -33,7 +33,7 @@ pub const SERVICE_WRITE_TAG_FRAGMENTED: u8 = 0x53;
 pub const SERVICE_READ_MODIFY_WRITE_TAG: u8 = 0x4E;
 pub const SERVICE_TEMPLATE_READ: u8 = 0x4C;
 
-pub type EipDiscovery = rseip_eip::EipDiscovery<ClientError>;
+//pub type EipDiscovery = super::discover::EipDiscovery<ClientError>;
 
 /// AB EIP Client
 pub type AbEipClient = Client<AbEipDriver>;
@@ -46,7 +46,7 @@ pub struct AbEipDriver;
 
 impl Driver for AbEipDriver {
     type Endpoint = SocketAddrV4;
-    type Service = EipContext<TcpStream, ClientError>;
+    type Service = EipContext<TokioTcpStream, ClientError>;
 
     #[inline]
     fn build_service(addr: Self::Endpoint) -> BoxFuture<'static, Result<Self::Service>> {

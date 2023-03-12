@@ -229,6 +229,7 @@ pub mod adapters;
 /// client
 pub mod client;
 mod error;
+mod rt;
 
 #[doc(inline)]
 pub use error::ClientError;

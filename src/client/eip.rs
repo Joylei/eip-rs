@@ -4,16 +4,14 @@
 // Copyright: 2021, Joylei <leingliu@gmail.com>
 // License: MIT
 
+use crate::rt::{Runtime, TokioRuntime, TokioTcpStream};
+
 use super::*;
 use futures_util::future::BoxFuture;
 pub use rseip_eip::{consts::*, EipContext};
-use std::{
-    borrow::Cow,
-    net::{SocketAddr, SocketAddrV4},
-};
-use tokio::net::{lookup_host, TcpSocket, TcpStream};
+use std::{borrow::Cow, net::SocketAddrV4};
 
-pub type EipDiscovery = rseip_eip::EipDiscovery<ClientError>;
+//pub type EipDiscovery = super::EipDiscovery<ClientError>;
 
 /// Generic EIP Client
 pub type EipClient = Client<EipDriver>;
@@ -26,12 +24,11 @@ pub struct EipDriver;
 
 impl Driver for EipDriver {
     type Endpoint = SocketAddrV4;
-    type Service = EipContext<TcpStream, ClientError>;
+    type Service = EipContext<TokioTcpStream, ClientError>;
 
     fn build_service(addr: Self::Endpoint) -> BoxFuture<'static, Result<Self::Service>> {
         let fut = async move {
-            let socket = TcpSocket::new_v4()?;
-            let stream = socket.connect(addr.into()).await?;
+            let stream = TokioTcpStream::connect(addr).await?;
             let service = EipContext::new(stream);
             Ok(service)
         };
@@ -67,19 +64,5 @@ async fn resolve_host(host: impl AsRef<str>) -> io::Result<SocketAddrV4> {
             host.into()
         }
     };
-    let addr = lookup_host(host.as_ref())
-        .await?
-        .filter_map(|item| match item {
-            SocketAddr::V4(addr) => Some(addr),
-            _ => None,
-        })
-        .next();
-    if let Some(addr) = addr {
-        Ok(addr)
-    } else {
-        Err(io::Error::new(
-            io::ErrorKind::InvalidInput,
-            "dns lookup failure",
-        ))
-    }
+    TokioRuntime::lookup_host(host.to_string()).await
 }

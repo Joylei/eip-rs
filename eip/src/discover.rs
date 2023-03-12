@@ -15,6 +15,7 @@ use futures_util::{stream, SinkExt, Stream, StreamExt};
 use rseip_core::{
     cip::{CommonPacketItem, CommonPacketIter},
     codec::{Decode, LittleEndianDecoder},
+    net::AsyncUdpSocket,
     Error,
 };
 use std::{
@@ -27,7 +28,8 @@ use tokio_util::udp::UdpFramed;
 
 /// device discovery
 #[derive(Debug)]
-pub struct EipDiscovery<E> {
+pub struct EipDiscovery<S, E> {
+    socket: S,
     listen_addr: SocketAddrV4,
     broadcast_addr: SocketAddrV4,
     times: Option<usize>,
@@ -35,12 +37,12 @@ pub struct EipDiscovery<E> {
     _marker: PhantomData<E>,
 }
 
-impl<E> EipDiscovery<E> {
+impl<S, E> EipDiscovery<S, E> {
     /// create [`EipDiscovery`]
     #[inline]
     pub fn new(listen_addr: Ipv4Addr) -> Self {
         Self {
-            listen_addr: SocketAddrV4::new(listen_addr, 0),
+            listen_addr: SocketAddrV4::new(Ipv4Addr::LOCALHOST, 0),
             broadcast_addr: SocketAddrV4::new(Ipv4Addr::BROADCAST, EIP_DEFAULT_PORT),
             times: Some(1),
             interval: Duration::from_secs(1),
@@ -77,8 +79,9 @@ impl<E> EipDiscovery<E> {
     }
 }
 
-impl<E> EipDiscovery<E>
+impl<S, E> EipDiscovery<S, E>
 where
+    S: AsyncUdpSocket,
     E: Error + 'static,
 {
     /// send requests to discover devices
@@ -86,9 +89,7 @@ where
     where
         I: Decode<'de> + 'static,
     {
-        let socket = UdpSocket::bind(self.listen_addr).await?;
-        socket.set_broadcast(true)?;
-        let service = UdpFramed::new(socket, ClientCodec::<E>::new());
+        let mut codec = ClientCodec::<E>::new();
         let (mut tx, rx) = service.split();
 
         let tx_fut = {
@@ -106,7 +107,9 @@ where
                     None => Some(()),
                 });
                 for _ in rng {
-                    if tx
+                    if self
+                        .socket
+                        .poll_read(cx, buf)
                         .send((ListIdentity, broadcast_addr.into()))
                         .await
                         .is_err()
