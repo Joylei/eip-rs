@@ -27,6 +27,7 @@ futures-util = { version = "0.3", default-features = false, features = [
 asynchronous-codec = { version = "0.6" }
 smallvec = "1"
 rseip-rt = { path = "../rt", version = "0.1" }
+pin-project-lite = "0.2"
 
 [features]
 default = ["inlinable-string", "error-explain"]

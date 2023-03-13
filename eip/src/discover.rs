@@ -4,153 +4,130 @@
 // Copyright: 2021, Joylei <leingliu@gmail.com>
 // License: MIT
 
-use crate::{
-    codec::ClientCodec,
-    command::ListIdentity,
-    consts::{EIP_COMMAND_LIST_IDENTITY, EIP_DEFAULT_PORT},
-};
+use crate::{codec::ClientCodec, consts::EIP_COMMAND_LIST_IDENTITY, EncapsulationPacket};
+use asynchronous_codec::{BytesMut, Decoder, Encoder};
 use bytes::Bytes;
 use core::marker::PhantomData;
-use futures_util::{stream, SinkExt, Stream, StreamExt};
+use futures_util::{future::poll_fn, ready, stream::FusedStream, Stream};
+use pin_project_lite::pin_project;
 use rseip_core::{
     cip::{CommonPacketItem, CommonPacketIter},
     codec::{Decode, LittleEndianDecoder},
-    net::AsyncUdpSocket,
     Error,
 };
+use rseip_rt::{AsyncUdpReadHalf, AsyncUdpSocket, AsyncUdpWriteHalf};
 use std::{
     io,
-    net::{Ipv4Addr, SocketAddr, SocketAddrV4},
-    time::Duration,
+    net::{SocketAddr, UdpSocket},
+    pin::Pin,
+    task::{Context, Poll},
 };
-use tokio::{net::UdpSocket, time};
-use tokio_util::udp::UdpFramed;
 
-/// device discovery
-#[derive(Debug)]
-pub struct EipDiscovery<S, E> {
-    socket: S,
-    listen_addr: SocketAddrV4,
-    broadcast_addr: SocketAddrV4,
-    times: Option<usize>,
-    interval: Duration,
-    _marker: PhantomData<E>,
-}
-
-impl<S, E> EipDiscovery<S, E> {
-    /// create [`EipDiscovery`]
-    #[inline]
-    pub fn new(listen_addr: Ipv4Addr) -> Self {
-        Self {
-            listen_addr: SocketAddrV4::new(Ipv4Addr::LOCALHOST, 0),
-            broadcast_addr: SocketAddrV4::new(Ipv4Addr::BROADCAST, EIP_DEFAULT_PORT),
-            times: Some(1),
-            interval: Duration::from_secs(1),
-            _marker: Default::default(),
-        }
-    }
-
-    /// set broadcast address
-    #[inline]
-    pub fn broadcast(mut self, ip: Ipv4Addr) -> Self {
-        self.broadcast_addr = SocketAddrV4::new(ip, EIP_DEFAULT_PORT);
-        self
-    }
-
-    /// repeatedly send requests with limited times
-    #[inline]
-    pub fn repeat(mut self, times: usize) -> Self {
-        self.times = Some(times);
-        self
-    }
-
-    /// repeatedly send requests forever
-    #[inline]
-    pub fn forever(mut self) -> Self {
-        self.times = None;
-        self
-    }
-
-    /// request interval
-    #[inline]
-    pub fn interval(mut self, interval: Duration) -> Self {
-        self.interval = interval;
-        self
+pin_project! {
+    pub struct Discovery<S, I, E> {
+        codec: ClientCodec<E>,
+        broadcast: SocketAddr,
+        #[pin]
+        socket: S,
+        reply_buf: BytesMut,
+        send_buf: Option<Bytes>,
+        _maker: PhantomData<I>,
     }
 }
 
-impl<S, E> EipDiscovery<S, E>
+impl<S, I, E> Discovery<S, I, E>
 where
-    S: AsyncUdpSocket,
+    S: AsyncUdpSocket + Unpin,
     E: Error + 'static,
 {
-    /// send requests to discover devices
-    pub async fn run<'de, I>(self) -> io::Result<impl Stream<Item = (I, SocketAddr)>>
+    pub fn new(listen_addr: SocketAddr, broadcast_addr: SocketAddr) -> io::Result<Self> {
+        let socket = UdpSocket::bind(listen_addr)?;
+        socket.set_broadcast(true)?;
+        socket.set_nonblocking(true)?;
+        let socket = S::from_std(socket)?;
+        Ok(Self {
+            codec: ClientCodec::new(),
+            broadcast: broadcast_addr,
+            socket,
+            reply_buf: BytesMut::with_capacity(4096),
+            send_buf: None,
+            _maker: Default::default(),
+        })
+    }
+
+    pub fn split(self) -> (Sender<S, E>, Receiver<S, I, E>) {
+        let (r, w) = self.socket.split();
+        let sender = Sender {
+            codec: self.codec,
+            socket: w,
+            send_buf: self.send_buf,
+            broadcast: self.broadcast,
+        };
+        let receiver = Receiver {
+            codec: ClientCodec::new(),
+            socket: r,
+            reply_buf: self.reply_buf,
+            _marker: Default::default(),
+        };
+        (sender, receiver)
+    }
+
+    pub async fn send(&mut self) -> Result<(), E> {
+        if self.send_buf.is_none() {
+            let mut pkt = EncapsulationPacket::default();
+            pkt.hdr.command = EIP_COMMAND_LIST_IDENTITY;
+            let mut buf = BytesMut::new();
+            self.codec.encode(pkt, &mut buf)?;
+            self.send_buf = Some(buf.freeze());
+        }
+        let buf = self.send_buf.as_ref().unwrap();
+        poll_fn(|cx| self.socket.poll_write(cx, &buf, self.broadcast)).await?;
+        Ok(())
+    }
+
+    pub fn poll_reply<'de>(self: Pin<&mut Self>, cx: &mut Context) -> Poll<(SocketAddr, I)>
     where
         I: Decode<'de> + 'static,
     {
-        let mut codec = ClientCodec::<E>::new();
-        let (mut tx, rx) = service.split();
-
-        let tx_fut = {
-            let broadcast_addr = self.broadcast_addr;
-            let interval = self.interval;
-            let mut times = self.times;
-
-            async move {
-                let rng = std::iter::from_fn(move || match times {
-                    Some(0) => None,
-                    Some(ref mut v) => {
-                        *v -= 1;
-                        Some(())
+        let it = self.get_mut();
+        it.reply_buf.clear();
+        if let Ok((_len, addr)) = ready!(it.socket.poll_read(cx, &mut it.reply_buf)) {
+            if let Ok(Some(pkt)) = it.codec.decode(&mut it.reply_buf) {
+                if pkt.hdr.command == EIP_COMMAND_LIST_IDENTITY {
+                    if let Some(res) = decode_identity::<I, E>(pkt.data).ok().flatten() {
+                        return Poll::Ready((addr, res));
                     }
-                    None => Some(()),
-                });
-                for _ in rng {
-                    if self
-                        .socket
-                        .poll_read(cx, buf)
-                        .send((ListIdentity, broadcast_addr.into()))
-                        .await
-                        .is_err()
-                    {
-                        break;
-                    }
-                    time::sleep(interval).await;
                 }
             }
-        };
-
-        let rx = stream::unfold((rx, Box::pin(tx_fut)), |mut state| async move {
-            loop {
-                tokio::select! {
-                    res = state.0.next() => {
-                        if let Some(res) =res {
-                            if let Some(v) = res.ok().and_then(|(pkt,addr)| {
-                                if pkt.hdr.command != EIP_COMMAND_LIST_IDENTITY {
-                                    None
-                                } else {
-                                    decode_identity::<'_,_,E>(pkt.data).ok().flatten().map(|v| (v, addr))
-                                }
-                            }) {
-                                return Some((v, state))
-                            }
-                        } else{
-                            return None;
-                        }
-                    },
-                    _ = Pin::new(&mut state.1) => {
-                        dbg!("cancel rx");
-                        return None;
-                    },
-                }
-            }
-        });
-        Ok(rx)
+        }
+        Poll::Pending
     }
 }
 
-#[inline]
+impl<'de, S, I, E> Stream for Discovery<S, I, E>
+where
+    S: AsyncUdpSocket,
+    E: Error + 'static,
+    I: Decode<'de> + 'static,
+{
+    type Item = (SocketAddr, I);
+
+    fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+        let reply = ready!(self.poll_reply(cx));
+        Poll::Ready(Some(reply))
+    }
+}
+impl<'de, S, I, E> FusedStream for Discovery<S, I, E>
+where
+    S: AsyncUdpSocket,
+    E: Error + 'static,
+    I: Decode<'de> + 'static,
+{
+    fn is_terminated(&self) -> bool {
+        false
+    }
+}
+
 fn decode_identity<'de, I, E>(data: Bytes) -> Result<Option<I>, E>
 where
     I: Decode<'de> + 'static,
@@ -163,4 +140,69 @@ where
         return Ok(Some(item.data));
     }
     Ok(None)
+}
+
+pin_project! {
+    #[derive(Debug)]
+    pub struct Sender<S, E> {
+        codec: ClientCodec<E>,
+        socket: AsyncUdpWriteHalf<S>,
+        send_buf: Option<Bytes>,
+        broadcast: SocketAddr,
+    }
+}
+
+impl<S, E> Sender<S, E>
+where
+    S: AsyncUdpSocket + Unpin,
+    E: Error + 'static,
+{
+    pub async fn send(&mut self) -> Result<(), E> {
+        if self.send_buf.is_none() {
+            let mut pkt = EncapsulationPacket::default();
+            pkt.hdr.command = EIP_COMMAND_LIST_IDENTITY;
+            let mut buf = BytesMut::new();
+            self.codec.encode(pkt, &mut buf)?;
+            self.send_buf = Some(buf.freeze());
+        }
+        let buf = self.send_buf.as_ref().unwrap();
+        poll_fn(|cx| self.socket.poll_write(cx, &buf, self.broadcast)).await?;
+        Ok(())
+    }
+}
+
+pin_project! {
+    #[derive(Debug)]
+    pub struct Receiver<S, I, E> {
+        codec: ClientCodec<E>,
+        #[pin]
+        socket: AsyncUdpReadHalf<S>,
+        reply_buf: BytesMut,
+        _marker: PhantomData<I>,
+    }
+}
+
+impl<'de, S, I, E> Stream for Receiver<S, I, E>
+where
+    S: AsyncUdpSocket + Unpin,
+    E: Error + 'static,
+    I: Decode<'de> + 'static,
+{
+    type Item = (SocketAddr, I);
+
+    fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+        let it = self.get_mut();
+        it.reply_buf.clear();
+        if let Ok((_len, addr)) = ready!(it.socket.poll_read(cx, &mut it.reply_buf)) {
+            if let Ok(Some(pkt)) = it.codec.decode(&mut it.reply_buf) {
+                dbg!(&pkt);
+                if pkt.hdr.command == EIP_COMMAND_LIST_IDENTITY {
+                    if let Some(res) = decode_identity::<I, E>(pkt.data).ok().flatten() {
+                        return Poll::Ready(Some((addr, res)));
+                    }
+                }
+            }
+        }
+        Poll::Pending
+    }
 }

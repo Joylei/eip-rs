@@ -8,16 +8,15 @@
 #![allow(clippy::match_like_matches_macro)]
 
 mod codec;
-//mod command;
 pub mod consts;
 pub(crate) mod context;
-//mod discover;
+mod discover;
 pub mod encapsulation;
 mod error;
 mod framed;
 
 pub use context::EipContext;
-//pub use discover::EipDiscovery;
+pub use discover::Discovery;
 pub use encapsulation::{EncapsulationHeader, EncapsulationPacket};
 pub use rseip_core::{
     cip::{CommonPacket, CommonPacketItem},
