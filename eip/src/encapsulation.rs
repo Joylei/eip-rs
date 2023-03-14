@@ -63,6 +63,7 @@ impl<T: Encode> Encode for EncapsulationPacket<T> {
         self.hdr.length = data_len as u16;
         self.hdr.encode(buf, encoder)?;
         self.data.encode(buf, encoder)?;
+
         Ok(())
     }
 

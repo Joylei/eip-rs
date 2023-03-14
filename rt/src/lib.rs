@@ -67,8 +67,11 @@ impl<S: AsyncUdpSocket> AsyncUdpReadHalf<S> {
         cx: &mut Context,
         buf: &mut [u8],
     ) -> Poll<io::Result<(usize, SocketAddr)>> {
-        let socket = &mut *self.inner.lock().unwrap();
-        socket.poll_read(cx, buf)
+        loop {
+            if let Ok(mut guard) = self.inner.try_lock() {
+                return guard.poll_read(cx, buf);
+            }
+        }
     }
 }
 
@@ -79,8 +82,11 @@ impl<S: AsyncUdpSocket> AsyncUdpWriteHalf<S> {
         buf: &[u8],
         to: SocketAddr,
     ) -> Poll<io::Result<()>> {
-        let socket = &mut *self.inner.lock().unwrap();
-        socket.poll_write(cx, buf, to)
+        loop {
+            if let Ok(mut guard) = self.inner.try_lock() {
+                return guard.poll_write(cx, buf, to);
+            }
+        }
     }
 }
 

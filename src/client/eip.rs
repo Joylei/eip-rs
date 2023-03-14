@@ -84,7 +84,7 @@ impl EipDiscovery {
             listen_addr: SocketAddrV4::new(listen_addr, 0),
             broadcast_addr: SocketAddrV4::new(Ipv4Addr::BROADCAST, EIP_DEFAULT_PORT),
             times: Some(1),
-            interval: Duration::from_secs(1),
+            interval: Duration::from_secs(3),
         }
     }
 
@@ -120,7 +120,7 @@ impl EipDiscovery {
             Discovery<<CurrentRuntime as Runtime>::UdpSocket, IdentityObject<'static>, ClientError>;
         let interval = self.interval;
         let mut times = self.times;
-        let mut rng = std::iter::from_fn(move || match times {
+        let rng = std::iter::from_fn(move || match times {
             Some(0) => None,
             Some(ref mut v) => {
                 *v -= 1;
@@ -132,15 +132,11 @@ impl EipDiscovery {
         let discover = ADiscovery::new(self.listen_addr.into(), self.broadcast_addr.into())?;
         let (mut tx, rx) = discover.split();
         let fut_send = Box::pin(async move {
-            match rng.next() {
-                Some(_) => {
-                    if tx.send().await.is_err() {
-                        return None;
-                    }
-                    CurrentRuntime::sleep(interval).await;
-                    Some(())
+            for _ in rng {
+                if tx.send().await.is_err() {
+                    break;
                 }
-                None => None,
+                CurrentRuntime::sleep(interval).await;
             }
         })
         .fuse();
@@ -150,8 +146,12 @@ impl EipDiscovery {
                     _ = &mut state.1 => return None,
                     res = state.0.next() => {
                         match res {
-                            Some(v) => return Some((v, state)),
-                            None => return None
+                            Some(Ok(v)) => return Some((v, state)),
+                            Some(Err(e)) => {
+                                dbg!(e);
+                                return None;
+                            }
+                            _ => return None
                         }
                     },
                 }

@@ -20,16 +20,20 @@ use std::{
     io,
     net::{SocketAddr, UdpSocket},
     pin::Pin,
+    slice,
     task::{Context, Poll},
 };
 
+const DEFAULT_BUF_SIZE: usize = 256;
+
 pin_project! {
+    #[derive(Debug)]
     pub struct Discovery<S, I, E> {
         codec: ClientCodec<E>,
         broadcast: SocketAddr,
         #[pin]
         socket: S,
-        reply_buf: BytesMut,
+        read_buf: BytesMut,
         send_buf: Option<Bytes>,
         _maker: PhantomData<I>,
     }
@@ -49,7 +53,7 @@ where
             codec: ClientCodec::new(),
             broadcast: broadcast_addr,
             socket,
-            reply_buf: BytesMut::with_capacity(4096),
+            read_buf: BytesMut::with_capacity(DEFAULT_BUF_SIZE),
             send_buf: None,
             _maker: Default::default(),
         })
@@ -66,7 +70,7 @@ where
         let receiver = Receiver {
             codec: ClientCodec::new(),
             socket: r,
-            reply_buf: self.reply_buf,
+            read_buf: self.read_buf,
             _marker: Default::default(),
         };
         (sender, receiver)
@@ -85,22 +89,50 @@ where
         Ok(())
     }
 
-    pub fn poll_reply<'de>(self: Pin<&mut Self>, cx: &mut Context) -> Poll<(SocketAddr, I)>
+    pub fn poll_reply<'de>(
+        self: Pin<&mut Self>,
+        cx: &mut Context,
+    ) -> Poll<Result<(SocketAddr, I), E>>
     where
         I: Decode<'de> + 'static,
     {
         let it = self.get_mut();
-        it.reply_buf.clear();
-        if let Ok((_len, addr)) = ready!(it.socket.poll_read(cx, &mut it.reply_buf)) {
-            if let Ok(Some(pkt)) = it.codec.decode(&mut it.reply_buf) {
-                if pkt.hdr.command == EIP_COMMAND_LIST_IDENTITY {
-                    if let Some(res) = decode_identity::<I, E>(pkt.data).ok().flatten() {
-                        return Poll::Ready((addr, res));
+        let old_len = it.read_buf.len();
+        let ptr = it.read_buf.as_mut_ptr();
+        let buf = unsafe {
+            slice::from_raw_parts_mut(ptr.add(old_len), it.read_buf.capacity() - old_len)
+        };
+        if let Ok((len, addr)) = ready!(it.socket.poll_read(cx, buf)) {
+            dbg!(len);
+            unsafe { it.read_buf.set_len(old_len + len) };
+            match it.codec.decode(&mut it.read_buf) {
+                Ok(Some(pkt)) => {
+                    if pkt.hdr.command == EIP_COMMAND_LIST_IDENTITY {
+                        let res = decode_identity::<I, E>(pkt.data).and_then(|v| match v {
+                            None => Err(E::custom("invalid packet")),
+                            Some(v) => Ok((addr, v)),
+                        });
+                        it.reset_buf();
+                        return Poll::Ready(res);
                     }
+                    it.reset_buf();
+                }
+                Ok(None) => return Poll::Pending,
+                Err(e) => {
+                    it.reset_buf();
+                    return Poll::Ready(Err(e));
                 }
             }
         }
         Poll::Pending
+    }
+
+    fn reset_buf(&mut self) {
+        if self.read_buf.capacity() != DEFAULT_BUF_SIZE {
+            self.read_buf = BytesMut::with_capacity(DEFAULT_BUF_SIZE);
+        } else {
+            self.read_buf.clear();
+        }
     }
 }
 
@@ -110,7 +142,7 @@ where
     E: Error + 'static,
     I: Decode<'de> + 'static,
 {
-    type Item = (SocketAddr, I);
+    type Item = Result<(SocketAddr, I), E>;
 
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         let reply = ready!(self.poll_reply(cx));
@@ -126,20 +158,6 @@ where
     fn is_terminated(&self) -> bool {
         false
     }
-}
-
-fn decode_identity<'de, I, E>(data: Bytes) -> Result<Option<I>, E>
-where
-    I: Decode<'de> + 'static,
-    E: Error + 'static,
-{
-    let mut cpf = CommonPacketIter::new(LittleEndianDecoder::<E>::new(data))?;
-    if let Some(item) = cpf.next_typed() {
-        let item: CommonPacketItem<I> = item?;
-        item.ensure_type_code::<E>(0x0C)?;
-        return Ok(Some(item.data));
-    }
-    Ok(None)
 }
 
 pin_project! {
@@ -177,8 +195,23 @@ pin_project! {
         codec: ClientCodec<E>,
         #[pin]
         socket: AsyncUdpReadHalf<S>,
-        reply_buf: BytesMut,
+        read_buf: BytesMut,
         _marker: PhantomData<I>,
+    }
+}
+
+impl<'de, S, I, E> Receiver<S, I, E>
+where
+    S: AsyncUdpSocket + Unpin,
+    E: Error + 'static,
+    I: Decode<'de> + 'static,
+{
+    fn reset_buf(&mut self) {
+        if self.read_buf.capacity() != DEFAULT_BUF_SIZE {
+            self.read_buf = BytesMut::with_capacity(DEFAULT_BUF_SIZE);
+        } else {
+            self.read_buf.clear();
+        }
     }
 }
 
@@ -188,21 +221,50 @@ where
     E: Error + 'static,
     I: Decode<'de> + 'static,
 {
-    type Item = (SocketAddr, I);
+    type Item = Result<(SocketAddr, I), E>;
 
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         let it = self.get_mut();
-        it.reply_buf.clear();
-        if let Ok((_len, addr)) = ready!(it.socket.poll_read(cx, &mut it.reply_buf)) {
-            if let Ok(Some(pkt)) = it.codec.decode(&mut it.reply_buf) {
-                dbg!(&pkt);
-                if pkt.hdr.command == EIP_COMMAND_LIST_IDENTITY {
-                    if let Some(res) = decode_identity::<I, E>(pkt.data).ok().flatten() {
-                        return Poll::Ready(Some((addr, res)));
+        let old_len = it.read_buf.len();
+        let ptr = it.read_buf.as_mut_ptr();
+        let buf = unsafe {
+            slice::from_raw_parts_mut(ptr.add(old_len), it.read_buf.capacity() - old_len)
+        };
+        if let Ok((len, addr)) = ready!(it.socket.poll_read(cx, buf)) {
+            unsafe { it.read_buf.set_len(old_len + len) };
+            match it.codec.decode(&mut it.read_buf) {
+                Ok(Some(pkt)) => {
+                    if pkt.hdr.command == EIP_COMMAND_LIST_IDENTITY {
+                        let res = decode_identity::<I, E>(pkt.data).and_then(|v| match v {
+                            None => Err(E::custom("invalid packet")),
+                            Some(v) => Ok((addr, v)),
+                        });
+                        it.reset_buf();
+                        return Poll::Ready(Some(res));
                     }
+                    it.reset_buf();
+                }
+                Ok(None) => return Poll::Pending,
+                Err(e) => {
+                    it.reset_buf();
+                    return Poll::Ready(Some(Err(e)));
                 }
             }
         }
         Poll::Pending
     }
+}
+
+fn decode_identity<'de, I, E>(data: Bytes) -> Result<Option<I>, E>
+where
+    I: Decode<'de> + 'static,
+    E: Error + 'static,
+{
+    let mut cpf = CommonPacketIter::new(LittleEndianDecoder::<E>::new(data))?;
+    if let Some(item) = cpf.next_typed() {
+        let item: CommonPacketItem<I> = item?;
+        item.ensure_type_code::<E>(0x0C)?;
+        return Ok(Some(item.data));
+    }
+    Ok(None)
 }
