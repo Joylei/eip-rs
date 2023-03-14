@@ -141,20 +141,18 @@ impl EipDiscovery {
         })
         .fuse();
         let stream = stream::unfold((rx.fuse(), fut_send), |mut state| async move {
-            loop {
-                futures_util::select! {
-                    _ = &mut state.1 => return None,
-                    res = state.0.next() => {
-                        match res {
-                            Some(Ok(v)) => return Some((v, state)),
-                            Some(Err(e)) => {
-                                dbg!(e);
-                                return None;
-                            }
-                            _ => return None
+            futures_util::select! {
+                _ = &mut state.1 => return None,
+                res = state.0.next() => {
+                    match res {
+                        Some(Ok(v)) => return Some((v, state)),
+                        Some(Err(e)) => {
+                            dbg!(e);
+                            return None;
                         }
-                    },
-                }
+                        _ => return None
+                    }
+                },
             }
         });
         Ok(stream)

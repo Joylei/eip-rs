@@ -85,7 +85,7 @@ where
             self.send_buf = Some(buf.freeze());
         }
         let buf = self.send_buf.as_ref().unwrap();
-        poll_fn(|cx| self.socket.poll_write(cx, &buf, self.broadcast)).await?;
+        poll_fn(|cx| self.socket.poll_write(cx, buf, self.broadcast)).await?;
         Ok(())
     }
 
@@ -184,7 +184,7 @@ where
             self.send_buf = Some(buf.freeze());
         }
         let buf = self.send_buf.as_ref().unwrap();
-        poll_fn(|cx| self.socket.poll_write(cx, &buf, self.broadcast)).await?;
+        poll_fn(|cx| self.socket.poll_write(cx, buf, self.broadcast)).await?;
         Ok(())
     }
 }
