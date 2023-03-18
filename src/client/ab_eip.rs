@@ -25,7 +25,6 @@ pub use value::*;
 
 pub const CLASS_SYMBOL: u16 = 0x6B;
 pub const CLASS_TEMPLATE: u16 = 0x6C;
-
 pub const SERVICE_READ_TAG: u8 = 0x4C;
 pub const SERVICE_WRITE_TAG: u8 = 0x4D;
 pub const SERVICE_READ_TAG_FRAGMENTED: u8 = 0x52;

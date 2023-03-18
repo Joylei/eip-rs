@@ -8,7 +8,7 @@ use crate::{codec::ClientCodec, consts::EIP_COMMAND_LIST_IDENTITY, Encapsulation
 use asynchronous_codec::{BytesMut, Decoder, Encoder};
 use bytes::Bytes;
 use core::marker::PhantomData;
-use futures_util::{future::poll_fn, ready, stream::FusedStream, Stream};
+use futures_util::{future::poll_fn, ready, Stream};
 use pin_project_lite::pin_project;
 use rseip_core::{
     cip::{CommonPacketItem, CommonPacketIter},
@@ -96,30 +96,26 @@ where
     where
         I: Decode<'de> + 'static,
     {
-        let it = self.get_mut();
-        let old_len = it.read_buf.len();
-        let ptr = it.read_buf.as_mut_ptr();
-        let buf = unsafe {
-            slice::from_raw_parts_mut(ptr.add(old_len), it.read_buf.capacity() - old_len)
-        };
-        if let Ok((len, addr)) = ready!(it.socket.poll_read(cx, buf)) {
-            dbg!(len);
-            unsafe { it.read_buf.set_len(old_len + len) };
-            match it.codec.decode(&mut it.read_buf) {
+        let rx = self.get_mut();
+        let buf =
+            unsafe { slice::from_raw_parts_mut(rx.read_buf.as_mut_ptr(), rx.read_buf.capacity()) };
+        if let Ok((len, addr)) = ready!(rx.socket.poll_read(cx, buf)) {
+            unsafe { rx.read_buf.set_len(len) };
+            match rx.codec.decode(&mut rx.read_buf) {
                 Ok(Some(pkt)) => {
                     if pkt.hdr.command == EIP_COMMAND_LIST_IDENTITY {
                         let res = decode_identity::<I, E>(pkt.data).and_then(|v| match v {
                             None => Err(E::custom("invalid packet")),
                             Some(v) => Ok((addr, v)),
                         });
-                        it.reset_buf();
+                        rx.reset_buf();
                         return Poll::Ready(res);
                     }
-                    it.reset_buf();
+                    rx.reset_buf();
                 }
                 Ok(None) => return Poll::Pending,
                 Err(e) => {
-                    it.reset_buf();
+                    rx.reset_buf();
                     return Poll::Ready(Err(e));
                 }
             }
@@ -143,20 +139,9 @@ where
     I: Decode<'de> + 'static,
 {
     type Item = Result<(SocketAddr, I), E>;
-
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         let reply = ready!(self.poll_reply(cx));
         Poll::Ready(Some(reply))
-    }
-}
-impl<'de, S, I, E> FusedStream for Discovery<S, I, E>
-where
-    S: AsyncUdpSocket,
-    E: Error + 'static,
-    I: Decode<'de> + 'static,
-{
-    fn is_terminated(&self) -> bool {
-        false
     }
 }
 
@@ -224,29 +209,26 @@ where
     type Item = Result<(SocketAddr, I), E>;
 
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
-        let it = self.get_mut();
-        let old_len = it.read_buf.len();
-        let ptr = it.read_buf.as_mut_ptr();
-        let buf = unsafe {
-            slice::from_raw_parts_mut(ptr.add(old_len), it.read_buf.capacity() - old_len)
-        };
-        if let Ok((len, addr)) = ready!(it.socket.poll_read(cx, buf)) {
-            unsafe { it.read_buf.set_len(old_len + len) };
-            match it.codec.decode(&mut it.read_buf) {
+        let rx = self.get_mut();
+        let buf =
+            unsafe { slice::from_raw_parts_mut(rx.read_buf.as_mut_ptr(), rx.read_buf.capacity()) };
+        if let Ok((len, addr)) = ready!(rx.socket.poll_read(cx, buf)) {
+            unsafe { rx.read_buf.set_len(len) };
+            match rx.codec.decode(&mut rx.read_buf) {
                 Ok(Some(pkt)) => {
                     if pkt.hdr.command == EIP_COMMAND_LIST_IDENTITY {
                         let res = decode_identity::<I, E>(pkt.data).and_then(|v| match v {
                             None => Err(E::custom("invalid packet")),
                             Some(v) => Ok((addr, v)),
                         });
-                        it.reset_buf();
+                        rx.reset_buf();
                         return Poll::Ready(Some(res));
                     }
-                    it.reset_buf();
+                    rx.reset_buf();
                 }
                 Ok(None) => return Poll::Pending,
                 Err(e) => {
-                    it.reset_buf();
+                    rx.reset_buf();
                     return Poll::Ready(Some(Err(e)));
                 }
             }

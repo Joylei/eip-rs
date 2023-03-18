@@ -12,8 +12,8 @@ use rseip_core::{
     Error,
 };
 
-/// UCMM: 504 bytes
-/// max: 65535
+// UCMM: 504 bytes
+// max: 65535
 #[derive(Debug, Default)]
 pub struct EncapsulationPacket<T> {
     pub hdr: EncapsulationHeader,
@@ -21,7 +21,7 @@ pub struct EncapsulationPacket<T> {
     pub data: T,
 }
 
-/// header: 24 bytes
+// header: 24 bytes
 #[derive(Debug, Default)]
 pub struct EncapsulationHeader {
     pub command: u16,

@@ -27,7 +27,6 @@ where
     T: AsyncRead + AsyncWrite,
     U: Encoder + Decoder,
 {
-    #[inline]
     pub fn new(inner: T, codec: U) -> Self {
         Self {
             inner: codec::Framed::new(inner, codec),

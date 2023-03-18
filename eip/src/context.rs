@@ -4,17 +4,12 @@
 // Copyright: 2021, Joylei <leingliu@gmail.com>
 // License: MIT
 
-use super::{
-    //command::{self, Command},
-    framed::Framed,
-    EncapsulationPacket,
-};
+use super::{framed::Framed, EncapsulationPacket};
 use crate::{codec::ClientCodec, consts::*, *};
 use byteorder::{ByteOrder, LittleEndian};
 use bytes::{BufMut, Bytes, BytesMut};
 use core::fmt;
-use futures_util::{AsyncRead, AsyncWrite};
-use futures_util::{SinkExt, StreamExt};
+use futures_util::{AsyncRead, AsyncWrite, SinkExt, StreamExt};
 use rseip_core::{
     cip::CommonPacketIter,
     codec::{Encode, LittleEndianDecoder},
@@ -43,7 +38,6 @@ impl<T, E: Error> fmt::Debug for EipContext<T, E> {
 impl<T, E: Error> EipContext<T, E> {
     /// set sender context
     #[allow(unused)]
-    #[inline]
     pub fn with_sender_context(&mut self, sender_context: [u8; 8]) -> &mut Self {
         let mut buf = BytesMut::new();
         buf.put_slice(&sender_context);
@@ -74,7 +68,6 @@ where
     E: Error + 'static,
 {
     /// create [`EipContext`]
-    #[inline]
     pub fn new(transport: T) -> Self {
         let framed = Framed::new(transport, ClientCodec::new());
 

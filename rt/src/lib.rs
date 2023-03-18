@@ -1,7 +1,7 @@
 // rseip
 //
 // rseip - Ethernet/IP (CIP) in pure Rust.
-// Copyright: 2022, Joylei <leingliu@gmail.com>
+// Copyright: 2023, Joylei <leingliu@gmail.com>
 // License: MIT
 
 /*!
@@ -62,6 +62,7 @@ pub struct AsyncUdpWriteHalf<S> {
 }
 
 impl<S: AsyncUdpSocket> AsyncUdpReadHalf<S> {
+    #[inline]
     pub fn poll_read(
         &mut self,
         cx: &mut Context,
@@ -76,6 +77,7 @@ impl<S: AsyncUdpSocket> AsyncUdpReadHalf<S> {
 }
 
 impl<S: AsyncUdpSocket> AsyncUdpWriteHalf<S> {
+    #[inline]
     pub fn poll_write(
         &mut self,
         cx: &mut Context,
@@ -209,7 +211,7 @@ mod rt_tokio {
         {
             tokio::net::UdpSocket::from_std(socket)
         }
-
+        #[inline]
         fn poll_read(
             &mut self,
             cx: &mut Context,
@@ -219,7 +221,7 @@ mod rt_tokio {
             let addr = ready!(self.poll_recv_from(cx, &mut buf))?;
             Poll::Ready(Ok((buf.filled().len(), addr)))
         }
-
+        #[inline]
         fn poll_write(
             &mut self,
             cx: &mut Context,
