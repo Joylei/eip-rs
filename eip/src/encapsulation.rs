@@ -60,7 +60,7 @@ impl<T: Encode> Encode for EncapsulationPacket<T> {
     {
         let data_len = self.data.bytes_count();
         debug_assert!(data_len <= ENCAPSULATION_DATA_MAX_LEN);
-
+        buf.reserve(ENCAPSULATION_HEADER_LEN + data_len);
         self.hdr.length = data_len as u16;
         self.hdr.encode(buf, encoder)?;
         self.data.encode(buf, encoder)?;
@@ -76,7 +76,7 @@ impl<T: Encode> Encode for EncapsulationPacket<T> {
     ) -> Result<(), A::Error> {
         let data_len = self.data.bytes_count();
         debug_assert!(data_len <= ENCAPSULATION_DATA_MAX_LEN);
-
+        buf.reserve(ENCAPSULATION_HEADER_LEN + data_len);
         //encode hdr
         encoder.encode_u16(self.hdr.command, buf)?;
         encoder.encode_u16(data_len as u16, buf)?;
