@@ -10,6 +10,7 @@ use asynchronous_codec::{self as codec, Decoder, Encoder};
 use bytes::Bytes;
 use futures_util::{AsyncRead, AsyncWrite};
 use futures_util::{Sink, Stream};
+use rseip_core::utils::unlikely;
 use std::{
     io,
     pin::Pin,
@@ -54,7 +55,7 @@ where
         let inner = Pin::new(&mut self.get_mut().inner);
         match inner.poll_next(cx) {
             Poll::Ready(Some(Ok(item))) => {
-                if item.hdr.command == EIP_COMMAND_NOP {
+                if unlikely(item.hdr.command == EIP_COMMAND_NOP) {
                     Poll::Pending
                 } else {
                     Poll::Ready(Some(Ok(item)))

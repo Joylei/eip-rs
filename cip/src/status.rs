@@ -6,6 +6,8 @@
 
 use core::fmt;
 
+use rseip_core::utils::likely;
+
 /// message reply status
 #[derive(Debug, Clone, Copy)]
 pub struct Status {
@@ -40,7 +42,7 @@ impl Status {
 
     #[inline]
     pub fn into_result(self) -> Result<(), Status> {
-        if self.general == 0 {
+        if likely(self.general == 0) {
             Ok(())
         } else {
             Err(self)

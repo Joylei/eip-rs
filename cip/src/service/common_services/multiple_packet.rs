@@ -10,6 +10,7 @@ use crate::*;
 use crate::{epath::EPath, error::cip_error};
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 use rseip_core::codec::{BytesHolder, Decode, Decoder, Encode, Encoder, LittleEndianDecoder};
+use rseip_core::utils::unlikely;
 use smallvec::SmallVec;
 
 /// build and send multiple service packet
@@ -51,7 +52,7 @@ where
     #[inline]
     pub async fn call(self) -> Result<ReplyIter<LittleEndianDecoder<T::Error>>, T::Error> {
         let Self { inner, items } = self;
-        if items.is_empty() {
+        if unlikely(items.is_empty()) {
             return Ok(ReplyIter::new(None));
         }
 

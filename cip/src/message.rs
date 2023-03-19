@@ -6,7 +6,7 @@
 
 use super::Status;
 use crate::error::cip_error_reply;
-use rseip_core::{codec::Encode, Error};
+use rseip_core::{codec::Encode, utils::unlikely, Error};
 
 /// Message request
 #[derive(Debug, Default, PartialEq, Eq)]
@@ -96,7 +96,7 @@ pub trait MessageReplyInterface {
 
     #[inline]
     fn expect_service<E: Error>(&self, expected_service: u8) -> Result<(), E> {
-        if self.reply_service() != expected_service {
+        if unlikely(self.reply_service() != expected_service) {
             Err(cip_error_reply(self.reply_service(), expected_service))
         } else {
             Ok(())

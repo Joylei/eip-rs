@@ -4,7 +4,7 @@
 // Copyright: 2021, Joylei <leingliu@gmail.com>
 // License: MIT
 
-use crate::{codec::*, hex::AsHex, Error};
+use crate::{codec::*, hex::AsHex, utils::unlikely, Error};
 use bytes::{Buf, Bytes, BytesMut};
 use core::{
     marker::PhantomData,
@@ -117,7 +117,7 @@ impl<T> CommonPacketItem<T> {
     /// ensure current item matches the specified type code
     #[inline]
     pub fn ensure_type_code<E: Error>(&self, type_code: u16) -> Result<(), E> {
-        if self.type_code != type_code {
+        if unlikely(self.type_code != type_code) {
             return Err(E::invalid_value(
                 format_args!("common packet item type {}", self.type_code.as_hex()),
                 type_code.as_hex(),
@@ -265,7 +265,7 @@ impl<T> CommonPacketItem<T> {
     {
         decoder.ensure_size(4)?;
         let type_code = decoder.decode_u16();
-        if type_code != expected_type_code {
+        if unlikely(type_code != expected_type_code) {
             return Err(Error::invalid_value(
                 format_args!("common packet type code {:#02x}", type_code),
                 expected_type_code.as_hex(),

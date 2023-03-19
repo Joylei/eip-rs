@@ -9,6 +9,7 @@ use bytes::Buf;
 use rseip_core::{
     codec::{Decode, Encode, Encoder},
     hex::AsHex,
+    utils::unlikely,
     Error,
 };
 
@@ -37,7 +38,7 @@ pub struct EncapsulationHeader {
 impl EncapsulationHeader {
     #[inline]
     pub fn ensure_command<E: Error>(&self, command_code: u16) -> Result<(), E> {
-        if self.command != command_code {
+        if unlikely(self.command != command_code) {
             return Err(E::invalid_value(
                 format_args!("command code {:#0x?}", self.command),
                 command_code.as_hex(),

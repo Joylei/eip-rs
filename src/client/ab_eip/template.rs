@@ -24,6 +24,7 @@ use core::{
 use rseip_cip::MessageReplyInterface;
 use rseip_core::{
     codec::{BytesHolder, Decode, Decoder},
+    utils::unlikely,
     Error,
 };
 use smallvec::SmallVec;
@@ -257,7 +258,7 @@ impl<'de> Decode<'de> for Template {
     {
         decoder.ensure_size(28)?;
         let count = decoder.decode_u16(); // buf[0..2]
-        if count != 4 {
+        if unlikely(count != 4) {
             return Err(Error::custom(
                 "template - unexpected count of items returned",
             ));
@@ -268,9 +269,9 @@ impl<'de> Decode<'de> for Template {
         let object_size: u32 = decode_attr(&mut decoder, 4)?;
         let struct_size: u32 = decode_attr(&mut decoder, 5)?;
 
-        if decoder.buf().has_remaining() {
-            return Err(Error::custom("template - too much data to decode"));
-        }
+        // if decoder.buf().has_remaining() {
+        //     return Err(Error::custom("template - too much data to decode"));
+        // }
         Ok(Self {
             instance_id: 0,
             handle,
@@ -288,13 +289,13 @@ where
 {
     let id = buf.decode_u16();
     let status = buf.decode_u16();
-    if status != 0 {
+    if unlikely(status != 0) {
         return Err(Error::custom(format!(
             "attribute - bad attribute[{}] status: {:#0x}",
             id, status
         )));
     }
-    if attr_id != id {
+    if unlikely(attr_id != id) {
         return Err(Error::custom(format!(
             "attribute -unexpected attribute[{}]",
             id

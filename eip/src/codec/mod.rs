@@ -17,6 +17,7 @@ use bytes::{BufMut, Bytes, BytesMut};
 use core::marker::PhantomData;
 use rseip_core::{
     codec::{self, Decode, Encode, LittleEndianDecoder},
+    utils::unlikely,
     Error,
 };
 
@@ -141,7 +142,7 @@ impl<E: Error> Decoder for ClientCodec<E> {
         }
         let data_len = LittleEndian::read_u16(&src[2..4]) as usize;
         //verify data length
-        if ENCAPSULATION_HEADER_LEN + data_len > u16::MAX as usize {
+        if unlikely(ENCAPSULATION_HEADER_LEN + data_len > u16::MAX as usize) {
             return Err(E::invalid_length(
                 ENCAPSULATION_HEADER_LEN + data_len,
                 "below u16::MAX",
@@ -150,19 +151,19 @@ impl<E: Error> Decoder for ClientCodec<E> {
         if src.len() < ENCAPSULATION_HEADER_LEN + data_len {
             return Ok(None);
         }
-        if src.len() > ENCAPSULATION_HEADER_LEN + data_len {
-            // should no remaining buffer
-            return Err(E::invalid_length(
-                src.len(),
-                ENCAPSULATION_HEADER_LEN + data_len,
-            ));
-        }
+        // if src.len() > ENCAPSULATION_HEADER_LEN + data_len {
+        //     // should no remaining buffer
+        //     return Err(E::invalid_length(
+        //         src.len(),
+        //         ENCAPSULATION_HEADER_LEN + data_len,
+        //     ));
+        // }
         let header_bytes = src.split_to(ENCAPSULATION_HEADER_LEN).freeze();
         let decoder = LittleEndianDecoder::<E>::new(header_bytes);
         let hdr = EncapsulationHeader::decode(decoder)?;
         match hdr.status {
             0 => {}
-            v if v > u16::MAX as u32 => {
+            v if unlikely(v > u16::MAX as u32) => {
                 return Err(eip_error(format_args!("invalid status code {:#04x?}", v)));
             }
             v => return Err(eip_error_code(v as u16)),

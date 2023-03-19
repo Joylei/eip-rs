@@ -11,6 +11,7 @@ use crate::{
     Status,
 };
 use bytes::Buf;
+use rseip_core::utils::unlikely;
 use rseip_core::{
     cip::CommonPacketIter,
     codec::{Decode, Decoder},
@@ -72,7 +73,7 @@ where
     D: Decoder<'de>,
     R: Decode<'de> + 'static,
 {
-    if cpf.len() != 2 {
+    if unlikely(cpf.len() != 2) {
         return Err(cip_error("common packet - expect 2 items"));
     }
     // should be connected address

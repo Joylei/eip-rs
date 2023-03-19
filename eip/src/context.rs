@@ -13,6 +13,7 @@ use futures_util::{AsyncRead, AsyncWrite, SinkExt, StreamExt};
 use rseip_core::{
     cip::CommonPacketIter,
     codec::{Encode, LittleEndianDecoder},
+    utils::unlikely,
 };
 
 pub type CommonPacket<'a, E> = CommonPacketIter<'a, LittleEndianDecoder<E>>;
@@ -164,7 +165,7 @@ where
             let session_options = LittleEndian::read_u16(&reply_data[2..4]);
             debug_assert_eq!(session_options, 0);
         }
-        if session_handle == 0 {
+        if unlikely(session_handle == 0) {
             return Err(E::invalid_value("session handle 0", ">0"));
         }
         self.session_handle = session_handle;
