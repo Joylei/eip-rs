@@ -147,7 +147,7 @@ impl EipDiscovery {
                     match res {
                         Some(Ok(v)) =>  Some((v, state)),
                         Some(Err(e)) => {
-                            dbg!(e);
+                             log::debug!("{:?}", e);
                              None
                         }
                         _ =>  None
