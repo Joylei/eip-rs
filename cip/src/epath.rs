@@ -79,6 +79,13 @@ impl EPath {
         self
     }
 
+    /// append attribute id
+    #[inline]
+    pub fn with_attribute(mut self, attribute_id: u16) -> Self {
+        self.0.push(Segment::Attribute(attribute_id));
+        self
+    }
+
     /// append element id
     #[inline]
     pub fn with_element(mut self, element_idx: u32) -> Self {
