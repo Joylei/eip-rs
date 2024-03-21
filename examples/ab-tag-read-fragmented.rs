@@ -56,6 +56,7 @@ impl Encode for AbString {
         buf: &mut BytesMut,
         encoder: &mut A,
     ) -> Result<(), A::Error> {
+        // NOTE: If writing to a string in the PLC, a "string-like" UDT must be created. By default, AB PLCs don't allow external write access to strings
         let mut data = self.data.as_bytes();
         if data.len() > DEFAULT_STRING_CAPACITY {
             data = &data[0..DEFAULT_STRING_CAPACITY];
